@@ -426,8 +426,8 @@ A Fase 06 está `Em execução`, iniciada após o review aprovado da Fase 05.
 | 02 | Cadastro seguro de usuários | [fase-02-cadastro-usuarios.md](fase-02-cadastro-usuarios.md) | Concluída | 2026-09-04 |
 | 03 | Autenticação e proteção do cliente web | [fase-03-autenticacao-protecao-web.md](fase-03-autenticacao-protecao-web.md) | Concluída | 2026-09-04 |
 | 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fase-04-criacao-consulta-produtos.md) | Concluída | 2026-09-04 |
-| 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fase-05-paginacao-manutencao-produtos.md) | Em execução | — |
-| 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fase-06-rate-limit-conformidade.md) | Pendente | — |
+| 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fase-05-paginacao-manutencao-produtos.md) | Concluída | 2026-09-04 |
+| 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fase-06-rate-limit-conformidade.md) | Em execução | — |
 | 07 | Empacotamento, infraestrutura e entrega | [fase-07-entrega-operacional.md](fase-07-entrega-operacional.md) | Pendente | — |
 
 ## Tarefas
@@ -466,11 +466,7 @@ A Fase 06 está `Em execução`, iniciada após o review aprovado da Fase 05.
 | T30 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/presentation/http/rate-limit-policies.spec.ts src/shared/presentation/http/rate-limit.middleware.spec.ts` (2 suítes/6 testes), `npm run test:e2e -- --runTestsByPath test/e2e/rate-limit.e2e.spec.ts test/e2e/list-products.e2e.spec.ts test/e2e/register-user.e2e.spec.ts` (3 suítes/24 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; tabela ADR-004, fallback, ordem do middleware, `OPTIONS` e isolamento das fixtures comprovados. |
 | T31 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/presentation/errors/api-exception.filter.spec.ts src/shared/infrastructure/rate-limit/in-memory-rate-limit-metrics.spec.ts` (2 suítes/5 testes), `npm run test:e2e -- --runTestsByPath test/e2e/rate-limit.e2e.spec.ts` (1 suíte/2 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; `429 RATE_LIMIT_EXCEEDED`, `Retry-After`, correlação, métrica agregada e bloqueio antes do controller comprovados. |
 | T32 | 06 | Concluída | `npm run test:e2e -- --runTestsByPath test/e2e/openapi.e2e.spec.ts` (1 suíte/1 teste), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; `/docs`, `/docs-json`, seis caminhos/nove operações, cookie auth, ausência de Bearer e `429` documentado comprovados. |
-| T29 | 06 | Pendente | — |
-| T30 | 06 | Pendente | — |
-| T31 | 06 | Pendente | — |
-| T32 | 06 | Pendente | — |
-| T33 | 06 | Pendente | — |
+| T33 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath test/conformance/acceptance-criteria.matrix.spec.ts test/conformance/sensitive-artifacts.spec.ts` (2 suítes/4 testes), gates completos com 35 suítes/168 testes unitários, 3 suítes/9 testes de integração e 15 suítes/87 testes E2E, além de lint, typecheck, build e `git diff --check`; matriz 1–27, fonte de produção, placeholder de ambiente e artefatos opcionais foram verificados. |
 | T34 | 07 | Pendente | — |
 | T35 | 07 | Pendente | — |
 | T36 | 07 | Pendente | — |
@@ -574,3 +570,14 @@ Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permiss�
   build e `git diff --check`.
 - Ressalvas: A-01 permanece restrito ao DynamoDB Local e encaminhado à Fase 07;
   a Fase 05 foi iniciada após o review e agora está encerrada com aprovação.
+
+### Encerramento da Fase 06
+
+- T28–T33 passaram os testes dirigidos e os gates completos; a Fase 06 aguarda
+  somente o review independente final antes de ser marcada como `Concluída`.
+- O componente próprio de Fixed Window segue a política da ADR-004; o uso de
+  `@nestjs/throttler` foi substituído porque a versão disponível não é
+  compatível com NestJS 12, sem alterar o contrato funcional.
+- A verificação da imagem publicada permanece encaminhada à Fase 07, pois não
+  há imagem/Dockerfile neste checkout; o audit T33 cobre os fontes, respostas,
+  logs de teste e artefatos de runtime fornecidos à suíte.
