@@ -27,6 +27,7 @@ import { DYNAMODB_DOCUMENT_CLIENT, type DocumentClient } from './dynamodb.tokens
           nodeEnv: configService.getOrThrow('nodeEnv'),
           port: configService.getOrThrow('port'),
           productsTableName: configService.getOrThrow('productsTableName'),
+          trustedProxyIps: configService.getOrThrow('trustedProxyIps'),
           usersTableName: configService.getOrThrow('usersTableName'),
         }),
     },

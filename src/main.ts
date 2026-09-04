@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { createAppConfig, type AppConfig } from './shared/infrastructure/configuration';
 import { createCorsOptions } from './shared/presentation/http/cors-options';
+import { configureTrustedProxies } from './shared/presentation/http/trusted-proxies';
 import { setupOpenApi } from './shared/presentation/openapi/setup-openapi';
 import { PublicValidationPipe } from './shared/presentation/validation/public-validation.pipe';
 
@@ -14,6 +15,7 @@ export async function bootstrap(): Promise<void> {
 
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService<AppConfig>);
+  configureTrustedProxies(app, configService.getOrThrow('trustedProxyIps'));
   app.enableCors(createCorsOptions(configService.getOrThrow('allowedOrigins')));
   app.useGlobalPipes(new PublicValidationPipe());
   const port = configService.getOrThrow<number>('port');

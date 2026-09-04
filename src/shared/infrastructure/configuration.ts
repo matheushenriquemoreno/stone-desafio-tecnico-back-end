@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 
+import { isIP } from 'node:net';
 import { Transform, Type, plainToInstance } from 'class-transformer';
 import {
   ArrayNotEmpty,
@@ -37,6 +38,7 @@ export interface AppConfig {
   readonly jwtAudience: string;
   readonly jwtAccessTtlSeconds: number;
   readonly allowedOrigins: readonly string[];
+  readonly trustedProxyIps: readonly string[];
   readonly cookieName: string;
   readonly cookieSecure: boolean;
 }
@@ -121,6 +123,25 @@ class EnvironmentVariables {
   @IsUrl({ protocols: ['http', 'https'], require_tld: false }, { each: true })
   ALLOWED_ORIGINS!: string[];
 
+  @Transform(({ value }: { value: unknown }): unknown => {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+
+    if (typeof value !== 'string') {
+      return value;
+    }
+
+    return value
+      .split(',')
+      .map((ip) => ip.trim())
+      .filter((ip) => ip.length > 0);
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  TRUSTED_PROXY_IPS?: string[];
+
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
@@ -154,6 +175,7 @@ interface ValidatedEnvironment {
   readonly JWT_AUDIENCE: string;
   readonly JWT_ACCESS_TTL_SECONDS: number;
   readonly ALLOWED_ORIGINS: string[];
+  readonly TRUSTED_PROXY_IPS?: string[];
   readonly COOKIE_NAME: string;
   readonly COOKIE_SECURE: boolean;
 }
@@ -184,6 +206,10 @@ function parseEnvironment(input: EnvironmentInput): ValidatedEnvironment {
     invalidFields.add('COOKIE_SECURE');
   }
 
+  if (variables.TRUSTED_PROXY_IPS?.some((ip) => isIP(ip) === 0)) {
+    invalidFields.add('TRUSTED_PROXY_IPS');
+  }
+
   if (invalidFields.size > 0) {
     throw new Error(
       `Configuração de ambiente inválida: ${Array.from(invalidFields).sort().join(', ')}.`,
@@ -204,6 +230,7 @@ function parseEnvironment(input: EnvironmentInput): ValidatedEnvironment {
     NODE_ENV: variables.NODE_ENV,
     PORT: variables.PORT,
     PRODUCTS_TABLE_NAME: variables.PRODUCTS_TABLE_NAME,
+    TRUSTED_PROXY_IPS: variables.TRUSTED_PROXY_IPS,
     USERS_TABLE_NAME: variables.USERS_TABLE_NAME,
   };
 }
@@ -232,6 +259,7 @@ export function createAppConfig(input: EnvironmentInput): AppConfig {
       environment.PRODUCTS_TABLE_NAME,
       environment.DYNAMODB_TABLE_PREFIX,
     ),
+    trustedProxyIps: environment.TRUSTED_PROXY_IPS ?? [],
     usersTableName: resolveTableName(
       environment.USERS_TABLE_NAME,
       environment.DYNAMODB_TABLE_PREFIX,

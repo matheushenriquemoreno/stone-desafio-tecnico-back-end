@@ -16,6 +16,7 @@ function localConfig(nodeEnv: AppConfig['nodeEnv']): AppConfig {
     nodeEnv,
     port: 3000,
     productsTableName: 'stone_products',
+    trustedProxyIps: [],
     usersTableName: 'stone_users',
   };
 }

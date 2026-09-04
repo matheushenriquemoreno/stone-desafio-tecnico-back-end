@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 
 import { AuthModule } from './modules/auth/auth.module';
@@ -13,12 +13,17 @@ import {
   configuration,
   validateEnvironment,
 } from './shared/infrastructure/configuration';
+import type { AppConfig } from './shared/infrastructure/configuration';
 import { SecureIdGenerator } from './shared/infrastructure/identifiers/secure-id-generator';
 import { ConsoleRequestLogger } from './shared/infrastructure/logging/console-request.logger';
 import { DynamoDbModule } from './shared/infrastructure/dynamodb/dynamodb.module';
 import { ApiExceptionFilter } from './shared/presentation/errors/api-exception.filter';
 import { CsrfProtectionMiddleware } from './shared/presentation/http/csrf-protection.middleware';
 import { CorrelationIdMiddleware } from './shared/presentation/http/correlation-id.middleware';
+import {
+  EFFECTIVE_CLIENT_IP_RESOLVER,
+  EffectiveClientIpResolver,
+} from './shared/presentation/http/effective-client-ip';
 import { RequestLoggingInterceptor } from './shared/presentation/logging/request-logging.interceptor';
 
 @Module({
@@ -40,6 +45,12 @@ import { RequestLoggingInterceptor } from './shared/presentation/logging/request
     { provide: CLOCK, useClass: SystemClock },
     { provide: ID_GENERATOR, useClass: SecureIdGenerator },
     { provide: REQUEST_LOGGER, useClass: ConsoleRequestLogger },
+    {
+      provide: EFFECTIVE_CLIENT_IP_RESOLVER,
+      useFactory: (configService: ConfigService<AppConfig>) =>
+        new EffectiveClientIpResolver(configService.getOrThrow('trustedProxyIps')),
+      inject: [ConfigService],
+    },
   ],
 })
 export class AppModule implements NestModule {

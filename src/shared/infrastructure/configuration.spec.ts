@@ -36,6 +36,7 @@ describe('environment configuration', () => {
       nodeEnv: 'test',
       port: 3000,
       productsTableName: 'stone_products_test',
+      trustedProxyIps: [],
       usersTableName: 'stone_users_test',
     });
   });
@@ -84,5 +85,20 @@ describe('environment configuration', () => {
     environment.COOKIE_SECURE = 'true';
 
     expect(() => validateEnvironment(environment)).toThrow('JWT_ACCESS_TTL_SECONDS');
+  });
+
+  it('parses explicit trusted proxy IPs', () => {
+    const environment = validEnvironment();
+    environment.TRUSTED_PROXY_IPS = '127.0.0.1, ::1';
+
+    expect(createAppConfig(environment).trustedProxyIps).toEqual(['127.0.0.1', '::1']);
+  });
+
+  it('rejects an invalid trusted proxy IP without exposing its value', () => {
+    const environment = validEnvironment();
+    environment.TRUSTED_PROXY_IPS = 'not-an-ip';
+
+    expect(() => validateEnvironment(environment)).toThrow('TRUSTED_PROXY_IPS');
+    expect(() => validateEnvironment(environment)).not.toThrow('not-an-ip');
   });
 });

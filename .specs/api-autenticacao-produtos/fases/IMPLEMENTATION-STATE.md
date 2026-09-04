@@ -164,6 +164,21 @@ A Fase 06 está `Em execução`, iniciada após o review aprovado da Fase 05.
   prova da identidade usada na chave sem IP bruto nos logs.
 - Conflitos: nenhum com ADR-004 ou DEC-12/DEC-19.
 
+### Preparação da tarefa T29
+
+- Premissas: o armazenamento será em memória da instância, com relógio
+  injetável; a primeira chamada fixa `expiresAt` e chamadas seguintes não
+  prorrogam a janela; expiração remove o bucket.
+- Abstrações: `FixedWindowRateLimiter` receberá uma chave já composta pela
+  borda e não conhecerá Express, headers ou DynamoDB; a métrica agregará apenas
+  o template da rota.
+- Arquivos: porta/serviço de rate limit, política de resultado e testes
+  unitários com relógio controlado.
+- Verificação: limite inclusivo, bloqueio seguinte, janela não deslizante,
+  expiração, isolamento por IP/método/template e limpeza dos buckets.
+- Conflitos: nenhum com ADR-004; a topologia de instância única permanecerá
+  explícita.
+
 ### Encerramento da Fase 03
 
 - T13–T17 concluídas com evidências unitárias e E2E.
@@ -391,7 +406,7 @@ A Fase 06 está `Em execução`, iniciada após o review aprovado da Fase 05.
 | T25 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/update-product/update-product.spec.ts src/modules/products/domain/product.spec.ts` (2 suítes/37 testes), `npm run lint` e `npm run typecheck` aprovados; patch não vazio e estrito, invariantes reutilizadas, campos omitidos preservados e relógio controlado comprovados. |
 | T26 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts src/modules/products/application/update-product/update-product.spec.ts` (2 suítes/21 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/5 testes), `npm run test:e2e -- --runTestsByPath test/e2e/update-product.e2e.spec.ts` (1 suíte/10 testes), `npm run lint` e `npm run typecheck` aprovados; `UpdateItem` condicional, patch estrito, preservação, falha técnica, proteção HTTP, compartilhamento e OpenAPI comprovados. |
 | T27 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/delete-product/delete-product.spec.ts src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (2 suítes/11 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/6 testes), `npm run test:e2e -- --runTestsByPath test/e2e/delete-product.e2e.spec.ts` (1 suíte/4 testes), `npm run lint` e `npm run typecheck` aprovados; `DeleteItem` condicional, `204` vazio, repetição `404`, compartilhamento, proteções e OpenAPI comprovados. |
-| T28 | 06 | Pendente | — |
+| T28 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/infrastructure/configuration.spec.ts src/shared/presentation/http/effective-client-ip.spec.ts src/shared/infrastructure/dynamodb/dynamodb.client.spec.ts` (3 suítes/16 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; allowlist explícita de proxies, cadeia confiável, normalização de IP e rejeição segura de configuração inválida comprovadas. |
 | T29 | 06 | Pendente | — |
 | T30 | 06 | Pendente | — |
 | T31 | 06 | Pendente | — |
