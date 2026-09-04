@@ -11,7 +11,7 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 ## Fase ativa
 
-Fase 01 — Tracer bullet e fundação observável (tarefas concluídas; aguardando review da fase).
+Fase 02 — Cadastro seguro de usuários.
 
 ### Registro de preparação
 
@@ -120,12 +120,34 @@ Fase 01 — Tracer bullet e fundação observável (tarefas concluídas; aguarda
 - Conflitos: nenhum; liveness continua fora da API e o rate limit da rota será
   adicionado somente na Fase 06.
 
+### Transição para a Fase 02
+
+- Gate anterior: review da Fase 01 aprovado na versão 1, registrado em
+  `REVIEW.md`.
+- Decisão: a Fase 01 foi marcada como `Concluída` e a Fase 02 foi marcada como
+  `Em execução`, preservando a ordem aprovada do plano.
+
+### Preparação da tarefa T06
+
+- Premissas: o domínio Auth será independente de NestJS, HTTP, DynamoDB, JWT e
+  Argon2; a senha em texto puro será uma entrada transitória do caso de uso e
+  não fará parte da entidade persistível.
+- Abstrações: usuário e e-mail serão tipos de domínio explícitos; as regras de
+  normalização e limites serão funções/objetos pequenos, sem repositório ou
+  serviço genérico antecipado.
+- Arquivos: `src/auth/domain`, erros de domínio e testes unitários de limites,
+  normalização e serialização segura.
+- Verificação: executar testes de borda para nome, e-mail e senha, teste de
+  equivalência após normalização, busca arquitetural e lint/typecheck.
+- Conflitos: nenhum encontrado entre PRD, design, ADRs e a Fase 02; Argon2id
+  será introduzido somente na tarefa T07, atrás de porta.
+
 ## Fases
 
 | #  | Fase | Arquivo | Status | Concluída em |
 |----|------|---------|--------|--------------|
-| 01 | Tracer bullet e fundação observável | [fase-01-tracer-bullet-fundacao.md](fase-01-tracer-bullet-fundacao.md) | Em execução | — |
-| 02 | Cadastro seguro de usuários | [fase-02-cadastro-usuarios.md](fase-02-cadastro-usuarios.md) | Pendente | — |
+| 01 | Tracer bullet e fundação observável | [fase-01-tracer-bullet-fundacao.md](fase-01-tracer-bullet-fundacao.md) | Concluída | 2026-09-04 |
+| 02 | Cadastro seguro de usuários | [fase-02-cadastro-usuarios.md](fase-02-cadastro-usuarios.md) | Em execução | — |
 | 03 | Autenticação e proteção do cliente web | [fase-03-autenticacao-protecao-web.md](fase-03-autenticacao-protecao-web.md) | Pendente | — |
 | 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fase-04-criacao-consulta-produtos.md) | Pendente | — |
 | 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fase-05-paginacao-manutencao-produtos.md) | Pendente | — |

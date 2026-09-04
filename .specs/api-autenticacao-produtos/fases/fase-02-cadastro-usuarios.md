@@ -1,9 +1,9 @@
 # Fase 02 — Cadastro seguro de usuários
 
-| Status       | Pendente   |
+| Status       | Em execução |
 |--------------|------------|
 | Created      | 2026-09-03 |
-| Last Updated | 2026-09-03 |
+| Last Updated | 2026-09-04 |
 
 **Objetivo e resultado esperado:** permitir que um visitante crie uma conta única com dados normalizados, senha protegida e resposta estritamente pública, sem autenticação automática.
 
