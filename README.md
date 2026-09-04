@@ -47,3 +47,24 @@ npm run build
 O bootstrap valida todas as variáveis obrigatórias antes de iniciar a API. O
 valor de `JWT_SECRET` no arquivo de exemplo é apenas um placeholder e deve ser
 substituído por um segredo local aleatório.
+
+Para iniciar a API após o build:
+
+```bash
+npm run build
+npm run start
+```
+
+Durante o desenvolvimento, use o modo com recarregamento automático:
+
+```bash
+npm run start:dev
+```
+
+O DynamoDB Local deve estar disponível em `DYNAMODB_ENDPOINT` e as tabelas
+devem existir. Para o ambiente local definido no exemplo:
+
+```bash
+docker compose up -d dynamodb-local
+npm run db:provision
+```
