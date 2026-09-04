@@ -152,6 +152,19 @@ Criar o componente reutilizável que exija `X-CSRF-Protection: 1` em `POST`, `PA
 - **Critérios de conclusão:** toda mutação fica protegida por padrão; rejeições retornam erro padrão correlacionado; a política não cria sessão ou token CSRF.
 - **Riscos ou premissas:** requisições sem `Origin` continuam sujeitas ao cabeçalho CSRF conforme o contrato de clientes não web.
 
+### Evidência de execução T11
+
+- `npm run test:e2e -- --runInBand test/e2e/csrf.e2e.spec.ts` — concluído; 1
+  suíte e 8 testes aprovados.
+- `CsrfProtectionMiddleware` protege globalmente `POST`, `PATCH` e `DELETE`,
+  exige o valor literal `1`, permite origem ausente, origem própria exata ou
+  origem da allowlist e rejeita demais combinações antes do controller.
+- Respostas bloqueadas foram convertidas pelo filtro global em `403
+  REQUEST_FORBIDDEN` correlacionado; o contador do controller permaneceu zero.
+- `npm run lint`, `npm run typecheck`, `npm test` (17 suítes/52 testes),
+  `npm run test:e2e` (4 suítes/17 testes), `npm run build` e
+  `git diff --check` — concluídos sem erros.
+
 ## Tarefa T12 — Expor POST /auth/register com contrato e E2E
 
 Criar DTO, controller, serialização e documentação OpenAPI do cadastro. A rota deve exigir `X-CSRF-Protection: 1` e origem autorizada quando `Origin` estiver presente, retornar `201` com os três campos públicos, `409 EMAIL_ALREADY_EXISTS` na duplicidade e `400 VALIDATION_ERROR` com campos públicos nos dados inválidos.

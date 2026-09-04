@@ -15,6 +15,7 @@ import { SecureIdGenerator } from './shared/infrastructure/identifiers/secure-id
 import { ConsoleRequestLogger } from './shared/infrastructure/logging/console-request.logger';
 import { DynamoDbModule } from './shared/infrastructure/dynamodb/dynamodb.module';
 import { ApiExceptionFilter } from './shared/presentation/errors/api-exception.filter';
+import { CsrfProtectionMiddleware } from './shared/presentation/http/csrf-protection.middleware';
 import { CorrelationIdMiddleware } from './shared/presentation/http/correlation-id.middleware';
 import { RequestLoggingInterceptor } from './shared/presentation/logging/request-logging.interceptor';
 
@@ -39,6 +40,6 @@ import { RequestLoggingInterceptor } from './shared/presentation/logging/request
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(CorrelationIdMiddleware).forRoutes('*');
+    consumer.apply(CorrelationIdMiddleware, CsrfProtectionMiddleware).forRoutes('*');
   }
 }

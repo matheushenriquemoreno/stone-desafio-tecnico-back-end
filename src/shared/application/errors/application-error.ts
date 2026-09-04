@@ -43,3 +43,14 @@ export class ServiceUnavailableError extends ApplicationError {
     this.name = 'ServiceUnavailableError';
   }
 }
+
+export class RequestForbiddenError extends ApplicationError {
+  constructor() {
+    super({
+      code: 'REQUEST_FORBIDDEN',
+      message: 'Requisição proibida.',
+      statusCode: 403,
+    });
+    this.name = 'RequestForbiddenError';
+  }
+}
