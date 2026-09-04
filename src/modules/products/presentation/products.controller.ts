@@ -23,11 +23,11 @@ import {
   ApiOperation,
   ApiQuery,
   ApiTags,
-  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
 import { ApiErrorDto } from '../../../shared/presentation/errors/api-error.dto';
+import { ApiRateLimitResponse } from '../../../shared/presentation/openapi/api-rate-limit-response';
 import { AccessTokenGuard } from '../../auth/presentation/access-token.guard';
 import { CreateProduct } from '../application/create-product/create-product';
 import { DeleteProduct } from '../application/delete-product/delete-product';
@@ -61,7 +61,7 @@ export class ProductsController {
   @ApiBadRequestResponse({ description: 'Query inválida.', type: ApiErrorDto })
   @ApiOkResponse({ description: 'Página de produtos.', type: ProductsPageResponseDto })
   @ApiOperation({ summary: 'Lista produtos por cursor.' })
-  @ApiTooManyRequestsResponse({ description: 'Limite de requisições excedido.', type: ApiErrorDto })
+  @ApiRateLimitResponse()
   @ApiQuery({
     description: 'Quantidade de itens; padrão 20, entre 1 e 100.',
     maximum: 100,
@@ -95,7 +95,7 @@ export class ProductsController {
     required: true,
   })
   @ApiOperation({ summary: 'Cria um produto no catálogo compartilhado.' })
-  @ApiTooManyRequestsResponse({ description: 'Limite de requisições excedido.', type: ApiErrorDto })
+  @ApiRateLimitResponse()
   @ApiUnauthorizedResponse({ description: 'Cookie inválido ou ausente.', type: ApiErrorDto })
   @HttpCode(HttpStatus.CREATED)
   @Post()
@@ -107,7 +107,7 @@ export class ProductsController {
   @ApiNotFoundResponse({ description: 'Produto não encontrado.', type: ApiErrorDto })
   @ApiOkResponse({ description: 'Produto encontrado.', type: ProductResponseDto })
   @ApiOperation({ summary: 'Consulta um produto pelo identificador.' })
-  @ApiTooManyRequestsResponse({ description: 'Limite de requisições excedido.', type: ApiErrorDto })
+  @ApiRateLimitResponse()
   @ApiUnauthorizedResponse({ description: 'Cookie inválido ou ausente.', type: ApiErrorDto })
   @Get(':id')
   async get(@Param('id') id: string): Promise<PublicProductData> {
@@ -128,7 +128,7 @@ export class ProductsController {
   @ApiNotFoundResponse({ description: 'Produto não encontrado.', type: ApiErrorDto })
   @ApiOkResponse({ description: 'Produto atualizado.', type: ProductResponseDto })
   @ApiOperation({ summary: 'Atualiza parcialmente um produto.' })
-  @ApiTooManyRequestsResponse({ description: 'Limite de requisições excedido.', type: ApiErrorDto })
+  @ApiRateLimitResponse()
   @ApiUnauthorizedResponse({ description: 'Cookie inválido ou ausente.', type: ApiErrorDto })
   @Patch(':id')
   async update(
@@ -154,7 +154,7 @@ export class ProductsController {
   @ApiNoContentResponse({ description: 'Produto excluído.' })
   @ApiNotFoundResponse({ description: 'Produto não encontrado.', type: ApiErrorDto })
   @ApiOperation({ summary: 'Exclui um produto do catálogo compartilhado.' })
-  @ApiTooManyRequestsResponse({ description: 'Limite de requisições excedido.', type: ApiErrorDto })
+  @ApiRateLimitResponse()
   @ApiUnauthorizedResponse({ description: 'Cookie inválido ou ausente.', type: ApiErrorDto })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)

@@ -1,7 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiOkResponse, ApiTags, ApiTooManyRequestsResponse } from '@nestjs/swagger';
+import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { ApiErrorDto } from '../../../shared/presentation/errors/api-error.dto';
+import { ApiRateLimitResponse } from '../../../shared/presentation/openapi/api-rate-limit-response';
 
 import {
   CheckReadiness,
@@ -15,7 +15,7 @@ export class HealthController {
 
   @Get()
   @ApiOkResponse({ description: 'Estado de prontidão da API.', schema: { example: { status: 'ok' } } })
-  @ApiTooManyRequestsResponse({ description: 'Limite de requisições excedido.', type: ApiErrorDto })
+  @ApiRateLimitResponse()
   check(): Promise<ReadinessResult> {
     return this.checkReadiness.execute();
   }

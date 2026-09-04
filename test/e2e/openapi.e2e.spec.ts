@@ -72,6 +72,13 @@ describe('OpenAPI export', () => {
       expect(operation.responses).toEqual(
         expect.objectContaining({ '429': expect.any(Object) }),
       );
+      expect(operation.responses?.['429']).toEqual(
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Retry-After': expect.any(Object),
+          }),
+        }),
+      );
     }
 
     const schemes = Object.values(document.components?.securitySchemes ?? {});
