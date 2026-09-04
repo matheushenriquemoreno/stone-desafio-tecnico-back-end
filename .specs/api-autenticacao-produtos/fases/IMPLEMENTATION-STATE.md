@@ -11,7 +11,16 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 ## Fase ativa
 
-Fase 03 — Autenticação e proteção do cliente web.
+Fase 04 — Criação e consulta de produtos.
+
+### Encerramento da Fase 03
+
+- T13–T17 concluídas com evidências unitárias e E2E.
+- Gate completo aprovado: lint, typecheck, 20 suítes/69 testes unitários,
+  2 suítes/3 testes de integração, 8 suítes/43 testes E2E e build.
+- Review independente aprovado na versão 3, registrado em `REVIEW.md`.
+- Ressalvas informativas A-01 e A-02 mantidas; A-02 será revalidada nas rotas
+  concretas de Products desta fase.
 
 ### Preparação da Fase 03
 
@@ -194,8 +203,8 @@ Fase 03 — Autenticação e proteção do cliente web.
 |----|------|---------|--------|--------------|
 | 01 | Tracer bullet e fundação observável | [fase-01-tracer-bullet-fundacao.md](fase-01-tracer-bullet-fundacao.md) | Concluída | 2026-09-04 |
 | 02 | Cadastro seguro de usuários | [fase-02-cadastro-usuarios.md](fase-02-cadastro-usuarios.md) | Concluída | 2026-09-04 |
-| 03 | Autenticação e proteção do cliente web | [fase-03-autenticacao-protecao-web.md](fase-03-autenticacao-protecao-web.md) | Em execução | — |
-| 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fase-04-criacao-consulta-produtos.md) | Pendente | — |
+| 03 | Autenticação e proteção do cliente web | [fase-03-autenticacao-protecao-web.md](fase-03-autenticacao-protecao-web.md) | Concluída | 2026-09-04 |
+| 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fase-04-criacao-consulta-produtos.md) | Em execução | — |
 | 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fase-05-paginacao-manutencao-produtos.md) | Pendente | — |
 | 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fase-06-rate-limit-conformidade.md) | Pendente | — |
 | 07 | Empacotamento, infraestrutura e entrega | [fase-07-entrega-operacional.md](fase-07-entrega-operacional.md) | Pendente | — |

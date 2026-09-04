@@ -1,6 +1,6 @@
 # Fase 03 — Autenticação e proteção do cliente web
 
-| Status       | Em execução |
+| Status       | Concluída |
 |--------------|------------|
 | Created      | 2026-09-03 |
 | Last Updated | 2026-09-03 |
