@@ -74,6 +74,11 @@ Implementar `GetProduct` e a rota de consulta protegida. Identificador existente
   datas são isoladas contra mutação externa e a serialização pública preserva
   os sete campos aprovados. Testes dirigidos: 1 suíte/24 testes; lint e
   typecheck aprovados.
+- **T19 — concluída em 2026-09-04:** porta `ProductRepository` e adaptador
+  DynamoDB implementados com `PutCommand` condicional, `GetCommand` com
+  leitura consistente e mapeamento estrito dos sete atributos. Testes
+  dirigidos: 1 suíte/5 testes unitários e 1 suíte/3 testes de integração;
+  lint e typecheck aprovados.
 
 ## Testes e verificações da fase
 

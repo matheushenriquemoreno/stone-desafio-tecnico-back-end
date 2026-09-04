@@ -231,7 +231,7 @@ Fase 04 — Criação e consulta de produtos.
 | T16 | 03 | Concluída | `npm test -- --runTestsByPath src/modules/auth/presentation/auth-cookie.spec.ts` (1 suíte/2 testes), `npm run test:e2e -- --runTestsByPath test/e2e/logout.e2e.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados. |
 | T17 | 03 | Concluída | `npm run test:e2e -- --runTestsByPath test/e2e/access-token-guard.e2e.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados. |
 | T18 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/domain/product.spec.ts` (1 suíte/24 testes), `npm run lint` e `npm run typecheck` aprovados; invariantes e serialização pública do domínio isoladas do framework. |
-| T19 | 04 | Pendente | — |
+| T19 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (1 suíte/5 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/3 testes), `npm run lint` e `npm run typecheck` aprovados; condição atômica, mapeamento exato, ausência e colisão sem sobrescrita comprovados. |
 | T20 | 04 | Pendente | — |
 | T21 | 04 | Pendente | — |
 | T22 | 05 | Pendente | — |
@@ -284,6 +284,19 @@ Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permiss�
   valores de preço e isolamento das datas; lint e typecheck.
 - Conflitos previstos: representação binária de números decimais não deve ser
   usada como evidência de casas decimais adicionais no contrato numérico.
+
+### Preparação da tarefa T19
+
+- Premissas: a chave primária de `products` é `id`; `PutCommand` usará
+  `attribute_not_exists(id)` e `GetCommand` consultará somente essa chave.
+- Abstrações: a aplicação conhecerá apenas `ProductRepository`; o adaptador
+  converterá explicitamente entre `Product` e o item aprovado do DynamoDB.
+- Arquivos: porta e erro de colisão em `products/application`, adaptador e
+  testes unitário/integrado da persistência.
+- Verificação: item com exatamente os sete campos aprovados, criação/leitura,
+  ausência, colisão sem sobrescrita e propagação de falha de infraestrutura.
+- Conflitos previstos: detalhes e tipos do SDK não devem atravessar a porta ou
+  aparecer em controller/caso de uso.
 
 ### Encerramento da Fase 02
 
