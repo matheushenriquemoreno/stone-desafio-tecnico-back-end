@@ -11,9 +11,9 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 ## Fase ativa
 
-A Fase 06 está `Concluída` após o review aprovado. A Fase 07 está `Em execução`
-para aplicar a revisão material aprovada da proteção CSRF; a Fase 08 permanece
-`Pendente` e só poderá começar após o review da Fase 07.
+A Fase 06 está `Concluída` após o review aprovado. A Fase 07 está `Concluída`
+após o review aprovado da revisão material da proteção CSRF; a Fase 08 permanece
+`Pendente` e ainda não foi iniciada.
 
 ### Preparação da Fase 07
 
@@ -451,7 +451,8 @@ para aplicar a revisão material aprovada da proteção CSRF; a Fase 08 permanec
 | 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fase-04-criacao-consulta-produtos.md) | Concluída | 2026-09-04 |
 | 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fase-05-paginacao-manutencao-produtos.md) | Concluída | 2026-09-04 |
 | 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fase-06-rate-limit-conformidade.md) | Concluída | 2026-09-04 |
-| 07 | Empacotamento, infraestrutura e entrega | [fase-07-entrega-operacional.md](fase-07-entrega-operacional.md) | Pendente | — |
+| 07 | Proteção CSRF por cookie e validação de origem | [fase-07-protecao-csrf-origem.md](fase-07-protecao-csrf-origem.md) | Concluída | 2026-09-04 |
+| 08 | Empacotamento, infraestrutura e entrega | [fase-08-entrega-operacional.md](fase-08-entrega-operacional.md) | Pendente | — |
 
 ## Tarefas
 
@@ -492,14 +493,14 @@ para aplicar a revisão material aprovada da proteção CSRF; a Fase 08 permanec
 | T33 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath test/conformance/acceptance-criteria.matrix.spec.ts test/conformance/sensitive-artifacts.spec.ts` (2 suítes/4 testes), gates completos com 35 suítes/168 testes unitários, 3 suítes/9 testes de integração e 15 suítes/87 testes E2E, além de lint, typecheck, build e `git diff --check`; matriz 1–27, fonte de produção, placeholder de ambiente e artefatos opcionais foram verificados. |
 | T34 | 07 | Concluída | Cookie e testes atualizados para `SameSite=Strict`; `npm test -- --runInBand --runTestsByPath src/modules/auth/presentation/auth-cookie.spec.ts` e E2E de login/logout (2 suítes/9 testes) aprovados. |
 | T35 | 07 | Concluída | Middleware e E2E de origem implementados; `npm run lint`, `npm run typecheck` e E2E dedicado (1 suíte/12 testes) aprovados. |
-| T36 | 07 | Concluída | CORS, OpenAPI, controllers, consumidores e matriz atualizados; busca residual não encontrou `X-CSRF-Protection` em `src`/`test` nem em contratos ativos; `npm run lint`, `npm run typecheck`, `npm test` (35 suítes/168 testes), `npm run test:integration` (3 suítes/9 testes), `npm run test:e2e` (15 suítes/91 testes), `npm run build` e `git diff --check` aprovados. |
+| T36 | 07 | Concluída | CORS, OpenAPI, controllers, consumidores e matriz atualizados; busca residual não encontrou o header customizado em `src`/`test` nem em contratos ativos; `npm run lint`, `npm run typecheck`, `npm test` (35 suítes/168 testes), `npm run test:integration` (3 suítes/9 testes), `npm run test:e2e` (15 suítes/91 testes), `npm run build` e `git diff --check` aprovados. |
 | T37 | 08 | Pendente | — |
 | T38 | 08 | Pendente | — |
 | T39 | 08 | Pendente | — |
 | T40 | 08 | Pendente | — |
 | T41 | 08 | Pendente | — |
 
-### Encerramento da Fase 07 — aguardando review
+### Encerramento da Fase 07 — review aprovado
 
 - T34, T35 e T36 estão `Concluídas` com evidências registradas na tabela de
   tarefas.
@@ -509,12 +510,13 @@ para aplicar a revisão material aprovada da proteção CSRF; a Fase 08 permanec
 - A busca residual confirma que o header removido não aparece em `src` ou
   `test`, CORS ou contratos ativos. Ocorrências em fases e ADRs antigos são
   históricas e identificadas como substituídas.
-- A Fase 08 permanece `Pendente`; seu início depende do review aprovado da
-  Fase 07.
+- O review independente da Fase 07 foi aprovado na versão 7 de `REVIEW.md`.
+- A Fase 08 permanece `Pendente` e pode ser iniciada somente como próxima fase
+  da execução.
 
 ## Bloqueios e desvios
 
-Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permissão do volume nomeado criado como `root:root`; é limitado ao serviço auxiliar local e não antecipa a política de usuário não privilegiado da imagem da API na Fase 07.
+Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permissão do volume nomeado criado como `root:root`; é limitado ao serviço auxiliar local e não antecipa a política de usuário não privilegiado da imagem da API na Fase 08.
 
 ### Preparação da Fase 04
 
@@ -622,6 +624,6 @@ Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permiss�
 - O componente próprio de Fixed Window segue a política da ADR-004; o uso de
   `@nestjs/throttler` foi substituído porque a versão disponível não é
   compatível com NestJS 12, sem alterar o contrato funcional.
-- A verificação da imagem publicada permanece encaminhada à Fase 07, pois não
+- A verificação da imagem publicada permanece encaminhada à Fase 08, pois não
   há imagem/Dockerfile neste checkout; o audit T33 cobre os fontes, respostas,
   logs de teste e artefatos de runtime fornecidos à suíte.

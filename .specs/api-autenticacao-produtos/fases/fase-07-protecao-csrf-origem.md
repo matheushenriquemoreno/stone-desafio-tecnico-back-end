@@ -1,6 +1,6 @@
 # Fase 07 — Proteção CSRF por cookie e validação de origem
 
-| Status       | Em execução |
+| Status       | Concluída |
 |--------------|-------------|
 | Created      | 2026-09-04 |
 | Last Updated | 2026-09-04 |

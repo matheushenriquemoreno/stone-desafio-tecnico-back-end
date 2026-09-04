@@ -3,7 +3,7 @@
 | Status       | Aprovado   |
 |--------------|------------|
 | Created      | 2026-09-03 |
-| Last Updated | 2026-09-03 |
+| Last Updated | 2026-09-04 |
 
 ## Histórico de atualizações
 

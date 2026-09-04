@@ -3,7 +3,7 @@
 | Status       | Aprovado   |
 |--------------|------------|
 | Created      | 2026-09-03 |
-| Last Updated | 2026-09-03 |
+| Last Updated | 2026-09-04 |
 
 PRD de referência: [PRODUCT-REQUIREMENTS.md](./PRODUCT-REQUIREMENTS.md) (`Aprovado`)
 
@@ -37,7 +37,7 @@ A Fase 01 estabelece `npm` com lockfile e os scripts `lint`, `typecheck`, `test`
 | 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fases/fase-04-criacao-consulta-produtos.md) | Concluída |
 | 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fases/fase-05-paginacao-manutencao-produtos.md) | Concluída |
 | 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fases/fase-06-rate-limit-conformidade.md) | Concluída |
-| 07 | Proteção CSRF por cookie e validação de origem | [fase-07-protecao-csrf-origem.md](fases/fase-07-protecao-csrf-origem.md) | Em execução |
+| 07 | Proteção CSRF por cookie e validação de origem | [fase-07-protecao-csrf-origem.md](fases/fase-07-protecao-csrf-origem.md) | Concluída |
 | 08 | Empacotamento, infraestrutura e entrega | [fase-08-entrega-operacional.md](fases/fase-08-entrega-operacional.md) | Pendente |
 
 ## Dependências e ordem entre as fases

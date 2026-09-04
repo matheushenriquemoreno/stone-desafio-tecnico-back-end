@@ -5,8 +5,133 @@
 | Created      | 2026-09-04 |
 | Last Updated | 2026-09-04 |
 
-**Escopo revisado:** fase 06 — Rate limit e conformidade operacional da API
-**Versão da avaliação:** 6
+**Escopo revisado:** fase 07 — Proteção CSRF por cookie e validação de origem
+**Versão da avaliação:** 7
+
+## Avaliação da Fase 07 — versão 7
+
+### Artefatos analisados
+
+- PRD: [PRODUCT-REQUIREMENTS.md](PRODUCT-REQUIREMENTS.md)
+- Design técnico: [TECHNICAL-DESIGN.md](TECHNICAL-DESIGN.md)
+- Plano: [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md)
+- Fase: [fases/fase-07-protecao-csrf-origem.md](fases/fase-07-protecao-csrf-origem.md)
+- Estado: [fases/IMPLEMENTATION-STATE.md](fases/IMPLEMENTATION-STATE.md)
+- ADRs: [ADR-005](../../docs/adr/ADR-005-autenticacao-cookie-http-only.md) e [ADR-006](../../docs/adr/ADR-006-protecao-csrf-origem.md)
+- Implementação: `auth-cookie.ts`, `csrf-protection.middleware.ts`, `cors-options.ts`, `setup-openapi.ts` e controllers
+- Testes: `test/e2e/csrf.e2e.spec.ts`, `test/e2e/cors.e2e.spec.ts`, E2E de autenticação/produtos e testes de cookie
+- Convenções: `rules/README.md`, `rules/principios-de-design.md`, `rules/codigo-como-um-livro.md` e `rules/checklist-de-implementacao.md`
+
+### Resumo executivo
+
+A Fase 07 foi revisada contra o PRD, o design, o plano, a ADR-006 e o código
+executável. A implementação publica `SameSite=Strict`, valida `Origin` com
+precedência e usa `Referer` somente como fallback; origens inválidas retornam
+`403 REQUEST_FORBIDDEN`, enquanto a ausência dos dois headers segue para as
+etapas posteriores. O header customizado foi removido de CORS, OpenAPI,
+controllers, consumidores e fixtures ativos.
+
+Os gates passaram sem achados bloqueadores, altos ou médios. A auditoria
+encontrou inicialmente uma referência obsoleta à antiga Fase 07 no estado da
+implementação; o link e a numeração foram corrigidos antes do veredito final.
+
+### Resultado das verificações obrigatórias
+
+| Verificação | Resultado | Evidência |
+| ------------ | --------- | --------- |
+| Requisitos | Atendida no recorte da fase | `AAP-20`–`AAP-24`, `AAP-60` e `EXPECT-03` estão refletidos no middleware, cookie, CORS, OpenAPI e contratos ativos. |
+| Critérios de aceitação | Atendida | Cookie, origem permitida/própria, fallback, precedência, ausência simultânea e métodos seguros possuem testes E2E dirigidos. |
+| Testes | Atendida | 35 suítes/168 testes unitários, 3 suítes/9 testes de integração e 15 suítes/91 testes E2E passaram. |
+| Design técnico | Atendida | `DEC-05` está marcada como histórica substituída; `DEC-20` e ADR-006 definem a estratégia ativa. |
+| Plano | Atendida | T34, T35 e T36 concluídas; Fase 08 foi movida para o próximo arquivo e permanece pendente. |
+| Escopo | Atendida | Não foram introduzidos Bearer, API key, token CSRF, sessão server-side, `Sec-Fetch-Site`, migração ou variável de ambiente. |
+| Qualidade | Atendida | Lint, typecheck, testes, build e `git diff --check` passaram. |
+| Padrões do projeto | Atendida | A regra permanece na borda HTTP, a fábrica de cookie é reutilizada e o domínio não recebeu dependências HTTP. |
+| Manutenibilidade | Atendida | Parsing, allowlist e decisão de precedência estão isolados no middleware; a política é exercitada por testes focados. |
+| Riscos | Atendida com risco residual aceito | A ausência de ambos os headers não classifica navegador versus back-end; o risco está documentado no PRD, design e ADR-006. |
+
+### Matriz de rastreabilidade da fase
+
+| Requisito | Código | Teste | Evidência | Status |
+| --------- | ------ | ----- | --------- | ------ |
+| `AAP-20`, `AAP-23`, `AAP-24` | `cors-options.ts`, `main.ts` | `test/e2e/cors.e2e.spec.ts` | Allowlist exata, credenciais, métodos permitidos, `Content-Type` e preflight sem header customizado. | Comprovado |
+| `AAP-21`, `AAP-22` | `auth-cookie.ts`, `csrf-protection.middleware.ts` | `test/e2e/csrf.e2e.spec.ts` e E2E das rotas mutáveis | `SameSite=Strict`; origem própria/allowlist passa; origem nula, malformada ou não autorizada retorna `403` antes do controller. | Comprovado |
+| `AAP-60` | `csrf-protection.middleware.ts` | `test/e2e/csrf.e2e.spec.ts` | Mutação sem `Origin` e `Referer` continua o pipeline para o controller. | Comprovado |
+| `EXPECT-03` | `auth-cookie.ts`, `AuthController` | `auth-cookie.spec.ts`, `login.e2e.spec.ts`, `logout.e2e.spec.ts` | Criação e expiração mantêm `HttpOnly`, `Secure` conforme ambiente, caminho raiz, duração e `SameSite=Strict`. | Comprovado |
+| Remoção do contrato anterior | CORS, OpenAPI, controllers, consumidores e fixtures | `openapi.e2e.spec.ts`, `cors.e2e.spec.ts` e busca residual | Não há `X-CSRF-Protection` em `src`/`test` nem em contratos ativos; ocorrências em fases anteriores são evidência histórica identificada. | Comprovado |
+
+### Critérios de aceitação da fase
+
+| Critério | Evidência | Status |
+| -------- | --------- | ------ |
+| Login e logout publicam `SameSite=Strict` mantendo os demais atributos. | Testes unitários de fábrica e E2E de login/logout. | Atendido |
+| Mutação com origem permitida ou própria passa sem header customizado. | E2E dedicado de CSRF/origem. | Atendido |
+| Origem não autorizada, `null` ou malformada retorna `403` antes do controller. | Casos parametrizados do E2E dedicado e contador do controller. | Atendido |
+| `Referer` permitido funciona apenas sem `Origin`; inválido/não autorizado retorna `403`. | E2E de fallback e precedência. | Atendido |
+| Ausência simultânea é aceita; métodos seguros permanecem isentos. | E2E sem contexto e casos de `GET`, `HEAD` e `OPTIONS`. | Atendido |
+| CORS e OpenAPI não anunciam o header removido. | E2E de CORS/OpenAPI e busca residual. | Atendido |
+| Fase seguinte não começa antes do review. | Fase 08 está `Pendente` no plano e no estado. | Atendido |
+
+### Achados
+
+| ID | Severidade | Achado | Evidência | Impacto | Recomendação | Encaminhamento |
+| -- | ---------- | ------ | --------- | ------- | ------------ | -------------- |
+| A-04 | Baixo | A auditoria inicial encontrou a antiga Fase 07 de entrega no estado da implementação, apontando para arquivo inexistente após a renumeração. | `fases/IMPLEMENTATION-STATE.md` antes da correção; plano e diretório já usavam Fase 08. | Poderia induzir a próxima execução a iniciar a fase errada ou quebrar a navegação documental. | Corrigir o estado, atualizar o status da Fase 07 e validar os links. | Resolvido nesta execução; rechecado no review final. |
+
+Não há achados abertos bloqueadores, altos, médios ou baixos após a correção.
+
+### Riscos residuais e ressalvas aceitas
+
+- A ausência simultânea de `Origin` e `Referer` é aceita para compatibilidade
+  com Swagger, CLI e back-ends que usam cookie; isso deixa mutações sem contexto
+  classificável como risco residual explicitamente aceito no PRD/design/ADR-006.
+- Cookie com autenticação de back-end é compatibilidade transitória. API key,
+  mTLS ou client credentials continuam adiados para uma decisão específica de
+  integração máquina-a-máquina.
+- `SameSite=Strict` pode impedir o envio do cookie em alguns fluxos iniciados
+  externamente; o domínio web e a API devem permanecer no mesmo site registrável.
+- A Fase 08 ainda precisa produzir e validar imagem, infraestrutura, CI e
+  deploy/rollback; nenhum desses artefatos foi antecipado neste review.
+
+### Resultado dos gates executados
+
+| Comando | Resultado |
+| ------- | --------- |
+| `npm run lint` | Passou |
+| `npm run typecheck` | Passou |
+| `npm test -- --runInBand` | 35 suítes e 168 testes passaram |
+| `npm run test:integration` | 3 suítes e 9 testes passaram |
+| `npm run test:e2e` | 15 suítes e 91 testes passaram |
+| `npm run build` | Passou |
+| `git diff --check HEAD~2..HEAD` | Passou |
+
+### Veredito
+
+**Veredito:** Aprovado
+
+**Fundamentação:** T34–T36 atendem ao PRD e à decisão `DEC-20`, os critérios
+de aceitação da fase têm evidência automatizada e os gates oficiais passaram.
+O único achado documental foi corrigido e revalidado. A Fase 08 permanece
+pendente e não foi iniciada.
+
+### Próxima ação
+
+Marcar a Fase 07 como concluída — feito neste estado — e manter a Fase 08 como
+próxima fase pendente; seu início pode ocorrer somente após esta aprovação.
+
+### Histórico da avaliação mais recente
+
+| Versão | Data | Escopo | Veredito | Resumo |
+| ------ | ---- | ------ | -------- | ------ |
+| 7 | 2026-09-04 | Fase 07 — Proteção CSRF por cookie e validação de origem | Aprovado | SameSite Strict, Origin/Referer, remoção do header, contratos e gates passaram; referência obsoleta do estado foi corrigida. |
+| 6 | 2026-09-04 | Fase 06 — Rate limit e conformidade operacional da API | Aprovado | Fixed Window, políticas, OpenAPI e matriz de conformidade passaram os gates. |
+| 5 | 2026-09-04 | Fase 05 — Paginação, atualização e exclusão de produtos | Aprovado | Cursor, listagem, atualização e exclusão passaram os gates; A-01/A-02 permaneceram informativos. |
+| 4 | 2026-09-04 | Fase 04 — Criação e consulta de produtos | Aprovado | Domínio Product, persistência, `POST /products` e `GET /products/:id` passaram os gates. |
+| 3 | 2026-09-04 | Fase 03 — Autenticação e proteção do cliente web | Aprovado | JWT HS256, cookie, login, logout e guard passaram os gates. |
+| 2 | 2026-09-04 | Fase 02 — Cadastro seguro de usuários | Aprovado | Cadastro, Argon2id, persistência condicional, CORS/CSRF e OpenAPI passaram os gates. |
+| 1 | 2026-09-04 | Fase 01 — Tracer bullet e fundação observável | Aprovado | Bootstrap, fronteiras, erros/correlação, DynamoDB Local e readiness passaram os gates. |
+
+## Histórico detalhado — versão 6
 
 ## Artefatos analisados
 
