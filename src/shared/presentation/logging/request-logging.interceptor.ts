@@ -30,6 +30,10 @@ function routeTemplate(request: CorrelationRequest): string {
 }
 
 function statusCodeFor(exception: unknown, fallbackStatusCode: number): number {
+  if (exception === undefined) {
+    return fallbackStatusCode;
+  }
+
   if (exception instanceof ApplicationError) {
     return exception.statusCode;
   }

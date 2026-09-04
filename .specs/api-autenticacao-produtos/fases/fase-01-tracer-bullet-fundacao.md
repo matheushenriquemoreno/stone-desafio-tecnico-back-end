@@ -144,6 +144,9 @@ Criar o serviço DynamoDB Local no Compose e scripts idempotentes para provision
 
 ## Tarefa T05 — Entregar readiness ponta a ponta
 
+| Status | Concluída |
+| ------ | --------- |
+
 Implementar o módulo Health e `GET /health` público. O caso de uso deve confirmar a inicialização e o acesso às duas tabelas; sucesso retorna exatamente `200 { "status": "ok" }`, enquanto indisponibilidade de qualquer dependência retorna `503 SERVICE_UNAVAILABLE` no schema padrão sem indicar qual tabela falhou.
 
 - **Requisitos relacionados:** `AAP-50`, `AAP-58`, `AAP-59`, `EXPECT-04`, `EXPECT-07`, `EXPECT-11`.
@@ -153,6 +156,23 @@ Implementar o módulo Health e `GET /health` público. O caso de uso deve confir
 - **Testes e verificações:** E2E com as duas tabelas acessíveis, cada tabela ausente ou inacessível e falha inesperada; confirmar ausência de autenticação e ausência de detalhes internos.
 - **Critérios de conclusão:** o fluxo real API → porta → DynamoDB Local responde `200`; qualquer dependência necessária indisponível produz `503` seguro e correlacionado; testes são determinísticos.
 - **Riscos ou premissas:** esta rota ainda receberá a política de rate limit na Fase 06; liveness permanece responsabilidade do processo/container.
+
+### Evidência de execução T05
+
+- `npm run lint` e `npm run typecheck` — concluídos sem erros.
+- `npm test` — concluído; 12 suítes e 24 testes unitários aprovados.
+- `npm run test:integration` — concluído com DynamoDB Local; 1 suíte e 1 teste
+  de persistência isolada aprovado.
+- `npm run test:e2e` — concluído; 2 suítes e 6 testes HTTP aprovados. O fluxo
+  real confirmou `200` com corpo exatamente `{ "status": "ok" }`, sem cookie ou
+  autenticação, e `503 SERVICE_UNAVAILABLE` seguro para ausência de `users` e
+  ausência de `products`.
+- O teste de falha inesperada do caso de uso converteu o erro em
+  `ServiceUnavailableError` sem transportar o detalhe interno.
+- Os logs E2E registraram status `200` no sucesso e `503` nas falhas, com rota,
+  duração e correlação, sem nomes de tabelas ou mensagens do SDK.
+- `npm run build` e `docker compose config` — concluídos.
+- `git diff --check` — sem erros.
 
 ## Orientações de implementação
 

@@ -11,7 +11,7 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 ## Fase ativa
 
-Fase 01 — Tracer bullet e fundação observável.
+Fase 01 — Tracer bullet e fundação observável (tarefas concluídas; aguardando review da fase).
 
 ### Registro de preparação
 
@@ -102,6 +102,24 @@ Fase 01 — Tracer bullet e fundação observável.
 - Conflitos: nenhum; não haverá exclusão de tabelas nem fallback para dados
   publicados.
 
+### Preparação da tarefa T05
+
+- Premissas: readiness será um caso de uso da aplicação que exige o estado de
+  inicialização e uma verificação `DescribeTable` de `users` e `products`; toda
+  falha da porta será convertida no mesmo `SERVICE_UNAVAILABLE` sem nome da
+  tabela ou detalhe do SDK.
+- Abstrações: `ReadinessProbe` e `ApplicationLifecycle` serão portas do módulo
+  Health; o adaptador DynamoDB ficará na infraestrutura; o controller só
+  serializará `{ status: 'ok' }`.
+- Arquivos: `src/modules/health` em camadas explícitas, erro compartilhado de
+  indisponibilidade, `AppModule` e E2E real de readiness com tabelas temporárias
+  por prefixo.
+- Verificação: testes unitários do caso de uso para inicialização, sucesso e
+  falha inesperada; E2E HTTP com tabelas acessíveis, cada tabela removida e
+  resposta correlacionada sem detalhes internos; gates completos da fase.
+- Conflitos: nenhum; liveness continua fora da API e o rate limit da rota será
+  adicionado somente na Fase 06.
+
 ## Fases
 
 | #  | Fase | Arquivo | Status | Concluída em |
@@ -122,7 +140,7 @@ Fase 01 — Tracer bullet e fundação observável.
 | T02 | 01 | Concluída | Lint com fronteiras, typecheck e `npm test` (6 suítes/11 testes) aprovados; produção usa `node:crypto.randomUUID`, fakes são determinísticos e teste arquitetural não encontrou dependências proibidas. |
 | T03 | 01 | Concluída | Lint/typecheck, `npm test` (8 suítes/16 testes), E2E (1 suíte/3 testes), integração, build e diff passaram; respostas 409/400/500 correlacionadas e logs sanitizados comprovados, sem senha/token/stack. |
 | T04 | 01 | Concluída | Compose, cliente injetado, provisionamento repetido, integração com duas tabelas isoladas e todos os gates (lint/typecheck/19 unitários/3 E2E/build) passaram; bootstrap real abriu a porta 3011. |
-| T05 | 01 | Pendente | — |
+| T05 | 01 | Concluída | Lint/typecheck, 12 suítes/24 unitários, integração, 2 suítes/6 E2E, build e Compose passaram; `/health` confirmou 200 exato com ambas as tabelas e 503 seguro para cada tabela ausente. |
 | T06 | 02 | Pendente | — |
 | T07 | 02 | Pendente | — |
 | T08 | 02 | Pendente | — |

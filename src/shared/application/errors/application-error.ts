@@ -32,3 +32,14 @@ export class ValidationApplicationError extends ApplicationError {
     this.errors = errors;
   }
 }
+
+export class ServiceUnavailableError extends ApplicationError {
+  constructor() {
+    super({
+      code: 'SERVICE_UNAVAILABLE',
+      message: 'Serviço temporariamente indisponível.',
+      statusCode: 503,
+    });
+    this.name = 'ServiceUnavailableError';
+  }
+}
