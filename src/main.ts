@@ -8,6 +8,7 @@ import { createCorsOptions } from './shared/presentation/http/cors-options';
 import { configureTrustedProxies } from './shared/presentation/http/trusted-proxies';
 import { setupOpenApi } from './shared/presentation/openapi/setup-openapi';
 import { PublicValidationPipe } from './shared/presentation/validation/public-validation.pipe';
+import { setupScalarDocs } from './shared/presentation/openapi/scalar-docs-config';
 
 export async function bootstrap(): Promise<void> {
   createAppConfig(process.env);
@@ -15,12 +16,16 @@ export async function bootstrap(): Promise<void> {
 
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService<AppConfig>);
+  const port = configService.getOrThrow<number>('port');
+
+
   configureTrustedProxies(app, configService.getOrThrow('trustedProxyIps'));
   app.enableCors(createCorsOptions(configService.getOrThrow('allowedOrigins')));
   app.useGlobalPipes(new PublicValidationPipe());
-  const port = configService.getOrThrow<number>('port');
-  setupOpenApi(app, configService.getOrThrow('cookieName'));
 
+  setupOpenApi(app, configService.getOrThrow('cookieName'));
+  setupScalarDocs(app);
+  
   await app.listen(port);
 }
 
