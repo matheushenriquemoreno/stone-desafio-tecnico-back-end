@@ -12,6 +12,10 @@ import { NestFactory } from '@nestjs/core';
 import request from 'supertest';
 
 import type { AppConfig } from '../../src/shared/infrastructure/configuration';
+import {
+  RATE_LIMITER,
+  type RateLimiter,
+} from '../../src/shared/application/ports/rate-limiter';
 import { createCorsOptions } from '../../src/shared/presentation/http/cors-options';
 import { setupOpenApi } from '../../src/shared/presentation/openapi/setup-openapi';
 import { PublicValidationPipe } from '../../src/shared/presentation/validation/public-validation.pipe';
@@ -67,6 +71,7 @@ function httpServer(
 
 describe('POST /auth/register', () => {
   let app: INestApplication;
+  let limiter: RateLimiter;
 
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
@@ -94,6 +99,7 @@ describe('POST /auth/register', () => {
     app.useGlobalPipes(new PublicValidationPipe());
     setupOpenApi(app, configService.getOrThrow('cookieName'));
     await app.init();
+    limiter = app.get(RATE_LIMITER);
   });
 
   afterAll(async () => {
@@ -101,6 +107,10 @@ describe('POST /auth/register', () => {
     await deleteTableIfPresent();
     client.destroy();
     documentClient.destroy();
+  });
+
+  beforeEach(() => {
+    limiter.clear();
   });
 
   it('returns only public fields, stores a hash and does not authenticate', async () => {

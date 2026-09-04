@@ -11,6 +11,10 @@ import { NestFactory } from '@nestjs/core';
 import request from 'supertest';
 
 import type { AppConfig } from '../../src/shared/infrastructure/configuration';
+import {
+  RATE_LIMITER,
+  type RateLimiter,
+} from '../../src/shared/application/ports/rate-limiter';
 import { createCorsOptions } from '../../src/shared/presentation/http/cors-options';
 import { setupOpenApi } from '../../src/shared/presentation/openapi/setup-openapi';
 import { PublicValidationPipe } from '../../src/shared/presentation/validation/public-validation.pipe';
@@ -84,6 +88,7 @@ async function login(app: INestApplication): Promise<string> {
 
 describe('GET /products', () => {
   let app: INestApplication;
+  let limiter: RateLimiter;
   let accessCookie: string;
   const productIds: string[] = [];
 
@@ -98,6 +103,7 @@ describe('GET /products', () => {
         .set('Origin', allowedOrigin)
         .set('X-CSRF-Protection', '1')
         .set('Cookie', accessCookie)
+        .set('X-Forwarded-For', `198.51.100.${index}`)
         .send({
           description: `Descrição do produto ${index}`,
           imageUrl: `https://example.com/product-${index}.png`,
@@ -123,6 +129,7 @@ describe('GET /products', () => {
     process.env.JWT_AUDIENCE = 'stone-web';
     process.env.JWT_ACCESS_TTL_SECONDS = '900';
     process.env.ALLOWED_ORIGINS = allowedOrigin;
+    process.env.TRUSTED_PROXY_IPS = '127.0.0.1';
     process.env.COOKIE_NAME = 'stone_access_token';
     process.env.COOKIE_SECURE = 'false';
 
@@ -138,6 +145,7 @@ describe('GET /products', () => {
     app.useGlobalPipes(new PublicValidationPipe());
     setupOpenApi(app, configService.getOrThrow('cookieName'));
     await app.init();
+    limiter = app.get(RATE_LIMITER);
 
     await register(app);
     accessCookie = await login(app);
@@ -148,6 +156,10 @@ describe('GET /products', () => {
     await deleteTableIfPresent(usersTableName);
     await deleteTableIfPresent(productsTableName);
     client.destroy();
+  });
+
+  beforeEach(() => {
+    limiter.clear();
   });
 
   it('returns an empty page without nextCursor for an empty catalog', async () => {

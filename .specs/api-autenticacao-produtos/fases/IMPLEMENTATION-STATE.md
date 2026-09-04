@@ -194,6 +194,19 @@ A Fase 06 está `Em execução`, iniciada após o review aprovado da Fase 05.
 - Conflitos: nenhum; a ordem CORS → correlation → rate limit → CSRF → guards
   será mantida explícita.
 
+### Preparação da tarefa T31
+
+- Premissas: bloqueio será `429 RATE_LIMIT_EXCEEDED`; o corpo usará o schema
+  comum, `Retry-After` será inteiro em segundos restantes e nunca zero durante
+  uma janela ainda ativa.
+- Abstrações: `RateLimitExceededError` carregará somente o retry seguro; o
+  filtro HTTP escreverá o header; métricas permanecerão agregadas por template.
+- Arquivos: filtro/exceção, métrica em memória e testes unitários/E2E de
+  arredondamento, correlação, ausência de downstream e privacidade.
+- Verificação: início/fim da janela, novo bucket após expiração, contagem por
+  template e ausência de IP/JWT/cookie em corpo e logs.
+- Conflitos: nenhum com o schema comum ou ADR-004.
+
 ### Encerramento da Fase 03
 
 - T13–T17 concluídas com evidências unitárias e E2E.
@@ -423,6 +436,7 @@ A Fase 06 está `Em execução`, iniciada após o review aprovado da Fase 05.
 | T27 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/delete-product/delete-product.spec.ts src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (2 suítes/11 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/6 testes), `npm run test:e2e -- --runTestsByPath test/e2e/delete-product.e2e.spec.ts` (1 suíte/4 testes), `npm run lint` e `npm run typecheck` aprovados; `DeleteItem` condicional, `204` vazio, repetição `404`, compartilhamento, proteções e OpenAPI comprovados. |
 | T28 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/infrastructure/configuration.spec.ts src/shared/presentation/http/effective-client-ip.spec.ts src/shared/infrastructure/dynamodb/dynamodb.client.spec.ts` (3 suítes/16 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; allowlist explícita de proxies, cadeia confiável, normalização de IP e rejeição segura de configuração inválida comprovadas. |
 | T29 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/infrastructure/rate-limit/in-memory-fixed-window-rate-limiter.spec.ts` (1 suíte/6 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; Fixed Window, chave estruturada por IP/método/template, não prorrogação, expiração e limpeza comprovadas. |
+| T30 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/presentation/http/rate-limit-policies.spec.ts src/shared/presentation/http/rate-limit.middleware.spec.ts` (2 suítes/6 testes), `npm run test:e2e -- --runTestsByPath test/e2e/rate-limit.e2e.spec.ts test/e2e/list-products.e2e.spec.ts test/e2e/register-user.e2e.spec.ts` (3 suítes/24 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; tabela ADR-004, fallback, ordem do middleware, `OPTIONS` e isolamento das fixtures comprovados. |
 | T29 | 06 | Pendente | — |
 | T30 | 06 | Pendente | — |
 | T31 | 06 | Pendente | — |

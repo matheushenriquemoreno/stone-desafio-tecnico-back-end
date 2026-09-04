@@ -54,3 +54,17 @@ export class RequestForbiddenError extends ApplicationError {
     this.name = 'RequestForbiddenError';
   }
 }
+
+export class RateLimitExceededError extends ApplicationError {
+  readonly retryAfterSeconds: number;
+
+  constructor(retryAfterSeconds: number) {
+    super({
+      code: 'RATE_LIMIT_EXCEEDED',
+      message: 'Limite de requisições excedido.',
+      statusCode: 429,
+    });
+    this.name = 'RateLimitExceededError';
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
