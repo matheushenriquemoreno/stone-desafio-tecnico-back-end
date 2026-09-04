@@ -30,6 +30,7 @@ Definir a porta de token e o adaptador JWT que emite somente `sub`, `iss`, `aud`
 | Tarefa | Status | Evidência |
 |--------|--------|-----------|
 | T13 | Concluída | Porta `AccessTokenService` e adaptador JWT implementados; claims, HS256, emissor, audiência, assinatura, algoritmo, expiração, TTL exato e relógio controlado cobertos por `jsonwebtoken-access-token.service.spec.ts`; configuração de produção exige TTL 900; testes dirigidos, lint e typecheck aprovados. |
+| T14 | Concluída | `AuthenticateUser` normaliza e-mail, verifica senha, emite token somente no sucesso e unifica conta ausente, senha incorreta e hash inválido em `INVALID_CREDENTIALS`; 7 testes unitários, lint e typecheck aprovados. |
 
 ## Tarefa T14 — Orquestrar autenticação com erro indistinguível
 

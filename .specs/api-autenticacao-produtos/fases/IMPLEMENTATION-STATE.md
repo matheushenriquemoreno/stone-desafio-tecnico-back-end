@@ -201,7 +201,7 @@ Fase 03 — Autenticação e proteção do cliente web.
 | T11 | 02 | Concluída | `CsrfProtectionMiddleware` global para mutações, origem própria/allowlist exata e `403 REQUEST_FORBIDDEN`; E2E dirigido (1/8), suíte total (17/52), lint, typecheck, build e diff aprovados. |
 | T12 | 02 | Concluída | Controller/DTOs, serialização pública, OpenAPI, CORS/CSRF no bootstrap e E2E de cadastro implementados; E2E dirigido (1/11), suíte total (17/52), integração (2/3), E2E completo (5/28), lint, typecheck, build e diff aprovados. |
 | T13 | 03 | Concluída | `npm test -- --runTestsByPath src/modules/auth/infrastructure/security/jsonwebtoken-access-token.service.spec.ts src/shared/infrastructure/configuration.spec.ts` (2 suítes/13 testes), `npm run lint` e `npm run typecheck` aprovados. |
-| T14 | 03 | Pendente | — |
+| T14 | 03 | Concluída | `npm test -- --runTestsByPath src/modules/auth/application/authenticate-user/authenticate-user.spec.ts` (1 suíte/7 testes), `npm run lint` e `npm run typecheck` aprovados. |
 | T15 | 03 | Pendente | — |
 | T16 | 03 | Pendente | — |
 | T17 | 03 | Pendente | — |
