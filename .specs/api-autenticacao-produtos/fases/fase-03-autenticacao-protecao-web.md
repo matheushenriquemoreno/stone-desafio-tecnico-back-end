@@ -33,6 +33,7 @@ Definir a porta de token e o adaptador JWT que emite somente `sub`, `iss`, `aud`
 | T14 | Concluída | `AuthenticateUser` normaliza e-mail, verifica senha, emite token somente no sucesso e unifica conta ausente, senha incorreta e hash inválido em `INVALID_CREDENTIALS`; 7 testes unitários, lint e typecheck aprovados. |
 | T15 | Concluída | DTO/controller e fábrica de cookie do login implementados e conectados ao AuthModule; E2E `login.e2e.spec.ts` cobre `204`, corpo vazio, cookie, TTL/escopo, erro `401` sem cookie e OpenAPI; 3 testes E2E, 1 teste unitário, lint e typecheck aprovados. |
 | T16 | Concluída | Logout idempotente expira o cookie com escopo simétrico sem validar JWT ou acessar persistência; E2E `logout.e2e.spec.ts` cobre cookie válido, inválido, expirado, ausente, CSRF e OpenAPI; 2 testes unitários, 6 testes E2E, lint e typecheck aprovados. |
+| T17 | Concluída | Estratégia Passport e `AccessTokenGuard` extraem somente o cookie configurado e delegam a validação à porta de token; E2E `access-token-guard.e2e.spec.ts` cobre cookie válido, ausência, cookie malformado, assinatura inválida, expiração e rejeição de Bearer; 6 testes E2E, lint e typecheck aprovados. |
 
 ## Tarefa T14 — Orquestrar autenticação com erro indistinguível
 

@@ -43,6 +43,22 @@ Fase 03 — Autenticação e proteção do cliente web.
 - Conflitos previstos: a biblioteca pode adicionar/remover claims de tempo
   implicitamente; o teste deve detectar isso antes de concluir a tarefa.
 
+### Preparação das tarefas T14–T17
+
+- T14: reutilizar `Email` como dono da normalização, consultar antes de
+  verificar Argon2id e emitir o token somente após a senha correta; testar
+  conta ausente, senha incorreta, hash inválido e falhas técnicas.
+- T15: manter o cookie na borda HTTP e a autenticação no caso de uso; testar
+  `204`, corpo vazio, atributos, TTL, erro genérico e ausência de `Set-Cookie`.
+- T16: não criar caso de uso ou sessão para logout; expirar diretamente o
+  cookie centralizado e testar os quatro estados do cookie sem tocar no banco.
+- T17: registrar a estratégia Passport com a porta de token e criar um guard
+  que aceite somente o cookie configurado; testar identidade válida e todas as
+  rejeições sem revelar token.
+- Conflitos previstos: o guard padrão do Passport exige opções de módulo no
+  contexto de cada controller; se isso impedir a reutilização, manter a
+  estratégia Passport e encapsular a chamada em um guard explícito.
+
 ### Registro de preparação
 
 - Padrões: TypeScript estrito; nomes de domínio em inglês no código; Clean
@@ -204,7 +220,7 @@ Fase 03 — Autenticação e proteção do cliente web.
 | T14 | 03 | Concluída | `npm test -- --runTestsByPath src/modules/auth/application/authenticate-user/authenticate-user.spec.ts` (1 suíte/7 testes), `npm run lint` e `npm run typecheck` aprovados. |
 | T15 | 03 | Concluída | `npm test -- --runTestsByPath src/modules/auth/presentation/auth-cookie.spec.ts` (1 suíte/1 teste), `npm run test:e2e -- --runTestsByPath test/e2e/login.e2e.spec.ts` (1 suíte/3 testes), `npm run lint` e `npm run typecheck` aprovados; primeiro gate E2E ajustado para aceitar `Expires` adicional emitido pelo Express, mantendo os atributos exigidos. |
 | T16 | 03 | Concluída | `npm test -- --runTestsByPath src/modules/auth/presentation/auth-cookie.spec.ts` (1 suíte/2 testes), `npm run test:e2e -- --runTestsByPath test/e2e/logout.e2e.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados. |
-| T17 | 03 | Pendente | — |
+| T17 | 03 | Concluída | `npm run test:e2e -- --runTestsByPath test/e2e/access-token-guard.e2e.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados. |
 | T18 | 04 | Pendente | — |
 | T19 | 04 | Pendente | — |
 | T20 | 04 | Pendente | — |

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { PassportModule } from '@nestjs/passport';
 
 import { CLOCK, type Clock } from '../../shared/application/ports/clock';
 import {
@@ -32,11 +33,15 @@ import { AuthenticateUser } from './application/authenticate-user/authenticate-u
 import { RegisterUser } from './application/register-user/register-user';
 import { DynamoDbUserRepository } from './infrastructure/persistence/dynamodb-user.repository';
 import { AuthController } from './presentation/auth.controller';
+import { AccessTokenGuard } from './presentation/access-token.guard';
+import { CookieAccessTokenStrategy } from './presentation/cookie-access-token.strategy';
 
 @Module({
   controllers: [AuthController],
-  imports: [ConfigModule, DynamoDbModule],
+  imports: [ConfigModule, DynamoDbModule, PassportModule.register({})],
   providers: [
+    AccessTokenGuard,
+    CookieAccessTokenStrategy,
     { provide: CLOCK, useClass: SystemClock },
     { provide: ID_GENERATOR, useClass: SecureIdGenerator },
     {
@@ -85,5 +90,6 @@ import { AuthController } from './presentation/auth.controller';
         new DynamoDbUserRepository(client, configService.getOrThrow('usersTableName')),
     },
   ],
+  exports: [AccessTokenGuard],
 })
 export class AuthModule {}
