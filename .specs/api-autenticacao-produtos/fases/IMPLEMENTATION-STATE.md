@@ -11,7 +11,8 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 ## Fase ativa
 
-A Fase 06 está `Em execução`, iniciada após o review aprovado da Fase 05.
+A Fase 06 está `Concluída` após o review aprovado; a Fase 07 permanece
+`Pendente` e não foi iniciada nesta solicitação.
 
 ### Preparação da Fase 05
 
@@ -427,7 +428,7 @@ A Fase 06 está `Em execução`, iniciada após o review aprovado da Fase 05.
 | 03 | Autenticação e proteção do cliente web | [fase-03-autenticacao-protecao-web.md](fase-03-autenticacao-protecao-web.md) | Concluída | 2026-09-04 |
 | 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fase-04-criacao-consulta-produtos.md) | Concluída | 2026-09-04 |
 | 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fase-05-paginacao-manutencao-produtos.md) | Concluída | 2026-09-04 |
-| 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fase-06-rate-limit-conformidade.md) | Em execução | — |
+| 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fase-06-rate-limit-conformidade.md) | Concluída | 2026-09-04 |
 | 07 | Empacotamento, infraestrutura e entrega | [fase-07-entrega-operacional.md](fase-07-entrega-operacional.md) | Pendente | — |
 
 ## Tarefas
@@ -573,8 +574,13 @@ Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permiss�
 
 ### Encerramento da Fase 06
 
-- T28–T33 passaram os testes dirigidos e os gates completos; a Fase 06 aguarda
-  somente o review independente final antes de ser marcada como `Concluída`.
+- Gate: review independente da Fase 06 aprovado na versão 6, registrado em
+  `REVIEW.md`.
+- Decisão: T28–T33 foram marcadas como `Concluídas`; a Fase 06 foi marcada
+  como `Concluída` após rate limit, OpenAPI e conformidade passarem os gates.
+- Evidência final: 35 suítes/168 testes unitários, 3 suítes/9 testes de
+  integração e 15 suítes/87 testes E2E passaram, além de lint, typecheck,
+  build e `git diff --check`.
 - O componente próprio de Fixed Window segue a política da ADR-004; o uso de
   `@nestjs/throttler` foi substituído porque a versão disponível não é
   compatível com NestJS 12, sem alterar o contrato funcional.

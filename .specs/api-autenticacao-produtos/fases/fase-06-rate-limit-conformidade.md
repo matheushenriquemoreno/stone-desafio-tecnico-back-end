@@ -1,6 +1,6 @@
 # Fase 06 — Rate limit e conformidade operacional da API
 
-| Status       | Em execução   |
+| Status       | Concluída   |
 |--------------|------------|
 | Created      | 2026-09-03 |
 | Last Updated | 2026-09-04 |
