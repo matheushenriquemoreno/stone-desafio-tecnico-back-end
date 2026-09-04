@@ -10,6 +10,7 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { Product } from '../../src/modules/products/domain/product';
 import { ProductIdAlreadyExistsError } from '../../src/modules/products/application/errors/product-id-already-exists.error';
 import { DynamoDbProductRepository } from '../../src/modules/products/infrastructure/persistence/dynamodb-product.repository';
+import { DynamoDbCursorCodec } from '../../src/modules/products/infrastructure/persistence/dynamodb-cursor-codec';
 
 const endpoint = process.env.DYNAMODB_ENDPOINT ?? 'http://localhost:8000';
 const region = process.env.AWS_REGION ?? 'us-east-1';
@@ -26,7 +27,11 @@ const documentClient = DynamoDBDocumentClient.from(
     region,
   }),
 );
-const repository = new DynamoDbProductRepository(documentClient, tableName);
+const repository = new DynamoDbProductRepository(
+  documentClient,
+  tableName,
+  new DynamoDbCursorCodec(),
+);
 
 async function deleteTableIfPresent(): Promise<void> {
   try {
@@ -100,5 +105,25 @@ describe('DynamoDB product repository', () => {
     await expect(repository.findById('product-collision')).resolves.toMatchObject({
       price: 10,
     });
+  });
+
+  it('lists a stable set sequentially by DynamoDB cursor', async () => {
+    const products = ['product-page-1', 'product-page-2', 'product-page-3'];
+
+    for (const id of products) {
+      await repository.save(createProduct(id));
+    }
+
+    const listedIds: string[] = [];
+    let cursor: string | undefined;
+
+    do {
+      const page = await repository.list(1, cursor);
+      listedIds.push(...page.items.map((product) => product.id));
+      cursor = page.nextCursor;
+    } while (cursor !== undefined);
+
+    expect(new Set(listedIds).size).toBe(listedIds.length);
+    expect(listedIds).toEqual(expect.arrayContaining(products));
   });
 });

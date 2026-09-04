@@ -2,6 +2,7 @@ import { Product } from '../../domain/product';
 import { ProductIdAlreadyExistsError } from '../../application/errors/product-id-already-exists.error';
 import type { DocumentClient } from '../../../../shared/infrastructure/dynamodb/dynamodb.tokens';
 import { DynamoDbProductRepository } from './dynamodb-product.repository';
+import { DynamoDbCursorCodec } from './dynamodb-cursor-codec';
 
 interface SentCommand {
   readonly input: unknown;
@@ -34,10 +35,12 @@ function createProduct(id = 'product-123'): Product {
   });
 }
 
+const cursorCodec = new DynamoDbCursorCodec();
+
 describe('DynamoDbProductRepository', () => {
   it('writes exactly the approved product attributes with atomic creation', async () => {
     const fake = createFakeClient(async () => ({}));
-    const repository = new DynamoDbProductRepository(fake.client, 'products');
+    const repository = new DynamoDbProductRepository(fake.client, 'products', cursorCodec);
 
     await repository.save(createProduct());
 
@@ -63,7 +66,7 @@ describe('DynamoDbProductRepository', () => {
     const fake = createFakeClient(async () => {
       throw conditionalFailure;
     });
-    const repository = new DynamoDbProductRepository(fake.client, 'products');
+    const repository = new DynamoDbProductRepository(fake.client, 'products', cursorCodec);
 
     await expect(repository.save(createProduct())).rejects.toBeInstanceOf(
       ProductIdAlreadyExistsError,
@@ -75,7 +78,7 @@ describe('DynamoDbProductRepository', () => {
     const fake = createFakeClient(async () => {
       throw technicalFailure;
     });
-    const repository = new DynamoDbProductRepository(fake.client, 'products');
+    const repository = new DynamoDbProductRepository(fake.client, 'products', cursorCodec);
 
     await expect(repository.save(createProduct())).rejects.toBe(technicalFailure);
   });
@@ -101,7 +104,7 @@ describe('DynamoDbProductRepository', () => {
 
       return {};
     });
-    const repository = new DynamoDbProductRepository(fake.client, 'products');
+    const repository = new DynamoDbProductRepository(fake.client, 'products', cursorCodec);
 
     await expect(repository.findById('product-123')).resolves.toMatchObject({
       id: 'product-123',
@@ -135,10 +138,50 @@ describe('DynamoDbProductRepository', () => {
         ownerId: 'unexpected',
       },
     }));
-    const repository = new DynamoDbProductRepository(fake.client, 'products');
+    const repository = new DynamoDbProductRepository(fake.client, 'products', cursorCodec);
 
     await expect(repository.findById('product-123')).rejects.toThrow(
       'formato inválido',
     );
+  });
+
+  it('scans with the requested limit and translates continuation keys', async () => {
+    let callCount = 0;
+    const fake = createFakeClient(async () => {
+      callCount += 1;
+
+      if (callCount === 1) {
+        return {
+          Items: [
+            {
+              createdAt: '2026-09-04T12:00:00.000Z',
+              description: 'Descrição do produto',
+              id: 'product-123',
+              imageUrl: 'https://example.com/product.png',
+              name: 'Produto',
+              price: 99.9,
+              updatedAt: '2026-09-04T12:00:00.000Z',
+            },
+          ],
+          LastEvaluatedKey: { id: 'product-123' },
+        };
+      }
+
+      return { Items: [] };
+    });
+    const repository = new DynamoDbProductRepository(fake.client, 'products', cursorCodec);
+
+    const firstPage = await repository.list(1);
+    const secondPage = await repository.list(1, firstPage.nextCursor);
+
+    expect(firstPage.items).toHaveLength(1);
+    expect(firstPage.nextCursor).toBe(cursorCodec.encode({ id: 'product-123' }));
+    expect(secondPage).toEqual({ items: [] });
+    expect(fake.commands[0]?.input).toEqual({ Limit: 1, TableName: 'products' });
+    expect(fake.commands[1]?.input).toEqual({
+      ExclusiveStartKey: { id: 'product-123' },
+      Limit: 1,
+      TableName: 'products',
+    });
   });
 });

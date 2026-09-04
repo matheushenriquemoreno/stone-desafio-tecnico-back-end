@@ -58,6 +58,19 @@ A Fase 05 está `Em execução`, iniciada após o review aprovado da Fase 04.
   cursor encaminhado e integração com DynamoDB Local.
 - Conflitos: nenhum.
 
+### Preparação da tarefa T24
+
+- Premissas: `GET /products` será protegido pelo mesmo guard dos demais
+  produtos; o query parser aceitará apenas dígitos decimais para `limit`, com
+  padrão 20, e o serializer omitirá `nextCursor` quando ausente.
+- Abstrações: DTOs de apresentação traduzirão query e resposta; `ListProducts`
+  continuará responsável somente pela regra de limite e pela porta do catálogo.
+- Arquivos: DTO/query, DTO de página, controller, módulo Products e E2E de
+  listagem/OpenAPI.
+- Verificação: catálogo vazio, limites, query inválida, cursor válido/inválido,
+  páginas consecutivas, autenticação e contrato OpenAPI.
+- Conflitos: nenhum.
+
 ### Encerramento da Fase 03
 
 - T13–T17 concluídas com evidências unitárias e E2E.
@@ -281,8 +294,8 @@ A Fase 05 está `Em execução`, iniciada após o review aprovado da Fase 04.
 | T21 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/get-product/get-product.spec.ts` (1 suíte/3 testes), `npm run test:e2e -- --runTestsByPath test/e2e/get-product.e2e.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados; `GET /products/:id` retorna catálogo compartilhado ou `404 PRODUCT_NOT_FOUND` e rejeita cookie ausente/inválido/expirado. |
 | T22 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/infrastructure/persistence/dynamodb-cursor-codec.spec.ts` (1 suíte/10 testes), `npm run lint` e `npm run typecheck` aprovados; envelope versionado, Base64 URL-safe, validação estrutural e erro seguro comprovados. |
 | T23 | 05 | Em execução | — |
-| T23 | 05 | Pendente | — |
-| T24 | 05 | Pendente | — |
+| T23 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/list-products/list-products.spec.ts src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (2 suítes/15 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/4 testes), `npm run lint` e `npm run typecheck` aprovados; `Scan`, `Limit`, cursor nativo, padrão 20 e limites 1–100 comprovados. |
+| T24 | 05 | Em execução | — |
 | T25 | 05 | Pendente | — |
 | T26 | 05 | Pendente | — |
 | T27 | 05 | Pendente | — |

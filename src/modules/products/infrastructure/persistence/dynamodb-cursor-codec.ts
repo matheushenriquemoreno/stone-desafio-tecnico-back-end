@@ -7,6 +7,8 @@ export interface DynamoDbCursorKey {
   readonly id: string;
 }
 
+export const PRODUCT_CURSOR_CODEC = Symbol('PRODUCT_CURSOR_CODEC');
+
 export interface ProductCursorCodec {
   encode(key: Record<string, unknown>): string;
   decode(cursor: string): DynamoDbCursorKey;

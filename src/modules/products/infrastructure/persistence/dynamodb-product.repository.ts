@@ -1,9 +1,13 @@
-import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { GetCommand, PutCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 
 import { Product } from '../../domain/product';
 import { ProductIdAlreadyExistsError } from '../../application/errors/product-id-already-exists.error';
-import type { ProductRepository } from '../../application/ports/product-repository';
+import type {
+  ProductPage,
+  ProductRepository,
+} from '../../application/ports/product-repository';
 import type { DocumentClient } from '../../../../shared/infrastructure/dynamodb/dynamodb.tokens';
+import type { ProductCursorCodec } from './dynamodb-cursor-codec';
 
 interface ProductItem {
   readonly [key: string]: unknown;
@@ -82,7 +86,42 @@ export class DynamoDbProductRepository implements ProductRepository {
   constructor(
     private readonly client: DocumentClient,
     private readonly tableName: string,
+    private readonly cursorCodec: ProductCursorCodec,
   ) {}
+
+  async list(limit: number, cursor?: string): Promise<ProductPage> {
+    const input: {
+      readonly ExclusiveStartKey?: Record<string, unknown>;
+      readonly Limit: number;
+      readonly TableName: string;
+    } = {
+      Limit: limit,
+      TableName: this.tableName,
+      ...(cursor === undefined
+        ? {}
+        : {
+            ExclusiveStartKey: this.cursorCodec.decode(cursor) as unknown as Record<
+              string,
+              unknown
+            >,
+          }),
+    };
+    const output = await this.client.send(new ScanCommand(input));
+    const items = (output.Items ?? []).map((item) =>
+      toProduct(item as unknown as Record<string, unknown>),
+    );
+
+    if (output.LastEvaluatedKey === undefined) {
+      return { items };
+    }
+
+    return {
+      items,
+      nextCursor: this.cursorCodec.encode(
+        output.LastEvaluatedKey as unknown as Record<string, unknown>,
+      ),
+    };
+  }
 
   async findById(id: string): Promise<Product | null> {
     const output = await this.client.send(

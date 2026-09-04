@@ -17,11 +17,17 @@ import { SecureIdGenerator } from '../../shared/infrastructure/identifiers/secur
 import { AuthModule } from '../auth/auth.module';
 import { CreateProduct } from './application/create-product/create-product';
 import { GetProduct } from './application/get-product/get-product';
+import { ListProducts } from './application/list-products/list-products';
 import {
   PRODUCT_REPOSITORY,
   type ProductRepository,
 } from './application/ports/product-repository';
 import { DynamoDbProductRepository } from './infrastructure/persistence/dynamodb-product.repository';
+import {
+  DynamoDbCursorCodec,
+  PRODUCT_CURSOR_CODEC,
+  type ProductCursorCodec,
+} from './infrastructure/persistence/dynamodb-cursor-codec';
 import { ProductsController } from './presentation/products.controller';
 
 @Module({
@@ -46,15 +52,24 @@ import { ProductsController } from './presentation/products.controller';
         new GetProduct(productRepository),
     },
     {
-      inject: [DYNAMODB_DOCUMENT_CLIENT, ConfigService],
+      inject: [PRODUCT_REPOSITORY],
+      provide: ListProducts,
+      useFactory: (productRepository: ProductRepository): ListProducts =>
+        new ListProducts(productRepository),
+    },
+    { provide: PRODUCT_CURSOR_CODEC, useClass: DynamoDbCursorCodec },
+    {
+      inject: [DYNAMODB_DOCUMENT_CLIENT, ConfigService, PRODUCT_CURSOR_CODEC],
       provide: PRODUCT_REPOSITORY,
       useFactory: (
         client: DocumentClient,
         configService: ConfigService<AppConfig>,
+        cursorCodec: ProductCursorCodec,
       ): ProductRepository =>
         new DynamoDbProductRepository(
           client,
           configService.getOrThrow('productsTableName'),
+          cursorCodec,
         ),
     },
   ],
