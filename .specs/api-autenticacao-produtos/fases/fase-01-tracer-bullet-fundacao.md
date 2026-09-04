@@ -74,6 +74,9 @@ Criar as portas de relógio e geração de identificadores criptograficamente se
 
 ## Tarefa T03 — Padronizar correlação, erros e logs sanitizados
 
+| Status | Concluída |
+| ------ | --------- |
+
 Implementar o contexto de requisição que cria ou propaga um `correlationId` opaco, o catálogo de erros da aplicação e um filtro global que converta falhas esperadas e inesperadas no schema `ApiError`. Erros de validação devem listar apenas campos públicos, e logs estruturados devem registrar método, template da rota, status e duração sem corpos sensíveis, cookies, tokens, hashes ou stack trace na resposta.
 
 - **Requisitos relacionados:** `AAP-50`, `AAP-51`, `AAP-52`, `EXPECT-02`, `EXPECT-04`, `EXPECT-11`.
@@ -83,6 +86,24 @@ Implementar o contexto de requisição que cria ou propaga um `correlationId` op
 - **Testes e verificações:** testes unitários e HTTP de erro conhecido, validação e falha inesperada; busca negativa por senha, JWT, cookie, hash, stack e detalhes DynamoDB nos corpos e logs capturados.
 - **Critérios de conclusão:** todo erro HTTP contém `statusCode`, `code`, `message` e `correlationId`; `errors` só aparece em validação; resposta `500` usa `INTERNAL_ERROR`; logs permitem correlação sem vazar dados proibidos.
 - **Riscos ou premissas:** detalhes técnicos podem existir apenas no log interno sanitizado, nunca no contrato público.
+
+### Evidência de execução T03
+
+- `npm run lint` e `npm run typecheck` — concluídos sem erros.
+- `npm test` — concluído; 8 suítes e 16 testes unitários aprovados.
+- `npm run test:e2e` — concluído; 1 suíte e 3 testes HTTP aprovados para erro
+  conhecido, validação e falha inesperada.
+- `npm run test:integration` — concluído com código 0; ainda não há casos de
+  integração, que serão adicionados no T04.
+- `npm run build` — concluído.
+- Os E2E confirmaram `statusCode`, `code`, `message` e `correlationId` em
+  respostas `409`, `400` e `500`, além da propagação do cabeçalho.
+- A busca negativa nos corpos e logs capturados não encontrou senha, token,
+  stack trace ou detalhes da exceção; o log contém somente método, rota,
+  status, duração, nível e correlação.
+- O runner Jest passou a usar ESM para compatibilidade da versão NestJS fixada;
+  o TypeScript de produção continua compilado em CommonJS e o build passou.
+- `git diff --check` — sem erros.
 
 ## Tarefa T04 — Disponibilizar DynamoDB Local e provisionamento isolado
 

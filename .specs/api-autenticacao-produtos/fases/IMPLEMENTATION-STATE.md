@@ -66,6 +66,25 @@ Fase 01 — Tracer bullet e fundação observável.
 - Conflitos: nenhum; não será criado repositório ou tipo genérico sem uso
   concreto.
 
+### Preparação da tarefa T03
+
+- Premissas: o `correlationId` será aceito somente quando tiver formato opaco
+  seguro e, caso contrário, será gerado pela porta de IDs; o corpo HTTP nunca
+  será passado ao logger; mensagens de validação serão genéricas e listarão
+  apenas propriedades públicas recebidas.
+- Abstrações: `ApplicationError` e `ApiError` ficam independentes de HTTP;
+  filtro, pipe, middleware e interceptor pertencem à apresentação; o logger
+  recebe somente um registro estruturado já sanitizado.
+- Arquivos: catálogo de erros e portas de logging em `src/shared/application`,
+  filtro/pipe/middleware/interceptor em `src/shared/presentation`, logger
+  concreto no compartilhado de infraestrutura, composition root e teste HTTP
+  em `test/e2e`.
+- Verificação: testes unitários do mapeamento, correlação e logs; E2E de erro
+  conhecido, validação e falha inesperada; busca negativa dos valores sensíveis
+  capturados; lint, typecheck e suíte completa.
+- Conflitos: nenhum; falhas inesperadas manterão detalhes somente fora da
+  resposta pública e sem stack trace no log estruturado.
+
 ## Fases
 
 | #  | Fase | Arquivo | Status | Concluída em |
@@ -84,7 +103,7 @@ Fase 01 — Tracer bullet e fundação observável.
 |-----|------|--------|------------|
 | T01 | 01 | Concluída | `npm ci --ignore-scripts --no-audit --no-fund`, lint, typecheck, teste unitário (1 suíte/4 testes), scripts de integração/E2E, build, bootstrap válido na porta 3010 e startup inválido com saída 1 sanitizada; `git diff --check` sem erros. |
 | T02 | 01 | Concluída | Lint com fronteiras, typecheck e `npm test` (6 suítes/11 testes) aprovados; produção usa `node:crypto.randomUUID`, fakes são determinísticos e teste arquitetural não encontrou dependências proibidas. |
-| T03 | 01 | Pendente | — |
+| T03 | 01 | Concluída | Lint/typecheck, `npm test` (8 suítes/16 testes), E2E (1 suíte/3 testes), integração, build e diff passaram; respostas 409/400/500 correlacionadas e logs sanitizados comprovados, sem senha/token/stack. |
 | T04 | 01 | Pendente | — |
 | T05 | 01 | Pendente | — |
 | T06 | 02 | Pendente | — |
