@@ -11,7 +11,7 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 ## Fase ativa
 
-Fase 04 — Criação e consulta de produtos.
+Nenhuma. A Fase 04 foi encerrada e a Fase 05 permanece `Pendente`.
 
 ### Encerramento da Fase 03
 
@@ -204,7 +204,7 @@ Fase 04 — Criação e consulta de produtos.
 | 01 | Tracer bullet e fundação observável | [fase-01-tracer-bullet-fundacao.md](fase-01-tracer-bullet-fundacao.md) | Concluída | 2026-09-04 |
 | 02 | Cadastro seguro de usuários | [fase-02-cadastro-usuarios.md](fase-02-cadastro-usuarios.md) | Concluída | 2026-09-04 |
 | 03 | Autenticação e proteção do cliente web | [fase-03-autenticacao-protecao-web.md](fase-03-autenticacao-protecao-web.md) | Concluída | 2026-09-04 |
-| 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fase-04-criacao-consulta-produtos.md) | Em execução | — |
+| 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fase-04-criacao-consulta-produtos.md) | Concluída | 2026-09-04 |
 | 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fase-05-paginacao-manutencao-produtos.md) | Pendente | — |
 | 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fase-06-rate-limit-conformidade.md) | Pendente | — |
 | 07 | Empacotamento, infraestrutura e entrega | [fase-07-entrega-operacional.md](fase-07-entrega-operacional.md) | Pendente | — |
@@ -336,3 +336,16 @@ Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permiss�
 - Ressalvas: autenticação por JWT/cookie permanece na Fase 03; rate limit e
   conformidade operacional permanecem na Fase 06; o desvio local do DynamoDB
   segue encaminhado à Fase 07.
+
+### Encerramento da Fase 04
+
+- Gate: review independente da Fase 04 aprovado na versão 4, registrado em
+  `REVIEW.md`.
+- Decisão: T18–T21 foram marcadas como `Concluídas`; a Fase 04 foi marcada como
+  `Concluída` após o domínio Product, persistência, criação e consulta
+  passarem os gates completos.
+- Evidência final: 24 suítes/104 testes unitários, 3 suítes/6 testes de
+  integração e 10 suítes/59 testes E2E passaram, além de lint, typecheck,
+  build e `git diff --check`.
+- Ressalvas: A-01 permanece restrito ao DynamoDB Local e encaminhado à Fase 07;
+  a Fase 05 permanece `Pendente` e não foi iniciada.

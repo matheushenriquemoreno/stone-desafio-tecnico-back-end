@@ -1,6 +1,6 @@
 # Fase 04 — Criação e consulta de produtos
 
-| Status       | Em execução |
+| Status       | Concluída |
 |--------------|------------|
 | Created      | 2026-09-03 |
 | Last Updated | 2026-09-04 |
@@ -100,6 +100,17 @@ Executar a validação padrão e um E2E completo com cadastro/login de duas cont
 3. Produto existente é consultado com `200`; ausente produz `404 PRODUCT_NOT_FOUND`.
 4. Qualquer pessoa autenticada consulta produto criado por outra conta.
 5. Guard, CSRF, erros, OpenAPI e logs permanecem alinhados ao contrato.
+
+## Encerramento da fase
+
+- T18–T21 concluídas com evidências unitárias, de integração e E2E.
+- Gate completo aprovado: `npm ci`, lint, typecheck, 24 suítes/104 testes
+  unitários, 3 suítes/6 testes de integração, 10 suítes/59 testes E2E, build e
+  `git diff --check`.
+- Review independente aprovado na versão 4, registrado em `REVIEW.md`.
+- A-01 permanece informativo e encaminhado à Fase 07; nenhuma pendência da
+  Fase 04 bloqueia o avanço futuro.
+- A Fase 05 permanece `Pendente`, sem ser iniciada neste ciclo.
 
 ## Riscos, premissas e dependências externas da fase
 
