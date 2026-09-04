@@ -202,7 +202,7 @@ Fase 03 — Autenticação e proteção do cliente web.
 | T12 | 02 | Concluída | Controller/DTOs, serialização pública, OpenAPI, CORS/CSRF no bootstrap e E2E de cadastro implementados; E2E dirigido (1/11), suíte total (17/52), integração (2/3), E2E completo (5/28), lint, typecheck, build e diff aprovados. |
 | T13 | 03 | Concluída | `npm test -- --runTestsByPath src/modules/auth/infrastructure/security/jsonwebtoken-access-token.service.spec.ts src/shared/infrastructure/configuration.spec.ts` (2 suítes/13 testes), `npm run lint` e `npm run typecheck` aprovados. |
 | T14 | 03 | Concluída | `npm test -- --runTestsByPath src/modules/auth/application/authenticate-user/authenticate-user.spec.ts` (1 suíte/7 testes), `npm run lint` e `npm run typecheck` aprovados. |
-| T15 | 03 | Pendente | — |
+| T15 | 03 | Concluída | `npm test -- --runTestsByPath src/modules/auth/presentation/auth-cookie.spec.ts` (1 suíte/1 teste), `npm run test:e2e -- --runTestsByPath test/e2e/login.e2e.spec.ts` (1 suíte/3 testes), `npm run lint` e `npm run typecheck` aprovados; primeiro gate E2E ajustado para aceitar `Expires` adicional emitido pelo Express, mantendo os atributos exigidos. |
 | T16 | 03 | Pendente | — |
 | T17 | 03 | Pendente | — |
 | T18 | 04 | Pendente | — |
