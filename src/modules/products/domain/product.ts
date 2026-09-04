@@ -42,7 +42,7 @@ function validateTextLength(
   }
 }
 
-function hasAtMostTwoDecimalPlaces(value: number): boolean {
+export function hasAtMostTwoDecimalPlaces(value: number): boolean {
   const representation = value.toString().toLowerCase();
   const [coefficient = representation, exponentText] = representation.split('e');
   const fractionalDigits = coefficient.split('.')[1]?.length ?? 0;

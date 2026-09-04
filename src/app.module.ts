@@ -4,6 +4,7 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
+import { ProductsModule } from './modules/products/products.module';
 import { CLOCK } from './shared/application/ports/clock';
 import { ID_GENERATOR } from './shared/application/ports/id-generator';
 import { REQUEST_LOGGER } from './shared/application/ports/request-logger';
@@ -31,6 +32,7 @@ import { RequestLoggingInterceptor } from './shared/presentation/logging/request
     }),
     AuthModule,
     HealthModule,
+    ProductsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: ApiExceptionFilter },

@@ -232,7 +232,7 @@ Fase 04 — Criação e consulta de produtos.
 | T17 | 03 | Concluída | `npm run test:e2e -- --runTestsByPath test/e2e/access-token-guard.e2e.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados. |
 | T18 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/domain/product.spec.ts` (1 suíte/24 testes), `npm run lint` e `npm run typecheck` aprovados; invariantes e serialização pública do domínio isoladas do framework. |
 | T19 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (1 suíte/5 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/3 testes), `npm run lint` e `npm run typecheck` aprovados; condição atômica, mapeamento exato, ausência e colisão sem sobrescrita comprovados. |
-| T20 | 04 | Pendente | — |
+| T20 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/create-product/create-product.spec.ts` (1 suíte/3 testes), `npm run test:e2e -- --runTestsByPath test/e2e/create-product.e2e.spec.ts` (1 suíte/10 testes), `npm run lint` e `npm run typecheck` aprovados; `POST /products` protegido, estrito e sem persistência em entradas inválidas. |
 | T21 | 04 | Pendente | — |
 | T22 | 05 | Pendente | — |
 | T23 | 05 | Pendente | — |
@@ -297,6 +297,21 @@ Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permiss�
   ausência, colisão sem sobrescrita e propagação de falha de infraestrutura.
 - Conflitos previstos: detalhes e tipos do SDK não devem atravessar a porta ou
   aparecer em controller/caso de uso.
+
+### Preparação da tarefa T20
+
+- Premissas: `POST /products` é protegido pelo `AccessTokenGuard` e pelo
+  middleware global de CSRF/origem; a entrada exige os quatro campos editáveis
+  e rejeita propriedades desconhecidas pelo pipe global.
+- Abstrações: `CreateProduct` gera ID e datas por `IdGenerator`/`Clock`, valida
+  pelo domínio e persiste pela porta; o controller retorna somente
+  `PublicProductData`.
+- Arquivos: caso de uso e teste unitário, DTO/validator/serializer/controller,
+  `ProductsModule`, composição da aplicação e E2E de criação.
+- Verificação: sucesso `201`, limites, ausência/nulo/desconhecido, autenticação,
+  CSRF/origem, ausência de escrita em falha e contrato OpenAPI.
+- Conflitos previstos: a validação HTTP duplica apenas a forma declarativa do
+  contrato; a invariável do domínio continua sendo a autoridade final.
 
 ### Encerramento da Fase 02
 

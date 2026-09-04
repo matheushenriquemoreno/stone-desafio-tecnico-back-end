@@ -79,6 +79,11 @@ Implementar `GetProduct` e a rota de consulta protegida. Identificador existente
   leitura consistente e mapeamento estrito dos sete atributos. Testes
   dirigidos: 1 suíte/5 testes unitários e 1 suíte/3 testes de integração;
   lint e typecheck aprovados.
+- **T20 — concluída em 2026-09-04:** `CreateProduct` e `POST /products`
+  implementados no módulo Products com guard de cookie, CSRF/origem, DTO
+  estrito e serializer público. Testes dirigidos: 1 suíte/3 testes unitários e
+  1 suíte/10 testes E2E; sucesso, limites, ausência/nulo/desconhecido,
+  autenticação, proteção CSRF, persistência e OpenAPI comprovados.
 
 ## Testes e verificações da fase
 
