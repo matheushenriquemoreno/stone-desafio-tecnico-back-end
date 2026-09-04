@@ -15,6 +15,7 @@ import {
   ApiHeader,
   ApiNoContentResponse,
   ApiOperation,
+  ApiTooManyRequestsResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -55,6 +56,7 @@ export class AuthController {
     required: true,
   })
   @ApiOperation({ summary: 'Cadastra um usuário sem autenticação automática.' })
+  @ApiTooManyRequestsResponse({ description: 'Limite de requisições excedido.', type: ApiErrorDto })
   @Post('register')
   register(@Body() input: RegisterUserDto): Promise<RegisterUserOutput> {
     return this.registerUser.execute(input);
@@ -72,6 +74,7 @@ export class AuthController {
     required: true,
   })
   @ApiOperation({ summary: 'Autentica e cria o cookie de acesso.' })
+  @ApiTooManyRequestsResponse({ description: 'Limite de requisições excedido.', type: ApiErrorDto })
   @ApiUnauthorizedResponse({ description: 'Credenciais inválidas.', type: ApiErrorDto })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('login')
@@ -94,6 +97,7 @@ export class AuthController {
   })
   @ApiNoContentResponse({ description: 'Cookie de autenticação expirado.' })
   @ApiOperation({ summary: 'Expira o cookie de autenticação de forma idempotente.' })
+  @ApiTooManyRequestsResponse({ description: 'Limite de requisições excedido.', type: ApiErrorDto })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('logout')
   logout(@Res({ passthrough: true }) response: Response): void {

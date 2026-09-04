@@ -220,6 +220,20 @@ A Fase 06 está `Em execução`, iniciada após o review aprovado da Fase 05.
   estados de sucesso/erro e presença de `429` nas rotas concluídas.
 - Conflitos: nenhum com PRD, Contrato-da-API ou DEC-02/DEC-03/DEC-05/DEC-13.
 
+### Preparação da tarefa T33
+
+- Premissas: a matriz terá uma linha por cada um dos 27 critérios de aceitação
+  do PRD e apontará para testes existentes ou para o teste transversal que os
+  valida; não será criado um segundo contrato paralelo.
+- Abstrações: o verificador será somente de conformidade e artefatos, sem
+  modificar runtime, persistência ou dados do ambiente.
+- Arquivos: matriz automatizada, verificador de caminhos/testes, varredura
+  negativa de artefatos sensíveis e documentação da evidência final.
+- Verificação: matriz sem IDs duplicados ou lacunas, testes oficiais, OpenAPI,
+  integração/E2E repetidos e busca por senha/hash/JWT/credencial em saídas
+  produzidas.
+- Conflitos: nenhum; o review independente continuará sendo o gate posterior.
+
 ### Encerramento da Fase 03
 
 - T13–T17 concluídas com evidências unitárias e E2E.
@@ -451,6 +465,7 @@ A Fase 06 está `Em execução`, iniciada após o review aprovado da Fase 05.
 | T29 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/infrastructure/rate-limit/in-memory-fixed-window-rate-limiter.spec.ts` (1 suíte/6 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; Fixed Window, chave estruturada por IP/método/template, não prorrogação, expiração e limpeza comprovadas. |
 | T30 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/presentation/http/rate-limit-policies.spec.ts src/shared/presentation/http/rate-limit.middleware.spec.ts` (2 suítes/6 testes), `npm run test:e2e -- --runTestsByPath test/e2e/rate-limit.e2e.spec.ts test/e2e/list-products.e2e.spec.ts test/e2e/register-user.e2e.spec.ts` (3 suítes/24 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; tabela ADR-004, fallback, ordem do middleware, `OPTIONS` e isolamento das fixtures comprovados. |
 | T31 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/presentation/errors/api-exception.filter.spec.ts src/shared/infrastructure/rate-limit/in-memory-rate-limit-metrics.spec.ts` (2 suítes/5 testes), `npm run test:e2e -- --runTestsByPath test/e2e/rate-limit.e2e.spec.ts` (1 suíte/2 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; `429 RATE_LIMIT_EXCEEDED`, `Retry-After`, correlação, métrica agregada e bloqueio antes do controller comprovados. |
+| T32 | 06 | Concluída | `npm run test:e2e -- --runTestsByPath test/e2e/openapi.e2e.spec.ts` (1 suíte/1 teste), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; `/docs`, `/docs-json`, seis caminhos/nove operações, cookie auth, ausência de Bearer e `429` documentado comprovados. |
 | T29 | 06 | Pendente | — |
 | T30 | 06 | Pendente | — |
 | T31 | 06 | Pendente | — |
