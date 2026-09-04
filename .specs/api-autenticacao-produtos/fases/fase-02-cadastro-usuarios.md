@@ -101,6 +101,19 @@ Implementar `RegisterUser` para validar e normalizar a entrada, gerar ID e insta
 - **Critérios de conclusão:** cadastro válido produz somente dados públicos; duplicidade produz erro estável mapeável para `409`; cadastro nunca autentica o visitante.
 - **Riscos ou premissas:** retentativa de infraestrutura não pode gerar identidade lógica diferente para a mesma execução.
 
+### Evidência de execução T09
+
+- `npm test -- --runInBand src/modules/auth/application/register-user/register-user.spec.ts` — concluído; 1 suíte e 6 testes aprovados.
+- O caso de uso valida antes do hash, normaliza nome/e-mail, gera ID e
+  instante uma vez, chama `PasswordHasher`, persiste pela porta e retorna
+  somente `id`, `name` e e-mail.
+- O teste de ordem registra `hash` antes de `save`; entradas inválidas não
+  chegam ao hash nem ao repositório; duplicidade e falha técnica são
+  propagadas sem criar token ou cookie.
+- O módulo `RegisterUser` não importa NestJS, HTTP, DynamoDB, Argon2, JWT ou
+  cookie. `npm run lint`, `npm run typecheck`, `npm run build` e
+  `git diff --check` — concluídos sem erros.
+
 ## Tarefa T10 — Configurar CORS exato e preflight antes do pipeline de negócio
 
 Implementar CORS com credenciais somente para origens configuradas por correspondência exata. Permitir explicitamente `GET`, `POST`, `PATCH`, `DELETE`, `OPTIONS`, os cabeçalhos `Content-Type` e `X-CSRF-Protection` e a exposição de `Retry-After`. O preflight autorizado deve terminar antes de autenticação, rate limit e caso de uso.
