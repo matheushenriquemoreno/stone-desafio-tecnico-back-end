@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 
 import { createAppConfig, type AppConfig } from './shared/infrastructure/configuration';
+import { createCorsOptions } from './shared/presentation/http/cors-options';
 import { PublicValidationPipe } from './shared/presentation/validation/public-validation.pipe';
 
 export async function bootstrap(): Promise<void> {
@@ -9,8 +10,11 @@ export async function bootstrap(): Promise<void> {
   const { AppModule } = await import('./app.module');
 
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new PublicValidationPipe());
   const configService = app.get(ConfigService<AppConfig>);
+  app.enableCors(
+    createCorsOptions(configService.getOrThrow('allowedOrigins')),
+  );
+  app.useGlobalPipes(new PublicValidationPipe());
   const port = configService.getOrThrow<number>('port');
 
   await app.listen(port);

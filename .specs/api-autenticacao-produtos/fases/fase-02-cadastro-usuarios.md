@@ -126,6 +126,20 @@ Implementar CORS com credenciais somente para origens configuradas por correspon
 - **Critérios de conclusão:** não existe curinga com credenciais; somente origens exatas recebem headers CORS; preflight autorizado é resolvido antes do pipeline de negócio.
 - **Riscos ou premissas:** origens precisam ser configuração obrigatória por ambiente; previews de terceiros permanecem fora do fluxo autenticado.
 
+### Evidência de execução T10
+
+- `npm run test:e2e -- --runInBand` — concluído; 3 suítes e 9 testes
+  aprovados, incluindo preflight CORS autorizado e recusado.
+- O bootstrap registra a política com correspondência exata de origem,
+  credenciais habilitadas, métodos explícitos `GET`, `POST`, `PATCH`, `DELETE`
+  e `OPTIONS`, cabeçalhos `Content-Type` e `X-CSRF-Protection`, e exposição de
+  `Retry-After`.
+- O preflight autorizado responde `204`, anuncia a política e não executa o
+  controller; uma origem semelhante mas não igual não recebe
+  `Access-Control-Allow-Origin`.
+- `npm run lint`, `npm run typecheck`, `npm test` (17 suítes/52 testes),
+  `npm run build` e `git diff --check` — concluídos sem erros.
+
 ## Tarefa T11 — Bloquear mutações sem proteção CSRF ou com origem inválida
 
 Criar o componente reutilizável que exija `X-CSRF-Protection: 1` em `POST`, `PATCH` e `DELETE`. Quando `Origin` existir, aceitar somente a origem própria da API ou uma origem cliente permitida. A rejeição deve ocorrer com `403 REQUEST_FORBIDDEN` antes de qualquer caso de uso ou acesso ao DynamoDB.
