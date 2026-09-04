@@ -1,9 +1,9 @@
 # Fase 06 — Rate limit e conformidade operacional da API
 
-| Status       | Pendente   |
+| Status       | Em execução   |
 |--------------|------------|
 | Created      | 2026-09-03 |
-| Last Updated | 2026-09-03 |
+| Last Updated | 2026-09-04 |
 
 **Objetivo e resultado esperado:** aplicar a política Fixed Window de forma determinística a todas as operações, completar o OpenAPI operacional e comprovar a conformidade transversal da API sem vazamento de dados sensíveis.
 

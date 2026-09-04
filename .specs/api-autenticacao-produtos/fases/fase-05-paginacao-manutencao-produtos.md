@@ -1,9 +1,9 @@
 # Fase 05 — Paginação, atualização e exclusão de produtos
 
-| Status       | Em execução |
+| Status       | Concluída |
 |--------------|------------|
 | Created      | 2026-09-03 |
-| Last Updated | 2026-09-03 |
+| Last Updated | 2026-09-04 |
 
 **Objetivo e resultado esperado:** completar o catálogo compartilhado com listagem sequencial por cursor, atualização parcial estrita e exclusão condicional, preservando autorização e contratos de erro.
 

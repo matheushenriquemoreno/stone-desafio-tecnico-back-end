@@ -11,7 +11,7 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 ## Fase ativa
 
-A Fase 05 está `Em execução`, iniciada após o review aprovado da Fase 04.
+A Fase 06 está `Em execução`, iniciada após o review aprovado da Fase 05.
 
 ### Preparação da Fase 05
 
@@ -112,6 +112,57 @@ A Fase 05 está `Em execução`, iniciada após o review aprovado da Fase 04.
 - Verificação: exclusão existente, repetição, duas contas, autenticação,
   CSRF/origem, corpo vazio e falha técnica.
 - Conflitos: nenhum.
+
+### Encerramento da Fase 05
+
+- Gate: review independente da Fase 05 aprovado na versão 5, registrado em
+  `REVIEW.md`.
+- Decisão: T22–T27 foram marcadas como `Concluídas`; a Fase 05 foi marcada
+  como `Concluída` após paginação, atualização e exclusão passarem os gates
+  completos.
+- Evidência final: 28 suítes/142 testes unitários, 3 suítes/9 testes de
+  integração e 13 suítes/84 testes E2E passaram, além de lint, typecheck,
+  build e `git diff --check`.
+- Ressalvas: A-01 permanece restrito ao DynamoDB Local; A-02 registra o
+  comportamento terminal observado no DynamoDB Local e ambos seguem para a
+  Fase 07. A Fase 06 foi então iniciada.
+
+### Preparação da Fase 06
+
+- Padrões: manter o rate limit antes de autenticação, validação e banco, mas
+  depois do preflight; separar resolução de IP, política, armazenamento e
+  resposta HTTP; não registrar IP bruto nem segredos.
+- Abstrações reutilizadas: `Clock`, `ConfigService`, `ApiExceptionFilter`,
+  `CorrelationIdMiddleware`, CORS/CSRF, controllers e setup OpenAPI já
+  existentes.
+- Premissas: Fixed Window em memória por instância; chave composta por IP
+  efetivo, método e template normalizado; proxy só é confiável quando listado
+  explicitamente em `TRUSTED_PROXY_IPS`; limites seguem integralmente a
+  ADR-004.
+- Arquivos previstos: configuração de proxies, resolvedor de IP, políticas,
+  armazenamento/metrics, middleware, filtro HTTP, OpenAPI e testes unitários,
+  integração e E2E de rate limit/conformidade.
+- Verificação: testes de cadeia de proxy e relógio controlados; políticas e
+  pipeline; `429`/`Retry-After`; `/docs`/`/docs-json`; matriz transversal;
+  lint, typecheck, suítes, build e `git diff --check`.
+- Conflitos: a dependência `@nestjs/throttler` prevista no design não é
+  compatível com NestJS 12; a implementação usará componente próprio com a
+  mesma política ADR-004, registrando o desvio para revisão.
+
+### Preparação da tarefa T28
+
+- Premissas: sem proxy confiável, somente `socket.remoteAddress` será aceito;
+  com proxy confiável, a cadeia `X-Forwarded-For` será percorrida da direita
+  para a esquerda até o primeiro endereço não confiável; a configuração aceita
+  apenas IPs explícitos válidos.
+- Abstrações: `EffectiveClientIpResolver` ficará na borda HTTP; casos de uso e
+  armazenamento receberão somente a identidade já resolvida; nenhum cabeçalho
+  será lido diretamente pelo rate limiter.
+- Arquivos: `TRUSTED_PROXY_IPS`, configuração de trust proxy, resolvedor e
+  testes unitários/E2E de cabeçalhos forjados e cadeia autorizada.
+- Verificação: conexão direta, um/múltiplos proxies, configuração inválida e
+  prova da identidade usada na chave sem IP bruto nos logs.
+- Conflitos: nenhum com ADR-004 ou DEC-12/DEC-19.
 
 ### Encerramento da Fase 03
 
@@ -335,7 +386,6 @@ A Fase 05 está `Em execução`, iniciada após o review aprovado da Fase 04.
 | T20 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/create-product/create-product.spec.ts` (1 suíte/3 testes), `npm run test:e2e -- --runTestsByPath test/e2e/create-product.e2e.spec.ts` (1 suíte/10 testes), `npm run lint` e `npm run typecheck` aprovados; `POST /products` protegido, estrito e sem persistência em entradas inválidas. |
 | T21 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/get-product/get-product.spec.ts` (1 suíte/3 testes), `npm run test:e2e -- --runTestsByPath test/e2e/get-product.e2e.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados; `GET /products/:id` retorna catálogo compartilhado ou `404 PRODUCT_NOT_FOUND` e rejeita cookie ausente/inválido/expirado. |
 | T22 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/infrastructure/persistence/dynamodb-cursor-codec.spec.ts` (1 suíte/10 testes), `npm run lint` e `npm run typecheck` aprovados; envelope versionado, Base64 URL-safe, validação estrutural e erro seguro comprovados. |
-| T23 | 05 | Em execução | — |
 | T23 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/list-products/list-products.spec.ts src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (2 suítes/15 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/4 testes), `npm run lint` e `npm run typecheck` aprovados; `Scan`, `Limit`, cursor nativo, padrão 20 e limites 1–100 comprovados. |
 | T24 | 05 | Concluída | `npm run test:e2e -- --runTestsByPath test/e2e/list-products.e2e.spec.ts` (1 suíte/11 testes), `npm run lint` e `npm run typecheck` aprovados; `GET /products` cobre catálogo vazio, limite padrão/limites, cursores consecutivos, erros seguros, autenticação e OpenAPI. |
 | T25 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/update-product/update-product.spec.ts src/modules/products/domain/product.spec.ts` (2 suítes/37 testes), `npm run lint` e `npm run typecheck` aprovados; patch não vazio e estrito, invariantes reutilizadas, campos omitidos preservados e relógio controlado comprovados. |
@@ -449,4 +499,4 @@ Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permiss�
   integração e 10 suítes/59 testes E2E passaram, além de lint, typecheck,
   build e `git diff --check`.
 - Ressalvas: A-01 permanece restrito ao DynamoDB Local e encaminhado à Fase 07;
-  a Fase 05 permanece `Pendente` e não foi iniciada.
+  a Fase 05 foi iniciada após o review e agora está encerrada com aprovação.
