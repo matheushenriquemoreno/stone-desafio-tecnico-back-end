@@ -25,6 +25,20 @@ Criar o domínio Auth com usuário e value objects/funções que validem nome en
 - **Critérios de conclusão:** todas as invariantes do cadastro são independentes de NestJS; normalização acontece antes da validação e da comparação; limites inclusivos e inválidos estão cobertos.
 - **Riscos ou premissas:** normalizar nome significa apenas o tratamento já aprovado na fronteira, sem inventar transformação cultural ou colapso de caracteres.
 
+### Evidência de execução T06
+
+- `npm run lint` — concluído sem erros, incluindo as fronteiras das camadas
+  internas.
+- `npm run typecheck` — concluído com TypeScript estrito.
+- `npm test -- --runInBand` — concluído; 14 suítes e 39 testes aprovados,
+  incluindo limites inclusivos de nome e senha, normalização de e-mail e
+  serialização pública segura do usuário.
+- `npm run build` — concluído.
+- `git diff --check` — concluído sem erros.
+- O domínio Auth não importa NestJS, HTTP, AWS SDK, JWT ou Argon2; a senha
+  em texto puro não aparece em `User` e o `toJSON` expõe apenas `id`, `name` e
+  e-mail.
+
 ## Tarefa T07 — Implementar hash Argon2id por porta
 
 Definir a porta de hash de senha e seu adaptador Argon2id, com criação e verificação de hash. Parâmetros devem ser configurados explicitamente, adequados ao ambiente demonstrativo e substituíveis nos testes sem reduzir a regra de produção.

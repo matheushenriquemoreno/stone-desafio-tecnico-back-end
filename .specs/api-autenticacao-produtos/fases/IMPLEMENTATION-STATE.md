@@ -163,7 +163,7 @@ Fase 02 — Cadastro seguro de usuários.
 | T03 | 01 | Concluída | Lint/typecheck, `npm test` (8 suítes/16 testes), E2E (1 suíte/3 testes), integração, build e diff passaram; respostas 409/400/500 correlacionadas e logs sanitizados comprovados, sem senha/token/stack. |
 | T04 | 01 | Concluída | Compose, cliente injetado, provisionamento repetido, integração com duas tabelas isoladas e todos os gates (lint/typecheck/19 unitários/3 E2E/build) passaram; bootstrap real abriu a porta 3011. |
 | T05 | 01 | Concluída | Lint/typecheck, 12 suítes/24 unitários, integração, 2 suítes/6 E2E, build e Compose passaram; `/health` confirmou 200 exato com ambas as tabelas e 503 seguro para cada tabela ausente. |
-| T06 | 02 | Pendente | — |
+| T06 | 02 | Concluída | Lint, typecheck, `npm test` (14 suítes/39 testes), build e `git diff --check` aprovados; domínio Auth cobre limites, normalização de e-mail e nome, senha transitória e serialização pública sem hash. |
 | T07 | 02 | Pendente | — |
 | T08 | 02 | Pendente | — |
 | T09 | 02 | Pendente | — |
