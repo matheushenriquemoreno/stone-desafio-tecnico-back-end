@@ -12,6 +12,10 @@ class RecordingProductRepository implements ProductRepository {
     return null;
   }
 
+  async list(): Promise<{ items: readonly Product[] }> {
+    return { items: [] };
+  }
+
   async save(product: Product): Promise<void> {
     if (this.error !== undefined) {
       throw this.error;

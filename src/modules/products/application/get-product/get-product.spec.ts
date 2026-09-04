@@ -18,6 +18,10 @@ class RecordingProductRepository implements ProductRepository {
     return this.product;
   }
 
+  async list(): Promise<{ items: readonly ProductEntity[] }> {
+    return { items: [] };
+  }
+
   async save(): Promise<void> {
     return Promise.resolve();
   }
