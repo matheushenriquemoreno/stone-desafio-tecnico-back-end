@@ -22,3 +22,4 @@ A interface Next.js é um cliente externo e consome esta API diretamente pelo na
 - [Decisões de tecnologia](./docs/Decisao-tecnologias.md)
 - [Decisão de deploy](./docs/Decisao-deploy.md)
 - [Architecture Decision Records](./docs/adr/README.md)
+- [Regras de desenvolvimento](./rules/README.md)
