@@ -1,6 +1,6 @@
 # Fase 05 — Paginação, atualização e exclusão de produtos
 
-| Status       | Pendente   |
+| Status       | Em execução |
 |--------------|------------|
 | Created      | 2026-09-03 |
 | Last Updated | 2026-09-03 |

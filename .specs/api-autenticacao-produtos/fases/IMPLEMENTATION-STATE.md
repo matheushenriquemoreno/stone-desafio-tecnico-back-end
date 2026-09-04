@@ -11,7 +11,52 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 ## Fase ativa
 
-Nenhuma. A Fase 04 foi encerrada e a Fase 05 permanece `Pendente`.
+A Fase 05 está `Em execução`, iniciada após o review aprovado da Fase 04.
+
+### Preparação da Fase 05
+
+- Padrões: preservar o domínio Product sem dependências de NestJS, HTTP ou
+  DynamoDB; casos de uso dependerão somente da porta `ProductRepository`;
+  controllers e DTOs continuarão responsáveis pela borda HTTP.
+- Abstrações reutilizadas: `Product`, `ProductRepository`, `Clock`,
+  `AccessTokenGuard`, `PublicValidationPipe`, `ApiExceptionFilter` e o cliente
+  `DynamoDBDocumentClient` já existentes.
+- Premissas: o cursor representa exclusivamente a chave `id` da tabela
+  `products`, será Base64 URL-safe sem assinatura e permanecerá opaco para o
+  cliente; atualização seguirá last-write-wins e exclusão não será idempotente.
+- Arquivos previstos: codec e erro de cursor, casos de uso e porta de
+  produtos, adaptador DynamoDB, DTOs/controllers, módulo Products e testes
+  unitários, de integração e E2E.
+- Verificação: cada tarefa terá teste dirigido; ao final serão executados
+  lint, typecheck, suíte unitária, integração, E2E, build e `git diff --check`.
+- Conflitos: nenhum encontrado entre PRD, design, plano, ADR-003 e o código
+  atual.
+
+### Preparação da tarefa T22
+
+- Premissas: o envelope terá versão `1` e a chave persistida será exatamente
+  `{ id: string }`; o limite do cursor será 2.048 caracteres e a saída não
+  será assinada nem tratada como criptografia.
+- Abstrações: `ProductCursorCodec` ficará na infraestrutura de persistência e
+  `InvalidProductCursorError` será o erro de aplicação público; o controller
+  não conhecerá `LastEvaluatedKey`.
+- Arquivos: codec/erro de cursor e teste unitário dedicado.
+- Verificação: round-trip, URL-safe, JSON/versão/estrutura/tipos/tamanho
+  inválidos e ausência de payload interno em mensagens.
+- Conflitos: nenhum.
+
+### Preparação da tarefa T23
+
+- Premissas: `ProductRepository.list` receberá o limite e o cursor opaco;
+  somente o adaptador converterá o cursor para `ExclusiveStartKey` e
+  `LastEvaluatedKey`.
+- Abstrações: `ProductPage` permanecerá uma saída da aplicação com produtos e
+  `nextCursor` opcional; o caso de uso aplicará o padrão 20 e os limites 1–100.
+- Arquivos: porta/repositório de produtos, `ListProducts`, adaptador DynamoDB,
+  módulo Products e testes unitários/de integração.
+- Verificação: catálogo vazio, limites, múltiplas páginas, página final,
+  cursor encaminhado e integração com DynamoDB Local.
+- Conflitos: nenhum.
 
 ### Encerramento da Fase 03
 
@@ -205,7 +250,7 @@ Nenhuma. A Fase 04 foi encerrada e a Fase 05 permanece `Pendente`.
 | 02 | Cadastro seguro de usuários | [fase-02-cadastro-usuarios.md](fase-02-cadastro-usuarios.md) | Concluída | 2026-09-04 |
 | 03 | Autenticação e proteção do cliente web | [fase-03-autenticacao-protecao-web.md](fase-03-autenticacao-protecao-web.md) | Concluída | 2026-09-04 |
 | 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fase-04-criacao-consulta-produtos.md) | Concluída | 2026-09-04 |
-| 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fase-05-paginacao-manutencao-produtos.md) | Pendente | — |
+| 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fase-05-paginacao-manutencao-produtos.md) | Em execução | — |
 | 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fase-06-rate-limit-conformidade.md) | Pendente | — |
 | 07 | Empacotamento, infraestrutura e entrega | [fase-07-entrega-operacional.md](fase-07-entrega-operacional.md) | Pendente | — |
 
@@ -234,7 +279,8 @@ Nenhuma. A Fase 04 foi encerrada e a Fase 05 permanece `Pendente`.
 | T19 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (1 suíte/5 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/3 testes), `npm run lint` e `npm run typecheck` aprovados; condição atômica, mapeamento exato, ausência e colisão sem sobrescrita comprovados. |
 | T20 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/create-product/create-product.spec.ts` (1 suíte/3 testes), `npm run test:e2e -- --runTestsByPath test/e2e/create-product.e2e.spec.ts` (1 suíte/10 testes), `npm run lint` e `npm run typecheck` aprovados; `POST /products` protegido, estrito e sem persistência em entradas inválidas. |
 | T21 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/get-product/get-product.spec.ts` (1 suíte/3 testes), `npm run test:e2e -- --runTestsByPath test/e2e/get-product.e2e.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados; `GET /products/:id` retorna catálogo compartilhado ou `404 PRODUCT_NOT_FOUND` e rejeita cookie ausente/inválido/expirado. |
-| T22 | 05 | Pendente | — |
+| T22 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/infrastructure/persistence/dynamodb-cursor-codec.spec.ts` (1 suíte/10 testes), `npm run lint` e `npm run typecheck` aprovados; envelope versionado, Base64 URL-safe, validação estrutural e erro seguro comprovados. |
+| T23 | 05 | Em execução | — |
 | T23 | 05 | Pendente | — |
 | T24 | 05 | Pendente | — |
 | T25 | 05 | Pendente | — |
