@@ -58,7 +58,8 @@ Todas as rotas de produtos serão protegidas por JWT. Nesta versão, qualquer us
 - Navegadores consumirão a API diretamente, sem endpoints intermediários.
 - A API aceitará credenciais somente das origens web explicitamente configuradas, sem curinga em CORS.
 - Requisições autenticadas deverão enviar o cookie automaticamente, sem permitir que o JavaScript leia o JWT.
-- Operações que alteram estado exigirão uma proteção CSRF verificável pela API.
+- O cookie de autenticação usará `HttpOnly`, `Secure`, `SameSite=Strict`, `__Host-` e `Path=/`; operações mutáveis validarão `Origin` e `Referer` conforme a política da [ADR-006](./adr/ADR-006-protecao-csrf-origem.md).
+- A ausência simultânea de `Origin` e `Referer` será aceita para Swagger, CLI e back-ends que usam cookie; autenticação, validação e execução do caso de uso continuam obrigatórias.
 
 ## Entregáveis
 
@@ -67,7 +68,7 @@ Todas as rotas de produtos serão protegidas por JWT. Nesta versão, qualquer us
 - Descrição das tabelas e padrões de acesso ao DynamoDB.
 - Testes unitários dos domínios e casos de uso.
 - Testes de integração dos adaptadores de persistência.
-- Testes E2E de cadastro, login, logout, autorização, CORS, preflight, CSRF, health, paginação, CRUD e rate limit.
+- Testes E2E de cadastro, login, logout, autorização, CORS, preflight, proteção por cookie e origem, health, paginação, CRUD e rate limit.
 - Instruções de configuração, execução, testes e build no `README.md` do projeto implementado.
 
 ## Critérios de entrega
@@ -76,7 +77,7 @@ Todas as rotas de produtos serão protegidas por JWT. Nesta versão, qualquer us
 - Senhas nunca são persistidas ou registradas em texto puro.
 - Rotas de produtos recusam tokens ausentes, inválidos ou expirados.
 - O login e o logout criam e removem o cookie conforme o contrato, sem expor o JWT ao JavaScript.
-- Origens não autorizadas e operações mutáveis sem a proteção CSRF são recusadas.
+- Origens não autorizadas e operações mutáveis com contexto de navegador inválido são recusadas antes do caso de uso.
 - A paginação retorna itens e `nextCursor` quando houver outra página.
 - Os testes usam dados determinísticos e ambiente DynamoDB isolado.
 - Lint, verificação de tipos, testes e build são executados com sucesso.

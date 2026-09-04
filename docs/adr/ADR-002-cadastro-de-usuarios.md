@@ -32,7 +32,7 @@ A API permitirá cadastro público com nome, e-mail e senha. A operação criar�
 ```http
 POST /auth/register
 Content-Type: application/json
-X-CSRF-Protection: 1
+Origin: https://app.example.com
 ```
 
 ```json

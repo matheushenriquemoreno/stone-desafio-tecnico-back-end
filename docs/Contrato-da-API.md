@@ -7,7 +7,6 @@ A documentação OpenAPI gerada pela aplicação é a fonte de verdade operacion
 ```http
 POST /auth/register
 Content-Type: application/json
-X-CSRF-Protection: 1
 ```
 
 ```json
@@ -35,7 +34,6 @@ Possíveis erros: `400`, `403`, `409`, `429` e `500`.
 ```http
 POST /auth/login
 Content-Type: application/json
-X-CSRF-Protection: 1
 ```
 
 ```json
@@ -49,7 +47,7 @@ Resposta de sucesso:
 
 ```http
 HTTP/1.1 204 No Content
-Set-Cookie: __Host-stone_access_token=<jwt>; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=900
+Set-Cookie: __Host-stone_access_token=<jwt>; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=900
 ```
 
 O JWT terá `exp - iat = 900` segundos, igual ao `Max-Age` do cookie. Ele não será incluído no corpo da resposta nem ficará acessível ao JavaScript. Possíveis erros são `400`, `401`, `403`, `429` e `500`; credenciais inválidas retornam `401` com mensagem genérica e não criam cookie.
@@ -59,14 +57,13 @@ O JWT terá `exp - iat = 900` segundos, igual ao `Max-Age` do cookie. Ele não s
 ```http
 POST /auth/logout
 Cookie: __Host-stone_access_token=<jwt>
-X-CSRF-Protection: 1
 ```
 
 Resposta de sucesso:
 
 ```http
 HTTP/1.1 204 No Content
-Set-Cookie: __Host-stone_access_token=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0
+Set-Cookie: __Host-stone_access_token=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0
 ```
 
 O logout é idempotente e retorna `204` mesmo quando o cookie estiver ausente, inválido ou expirado. Ele remove a credencial do navegador, mas não mantém lista de revogação do JWT; uma cópia do token permanece criptograficamente válida até sua expiração.
@@ -89,14 +86,14 @@ Todas as operações exigem:
 Cookie: __Host-stone_access_token=<jwt>
 ```
 
-Operações que alteram estado também exigem:
+Para chamadas de navegador, operações que alteram estado devem incluir uma origem autorizada:
 
 ```http
-X-CSRF-Protection: 1
+Origin: https://app.example.com
 Content-Type: application/json
 ```
 
-`DELETE /products/:id` exige o cabeçalho de proteção CSRF, mas não precisa enviar corpo nem `Content-Type`.
+Quando `Origin` estiver ausente, a API poderá usar a origem de `Referer`. Se ambos estiverem ausentes, a chamada será aceita para compatibilidade com Swagger, CLI e back-ends que usam o cookie de sessão; a autenticação, a validação e o caso de uso continuam obrigatórios.
 
 Um produto possui:
 
@@ -232,10 +229,11 @@ Mudanças incompatíveis em campos, endpoints, autenticação, paginação ou er
 - O navegador chama a API diretamente; não há endpoints intermediários.
 - Todas as chamadas do navegador usam `credentials: include` para receber e enviar o cookie.
 - A API habilita credenciais somente para origens exatas configuradas. `Access-Control-Allow-Origin: *` não é permitido.
-- Requisições `POST`, `PATCH` e `DELETE` exigem `X-CSRF-Protection: 1`; quando houver `Origin`, ele deve ser a própria origem da API ou estar na lista de clientes permitidos.
-- Swagger UI e clientes como `curl` usam o mesmo fluxo de cookie e enviam o cabeçalho CSRF nas operações mutáveis.
+- `GET`, `HEAD` e `OPTIONS` não passam pela verificação de origem. Nos demais métodos, `Origin` presente deve ser uma origem HTTP(S) exata da API ou da allowlist; `null`, malformado ou não autorizado retorna `403 REQUEST_FORBIDDEN`.
+- Somente quando `Origin` estiver ausente, `Referer` será interpretado. A origem extraída deve ser autorizada; `Referer` malformado ou não autorizado retorna `403`. `Origin` inválido nunca é compensado por `Referer` válido.
+- Quando `Origin` e `Referer` estiverem ausentes, a requisição segue para autenticação, validação e caso de uso. Swagger UI, CLI e back-ends podem usar o cookie sem enviar headers de contexto de navegador.
 - A autenticação não aceita `Authorization: Bearer` nesta versão.
 - A política e os limites de requisição estão definidos na [ADR-004](./adr/ADR-004-rate-limit.md).
-- A decisão completa de cookie, CORS, CSRF e escalabilidade está na [ADR-005](./adr/ADR-005-autenticacao-cookie-http-only.md).
+- A decisão de cookie, consumo direto e JWT está na [ADR-005](./adr/ADR-005-autenticacao-cookie-http-only.md); a proteção CSRF/origem está na [ADR-006](./adr/ADR-006-protecao-csrf-origem.md).
 
-Para origens permitidas, o preflight CORS autoriza `GET`, `POST`, `PATCH`, `DELETE` e `OPTIONS`, além dos cabeçalhos `Content-Type` e `X-CSRF-Protection`. O navegador poderá ler `Retry-After`. Requisições `OPTIONS` não exigem autenticação e não consomem o limite dos endpoints de negócio.
+Para origens permitidas, o preflight CORS autoriza `GET`, `POST`, `PATCH`, `DELETE` e `OPTIONS`, além do cabeçalho `Content-Type`. O navegador poderá ler `Retry-After`. Requisições `OPTIONS` não exigem autenticação e não consomem o limite dos endpoints de negócio.

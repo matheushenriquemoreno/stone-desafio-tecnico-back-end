@@ -62,7 +62,6 @@ async function register(app: INestApplication, email: string, name: string): Pro
   await request(httpServer(app))
     .post('/auth/register')
     .set('Origin', allowedOrigin)
-    .set('X-CSRF-Protection', '1')
     .send({ email, name, password: 'senha-super-secreta' })
     .expect(201);
 }
@@ -71,7 +70,6 @@ async function login(app: INestApplication, email: string): Promise<string> {
   const response = await request(httpServer(app))
     .post('/auth/login')
     .set('Origin', allowedOrigin)
-    .set('X-CSRF-Protection', '1')
     .send({ email, password: 'senha-super-secreta' });
   const cookie = response.headers['set-cookie']?.[0];
 
@@ -126,7 +124,6 @@ describe('PATCH /products/:id', () => {
     const createResponse = await request(httpServer(app))
       .post('/products')
       .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1')
       .set('Cookie', creatorCookie)
       .send({
         description: 'Descrição original',
@@ -151,7 +148,6 @@ describe('PATCH /products/:id', () => {
     const response = await request(httpServer(app))
       .patch(`/products/${productId}`)
       .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1')
       .set('Cookie', otherAccountCookie)
       .send({ name: 'Produto atualizado', price: 109.9 });
 
@@ -179,7 +175,6 @@ describe('PATCH /products/:id', () => {
     const response = await request(httpServer(app))
       .patch(`/products/${productId}`)
       .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1')
       .set('Cookie', creatorCookie)
       .send(patch);
 
@@ -198,7 +193,6 @@ describe('PATCH /products/:id', () => {
     const response = await request(httpServer(app))
       .patch('/products/missing-product')
       .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1')
       .set('Cookie', creatorCookie)
       .send({ name: 'Produto ausente' });
 
@@ -206,26 +200,18 @@ describe('PATCH /products/:id', () => {
     expect(response.body.code).toBe('PRODUCT_NOT_FOUND');
   });
 
-  it('requires cookie, CSRF protection and an authorized origin', async () => {
+  it('requires the authentication cookie and rejects an unauthorized origin', async () => {
     const withoutCookie = await request(httpServer(app))
       .patch(`/products/${productId}`)
       .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1')
       .send({ name: 'Sem cookie' });
-    const withoutCsrf = await request(httpServer(app))
-      .patch(`/products/${productId}`)
-      .set('Origin', allowedOrigin)
-      .set('Cookie', creatorCookie)
-      .send({ name: 'Sem CSRF' });
     const withoutOrigin = await request(httpServer(app))
       .patch(`/products/${productId}`)
       .set('Origin', 'https://evil.example.com')
-      .set('X-CSRF-Protection', '1')
       .set('Cookie', creatorCookie)
       .send({ name: 'Origem inválida' });
 
     expect(withoutCookie.status).toBe(401);
-    expect(withoutCsrf.status).toBe(403);
     expect(withoutOrigin.status).toBe(403);
   });
 

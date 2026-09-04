@@ -114,9 +114,9 @@ Referências:
 ## Segurança operacional
 
 - Clientes acessarão a API por HTTPS na borda da Cloudflare.
-- O cookie JWT terá `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/` e não definirá `Domain`.
+- O cookie JWT terá `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/` e não definirá `Domain`.
 - CORS permitirá credenciais apenas para origens exatas configuradas; curingas não serão aceitos.
-- Operações mutáveis exigirão o cabeçalho de proteção CSRF definido na ADR-005.
+- Operações mutáveis seguirão `SameSite=Strict` e a validação de `Origin`/`Referer` definida na [ADR-006](./adr/ADR-006-protecao-csrf-origem.md).
 - A comunicação VPS–DynamoDB usará TLS.
 - Segredos ficarão em GitHub Secrets e no arquivo protegido da VPS.
 - O `.env` terá permissão restrita e não será versionado.

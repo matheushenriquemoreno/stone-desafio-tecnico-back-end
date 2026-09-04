@@ -90,6 +90,7 @@ describe('OpenAPI export', () => {
     expect(
       schemes.some((scheme) => scheme.type === 'http' && scheme.scheme === 'bearer'),
     ).toBe(false);
+    expect(schemes.some((scheme) => scheme.in === 'header')).toBe(false);
     expect(document.components?.schemas?.ApiErrorDto).toBeDefined();
   });
 });

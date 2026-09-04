@@ -12,7 +12,6 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
-  ApiHeader,
   ApiNoContentResponse,
   ApiOperation,
   ApiTags,
@@ -50,11 +49,6 @@ export class AuthController {
     description: 'Proteção CSRF ou origem inválida.',
     type: ApiErrorDto,
   })
-  @ApiHeader({
-    description: 'Deve ser enviado com o valor literal 1.',
-    name: 'X-CSRF-Protection',
-    required: true,
-  })
   @ApiOperation({ summary: 'Cadastra um usuário sem autenticação automática.' })
   @ApiRateLimitResponse()
   @Post('register')
@@ -68,11 +62,6 @@ export class AuthController {
     type: ApiErrorDto,
   })
   @ApiNoContentResponse({ description: 'Cookie de autenticação criado.' })
-  @ApiHeader({
-    description: 'Deve ser enviado com o valor literal 1.',
-    name: 'X-CSRF-Protection',
-    required: true,
-  })
   @ApiOperation({ summary: 'Autentica e cria o cookie de acesso.' })
   @ApiRateLimitResponse()
   @ApiUnauthorizedResponse({ description: 'Credenciais inválidas.', type: ApiErrorDto })
@@ -89,11 +78,6 @@ export class AuthController {
   @ApiForbiddenResponse({
     description: 'Proteção CSRF ou origem inválida.',
     type: ApiErrorDto,
-  })
-  @ApiHeader({
-    description: 'Deve ser enviado com o valor literal 1.',
-    name: 'X-CSRF-Protection',
-    required: true,
   })
   @ApiNoContentResponse({ description: 'Cookie de autenticação expirado.' })
   @ApiOperation({ summary: 'Expira o cookie de autenticação de forma idempotente.' })

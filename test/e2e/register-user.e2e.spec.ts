@@ -118,7 +118,6 @@ describe('POST /auth/register', () => {
     const response = await request(httpServer(app))
       .post('/auth/register')
       .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1')
       .send({
         email: '  MARIA@example.com ',
         name: '  Maria Silva  ',
@@ -160,7 +159,6 @@ describe('POST /auth/register', () => {
     const response = await request(httpServer(app))
       .post('/auth/register')
       .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1')
       .send({
         email: ' MARIA@EXAMPLE.COM ',
         name: 'Another Name',
@@ -219,7 +217,6 @@ describe('POST /auth/register', () => {
       const response = await request(httpServer(app))
         .post('/auth/register')
         .set('Origin', allowedOrigin)
-        .set('X-CSRF-Protection', '1')
         .send(body);
 
       expect(response.status).toBe(400);
@@ -234,35 +231,35 @@ describe('POST /auth/register', () => {
     },
   );
 
-  it('rejects a registration without CSRF before writing a user', async () => {
+  it('accepts a registration without browser context headers', async () => {
     const response = await request(httpServer(app))
       .post('/auth/register')
       .set('Origin', allowedOrigin)
       .send({
-        email: 'without-csrf@example.com',
+        email: 'without-context@example.com',
         name: 'Maria',
         password: '12345678',
       });
 
-    expect(response.status).toBe(403);
-    expect(response.body).toMatchObject({
-      code: 'REQUEST_FORBIDDEN',
-      statusCode: 403,
+    expect(response.status).toBe(201);
+    expect(response.body).toEqual({
+      email: 'without-context@example.com',
+      id: expect.any(String),
+      name: 'Maria',
     });
     const item = await documentClient.send(
       new GetCommand({
-        Key: { email: 'without-csrf@example.com' },
+        Key: { email: 'without-context@example.com' },
         TableName: tableName,
       }),
     );
-    expect(item.Item).toBeUndefined();
+    expect(item.Item).toEqual(expect.objectContaining({ email: 'without-context@example.com' }));
   });
 
   it('rejects a registration from an unlisted origin', async () => {
     const response = await request(httpServer(app))
       .post('/auth/register')
       .set('Origin', 'https://evil.example.com')
-      .set('X-CSRF-Protection', '1')
       .send({
         email: 'without-origin@example.com',
         name: 'Maria',
@@ -291,14 +288,8 @@ describe('POST /auth/register', () => {
         '409': expect.any(Object),
       }),
     );
-    expect(registerOperation.parameters).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          in: 'header',
-          name: 'X-CSRF-Protection',
-          required: true,
-        }),
-      ]),
+    expect(registerOperation.parameters ?? []).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ in: 'header' })]),
     );
     expect(jsonResponse.body.components.schemas.RegisterUserDto).toBeDefined();
     expect(jsonResponse.body.components.schemas.RegisterUserResponseDto).toBeDefined();

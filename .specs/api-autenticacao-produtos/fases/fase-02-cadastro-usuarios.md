@@ -13,6 +13,10 @@
 
 **Dependências externas:** DynamoDB Local da Fase 01.
 
+> **Registro histórico:** esta fase foi executada antes da revisão material de
+> 2026-09-04. As referências ao header customizado em suas tarefas e evidências
+> descrevem o contrato anterior e foram substituídas pela Fase 07 e pela ADR-006.
+
 ## Tarefa T06 — Modelar usuário, e-mail normalizado e invariantes de cadastro
 
 Criar o domínio Auth com usuário e value objects/funções que validem nome entre 2 e 100 caracteres, senha entre 8 e 128, remoção de espaços externos e conversão do e-mail para minúsculas antes da validação de formato. A senha em texto puro deve existir somente como entrada transitória do caso de uso e nunca integrar a entidade persistível.

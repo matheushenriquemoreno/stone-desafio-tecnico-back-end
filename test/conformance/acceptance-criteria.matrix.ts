@@ -13,7 +13,7 @@ export const ACCEPTANCE_CRITERIA: readonly AcceptanceCriterionEvidence[] = [
   { id: 5, requirements: 'AAP-14, AAP-15, AAP-50', summary: 'Credencial inválida é genérica e não cria cookie.', testPaths: ['test/e2e/login.e2e.spec.ts'] },
   { id: 6, requirements: 'AAP-16, AAP-17', summary: 'Logout expira o cookie em todos os estados.', testPaths: ['test/e2e/logout.e2e.spec.ts'] },
   { id: 7, requirements: 'AAP-18, AAP-19, AAP-50', summary: 'Produto sem cookie válido retorna UNAUTHORIZED.', testPaths: ['test/e2e/access-token-guard.e2e.spec.ts', 'test/e2e/get-product.e2e.spec.ts'] },
-  { id: 8, requirements: 'AAP-21, AAP-22, AAP-50', summary: 'Mutação sem CSRF/origem autorizada é recusada.', testPaths: ['test/e2e/csrf.e2e.spec.ts', 'test/e2e/create-product.e2e.spec.ts'] },
+  { id: 8, requirements: 'AAP-21, AAP-22, AAP-50, AAP-60', summary: 'Mutação valida origem e aceita ausência de contexto de navegador.', testPaths: ['test/e2e/csrf.e2e.spec.ts', 'test/e2e/create-product.e2e.spec.ts'] },
   { id: 9, requirements: 'AAP-20, AAP-23, AAP-24', summary: 'Preflight autorizado não autentica nem consome operação.', testPaths: ['test/e2e/cors.e2e.spec.ts', 'test/e2e/rate-limit.e2e.spec.ts'] },
   { id: 10, requirements: 'AAP-25..30', summary: 'Produto válido é criado com o recurso completo.', testPaths: ['test/e2e/create-product.e2e.spec.ts'] },
   { id: 11, requirements: 'AAP-26..29, AAP-51, AAP-52', summary: 'Campos de produto inválidos produzem erro seguro.', testPaths: ['test/e2e/create-product.e2e.spec.ts'] },

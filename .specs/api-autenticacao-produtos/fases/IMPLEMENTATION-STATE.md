@@ -492,12 +492,25 @@ para aplicar a revisão material aprovada da proteção CSRF; a Fase 08 permanec
 | T33 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath test/conformance/acceptance-criteria.matrix.spec.ts test/conformance/sensitive-artifacts.spec.ts` (2 suítes/4 testes), gates completos com 35 suítes/168 testes unitários, 3 suítes/9 testes de integração e 15 suítes/87 testes E2E, além de lint, typecheck, build e `git diff --check`; matriz 1–27, fonte de produção, placeholder de ambiente e artefatos opcionais foram verificados. |
 | T34 | 07 | Concluída | Cookie e testes atualizados para `SameSite=Strict`; `npm test -- --runInBand --runTestsByPath src/modules/auth/presentation/auth-cookie.spec.ts` e E2E de login/logout (2 suítes/9 testes) aprovados. |
 | T35 | 07 | Concluída | Middleware e E2E de origem implementados; `npm run lint`, `npm run typecheck` e E2E dedicado (1 suíte/12 testes) aprovados. |
-| T36 | 07 | Pendente | — |
+| T36 | 07 | Concluída | CORS, OpenAPI, controllers, consumidores e matriz atualizados; busca residual não encontrou `X-CSRF-Protection` em `src`/`test` nem em contratos ativos; `npm run lint`, `npm run typecheck`, `npm test` (35 suítes/168 testes), `npm run test:integration` (3 suítes/9 testes), `npm run test:e2e` (15 suítes/91 testes), `npm run build` e `git diff --check` aprovados. |
 | T37 | 08 | Pendente | — |
 | T38 | 08 | Pendente | — |
 | T39 | 08 | Pendente | — |
 | T40 | 08 | Pendente | — |
 | T41 | 08 | Pendente | — |
+
+### Encerramento da Fase 07 — aguardando review
+
+- T34, T35 e T36 estão `Concluídas` com evidências registradas na tabela de
+  tarefas.
+- O gate completo passou: lint, typecheck, 35 suítes/168 testes unitários,
+  3 suítes/9 testes de integração, 15 suítes/91 testes E2E, build e
+  `git diff --check`.
+- A busca residual confirma que o header removido não aparece em `src` ou
+  `test`, CORS ou contratos ativos. Ocorrências em fases e ADRs antigos são
+  históricas e identificadas como substituídas.
+- A Fase 08 permanece `Pendente`; seu início depende do review aprovado da
+  Fase 07.
 
 ## Bloqueios e desvios
 
@@ -582,7 +595,7 @@ Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permiss�
   foi iniciada.
 - Ressalvas: autenticação por JWT/cookie permanece na Fase 03; rate limit e
   conformidade operacional permanecem na Fase 06; o desvio local do DynamoDB
-  segue encaminhado à Fase 07.
+  segue encaminhado à Fase 08.
 
 ### Encerramento da Fase 04
 
@@ -594,7 +607,7 @@ Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permiss�
 - Evidência final: 24 suítes/104 testes unitários, 3 suítes/6 testes de
   integração e 10 suítes/59 testes E2E passaram, além de lint, typecheck,
   build e `git diff --check`.
-- Ressalvas: A-01 permanece restrito ao DynamoDB Local e encaminhado à Fase 07;
+- Ressalvas: A-01 permanece restrito ao DynamoDB Local e encaminhado à Fase 08;
   a Fase 05 foi iniciada após o review e agora está encerrada com aprovação.
 
 ### Encerramento da Fase 06

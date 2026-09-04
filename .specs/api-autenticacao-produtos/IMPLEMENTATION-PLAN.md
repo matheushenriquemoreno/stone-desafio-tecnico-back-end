@@ -15,6 +15,7 @@ Design técnico: [TECHNICAL-DESIGN.md](./TECHNICAL-DESIGN.md) (`Aprovado`)
 |------------|-----------|
 | 2026-09-03 | Versão inicial criada e encaminhada para revisão. |
 | 2026-09-03 | Plano aprovado; formalizado o limite de 30 requisições por minuto e IP para `/docs` e `/docs-json`. |
+| 2026-09-04 | Revisão material aprovada: inserida a Fase 07 para `SameSite=Strict` e origem; a entrega operacional foi movida para a Fase 08. |
 
 ## Objetivo geral da implementação
 
@@ -22,7 +23,7 @@ Entregar uma API NestJS executável, testada e publicável que permita cadastro,
 
 ## Estratégia de execução
 
-A execução começa com um tracer bullet de infraestrutura da aplicação até o DynamoDB Local, observável por `GET /health`. Em seguida, adiciona capacidades verticais de cadastro, autenticação e produtos, mantendo testes unitários, de integração e E2E junto de cada comportamento. A robustez transversal — rate limit e conformidade integral do OpenAPI — é consolidada depois que todas as rotas existem. A última fase empacota e automatiza a entrega sem misturar a validação funcional com o provisionamento externo.
+A execução começa com um tracer bullet de infraestrutura da aplicação até o DynamoDB Local, observável por `GET /health`. Em seguida, adiciona capacidades verticais de cadastro, autenticação e produtos, mantendo testes unitários, de integração e E2E junto de cada comportamento. A robustez transversal — rate limit e conformidade integral do OpenAPI — é consolidada depois que todas as rotas existem. A Fase 07 atualiza a proteção de origem; a Fase 08 empacota e automatiza a entrega sem misturar a validação funcional com o provisionamento externo.
 
 A Fase 01 estabelece `npm` com lockfile e os scripts `lint`, `typecheck`, `test`, `test:integration`, `test:e2e` e `build`; esses comandos passam a ser as verificações oficiais das fases seguintes. Cada fase é executada isoladamente e precisa passar por `review` antes de a próxima iniciar.
 
@@ -30,13 +31,14 @@ A Fase 01 estabelece `npm` com lockfile e os scripts `lint`, `typecheck`, `test`
 
 | #  | Fase | Arquivo | Status |
 |----|------|---------|--------|
-| 01 | Tracer bullet e fundação observável | [fase-01-tracer-bullet-fundacao.md](fases/fase-01-tracer-bullet-fundacao.md) | Pendente |
-| 02 | Cadastro seguro de usuários | [fase-02-cadastro-usuarios.md](fases/fase-02-cadastro-usuarios.md) | Pendente |
-| 03 | Autenticação e proteção do cliente web | [fase-03-autenticacao-protecao-web.md](fases/fase-03-autenticacao-protecao-web.md) | Pendente |
-| 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fases/fase-04-criacao-consulta-produtos.md) | Pendente |
-| 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fases/fase-05-paginacao-manutencao-produtos.md) | Pendente |
-| 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fases/fase-06-rate-limit-conformidade.md) | Pendente |
-| 07 | Empacotamento, infraestrutura e entrega | [fase-07-entrega-operacional.md](fases/fase-07-entrega-operacional.md) | Pendente |
+| 01 | Tracer bullet e fundação observável | [fase-01-tracer-bullet-fundacao.md](fases/fase-01-tracer-bullet-fundacao.md) | Concluída |
+| 02 | Cadastro seguro de usuários | [fase-02-cadastro-usuarios.md](fases/fase-02-cadastro-usuarios.md) | Concluída |
+| 03 | Autenticação e proteção do cliente web | [fase-03-autenticacao-protecao-web.md](fases/fase-03-autenticacao-protecao-web.md) | Concluída |
+| 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fases/fase-04-criacao-consulta-produtos.md) | Concluída |
+| 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fases/fase-05-paginacao-manutencao-produtos.md) | Concluída |
+| 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fases/fase-06-rate-limit-conformidade.md) | Concluída |
+| 07 | Proteção CSRF por cookie e validação de origem | [fase-07-protecao-csrf-origem.md](fases/fase-07-protecao-csrf-origem.md) | Em execução |
+| 08 | Empacotamento, infraestrutura e entrega | [fase-08-entrega-operacional.md](fases/fase-08-entrega-operacional.md) | Pendente |
 
 ## Dependências e ordem entre as fases
 
@@ -45,7 +47,8 @@ A Fase 01 estabelece `npm` com lockfile e os scripts `lint`, `typecheck`, `test`
 3. A Fase 04 depende do guard de autenticação e cria a base de domínio e repositório de produtos.
 4. A Fase 05 amplia o repositório de produtos e depende dos modelos e contratos da Fase 04.
 5. A Fase 06 só consolida políticas por endpoint depois que todas as rotas de negócio existem; sua implementação reutiliza relógio, IP, erros e correlação estabelecidos anteriormente.
-6. A Fase 07 depende da API funcional e da suíte verde para produzir imagem, infraestrutura, pipeline e procedimentos de deploy/rollback.
+6. A Fase 07 atualiza a proteção transversal sobre a API funcional e exige review aprovado antes da Fase 08.
+7. A Fase 08 depende da Fase 07 aprovada, da API funcional e da suíte verde para produzir imagem, infraestrutura, pipeline e procedimentos de deploy/rollback.
 
 Não há ciclos. Uma fase somente começa depois que a anterior estiver `Concluída` e aprovada pela skill `review`.
 
@@ -55,7 +58,8 @@ Não há ciclos. Uma fase somente começa depois que a anterior estiver `Conclu�
 - **Marco 2 — Fases 02 e 03 aprovadas:** visitante cadastra uma conta, autentica-se por cookie seguro e as fronteiras web recusam acessos ou mutações inválidas.
 - **Marco 3 — Fases 04 e 05 aprovadas:** catálogo compartilhado oferece CRUD completo e paginação sequencial por cursor opaco.
 - **Marco 4 — Fase 06 aprovada:** todas as rotas obedecem rate limit, erros, OpenAPI e verificações transversais do contrato.
-- **Marco 5 — Fase 07 aprovada:** imagem imutável, infraestrutura e pipeline de publicação/rollback estão reproduzíveis e verificáveis.
+- **Marco 5 — Fase 07 aprovada:** cookie, origem, CORS, OpenAPI e consumidores seguem a nova proteção, com risco residual documentado.
+- **Marco 6 — Fase 08 aprovada:** imagem imutável, infraestrutura e pipeline de publicação/rollback estão reproduzíveis e verificáveis.
 
 ## Cobertura executiva de requisitos
 
@@ -63,7 +67,8 @@ Não há ciclos. Uma fase somente começa depois que a anterior estiver `Conclu�
 |------------|---------|
 | `AAP-01`–`AAP-09` | `T06`–`T09`, `T12` |
 | `AAP-10`–`AAP-17` | `T13`–`T16` |
-| `AAP-18`–`AAP-24` | `T10`, `T11`, `T17`, `T30` |
+| `AAP-18`–`AAP-24` | `T10`, `T11`, `T17`, `T30`, `T34`–`T36` |
+| `AAP-60` | `T35`, `T36` |
 | `AAP-25`–`AAP-30` | `T18`–`T20` |
 | `AAP-31`–`AAP-38` | `T19`, `T21`–`T24` |
 | `AAP-39`–`AAP-49` | `T21`, `T25`–`T27` |
@@ -73,17 +78,17 @@ Não há ciclos. Uma fase somente começa depois que a anterior estiver `Conclu�
 | `AAP-58`–`AAP-59` | `T04`–`T05` |
 | `EXPECT-01`–`EXPECT-05` | `T03`, `T07`, `T10`–`T17`, `T33` |
 | `EXPECT-06` | `T12`, `T15`–`T17`, `T20`–`T27`, `T32` |
-| `EXPECT-07`–`EXPECT-08` | `T01`–`T05`, testes de cada tarefa, `T33`, `T37` |
-| `EXPECT-09`–`EXPECT-10` | `T34`–`T37` |
-| `EXPECT-11` | `T03`, `T31`, `T33`, `T36` |
+| `EXPECT-07`–`EXPECT-08` | `T01`–`T05`, testes de cada tarefa, `T33`, `T34`–`T36`, `T40` |
+| `EXPECT-09`–`EXPECT-10` | `T37`–`T40` |
+| `EXPECT-11` | `T03`, `T31`, `T33`, `T39` |
 
 Todos os requisitos `Essencial` e `Importante` possuem ao menos uma tarefa. O PRD não possui requisito `Desejável` pendente ou adiado nesta versão. Toda tarefa aponta para requisito, critério de aceitação ou necessidade técnica do design aprovado.
 
 ## Riscos e verificações gerais
 
-- **Drift entre DTO, domínio, OpenAPI e contrato:** cada rota recebe teste E2E e descrição OpenAPI na fase que a cria; `T31` executa a verificação consolidada.
+- **Drift entre DTO, domínio, OpenAPI e contrato:** cada rota recebe teste E2E e descrição OpenAPI na fase que a cria; `T31` e `T36` executam a verificação consolidada.
 - **Testes não determinísticos:** relógio, gerador de IDs e identificação de IP entram por portas controláveis; DynamoDB Local usa tabelas isoladas por execução.
-- **Segredos ou dados sensíveis em saída:** filtros, logs e serializadores são verificados desde as primeiras fases e auditados novamente em `T33` e `T36`.
+- **Segredos ou dados sensíveis em saída:** filtros, logs e serializadores são verificados desde as primeiras fases e auditados novamente em `T33` e `T39`.
 - **Semântica incorreta do Fixed Window:** `T29` implementa armazenamento explícito e `T31` comprova limite, independência e `Retry-After` com relógio controlado.
 - **Inconsistência entre desenvolvimento e produção:** configuração falha cedo; Compose local, imagem e manifesto de produção são validados separadamente.
 - **Dependências externas indisponíveis:** publicação real depende de AWS, GHCR, Cloudflare e VPS; artefatos e validações locais podem ser concluídos antes, mas o marco final exige evidência do ambiente publicado.
@@ -110,7 +115,7 @@ Fases que alteram containers ou infraestrutura acrescentam `docker compose confi
 
 - Durante as Fases 01–06, cada tarefa deve manter mudanças pequenas e isoladas; a reversão remove apenas a capacidade ainda não aprovada, sem alterar artefatos anteriores aprovados.
 - Alterações de dados são aditivas no primeiro provisionamento. Nenhuma fase possui migração ou exclusão de tabela.
-- Na Fase 07, rollback de aplicação reaponta o Compose ao SHA anteriormente validado e confirma `/health`; infraestrutura persistente não é destruída como parte do rollback da aplicação.
+- Na Fase 08, rollback de aplicação reaponta o Compose ao SHA anteriormente validado e confirma `/health`; infraestrutura persistente não é destruída como parte do rollback da aplicação.
 
 ## Perguntas que bloqueiam a implementação
 

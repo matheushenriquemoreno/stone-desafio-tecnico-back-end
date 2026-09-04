@@ -14,6 +14,7 @@ PRD de referência: [PRODUCT-REQUIREMENTS.md](./PRODUCT-REQUIREMENTS.md) (`Aprov
 | 2026-09-03 | Versão inicial consolidada a partir do PRD aprovado, das ADRs e dos contratos existentes. |
 | 2026-09-03 | Design encaminhado para revisão após definição de HS256 e capacidade sob demanda. |
 | 2026-09-03 | Design técnico aprovado pelo solicitante. |
+| 2026-09-04 | Revisão material aprovada: `DEC-05` fica histórica e a proteção passa a usar `SameSite=Strict` com `Origin`/`Referer`. |
 
 ## Contexto técnico e estado atual
 
@@ -25,7 +26,8 @@ As referências existentes definem:
 - cadastro independente do login, unicidade de e-mail e hash de senha na [ADR-002](../../docs/adr/ADR-002-cadastro-de-usuarios.md);
 - duas tabelas, padrões de acesso e cursor alinhado ao DynamoDB na [ADR-003](../../docs/adr/ADR-003-modelagem-dynamodb.md);
 - rate limit Fixed Window por IP efetivo e operação na [ADR-004](../../docs/adr/ADR-004-rate-limit.md);
-- consumo direto da API, JWT em cookie HttpOnly, CORS e CSRF na [ADR-005](../../docs/adr/ADR-005-autenticacao-cookie-http-only.md);
+- consumo direto da API, JWT em cookie HttpOnly e decisões de cookie na [ADR-005](../../docs/adr/ADR-005-autenticacao-cookie-http-only.md);
+- proteção CSRF por cookie e validação de origem na [ADR-006](../../docs/adr/ADR-006-protecao-csrf-origem.md);
 - endpoints e esquemas públicos no [Contrato da API](../../docs/Contrato-da-API.md);
 - tecnologias adotadas em [Decisões de tecnologia](../../docs/Decisao-tecnologias.md);
 - topologia, segurança operacional, CI/CD e rollback na [Decisão de deploy](../../docs/Decisao-deploy.md).
@@ -38,7 +40,7 @@ Limitações conhecidas: a listagem inicial usa `Scan`, o rate limit reside na m
 - Expor os contratos REST aprovados com validação centralizada, autenticação por cookie e erros consistentes.
 - Garantir unicidade de usuário e existência de produto de forma atômica no DynamoDB.
 - Isolar a representação do DynamoDB, o hash de senha, a emissão de JWT e o transporte HTTP atrás de fronteiras explícitas.
-- Proteger todos os endpoints com rate limit e todas as mutações com CORS e CSRF conforme as políticas aprovadas.
+- Proteger todos os endpoints com rate limit e todas as mutações com `SameSite=Strict` e validação de origem conforme as políticas aprovadas.
 - Entregar documentação OpenAPI, readiness, logs correlacionáveis e testes nos níveis unitário, integração e E2E.
 - Produzir uma imagem reproduzível e publicá-la na topologia demonstrativa já decidida.
 
@@ -51,7 +53,7 @@ A solução não cria BFF, sessão persistida, refresh token, autorização por 
 - Aplicação NestJS em TypeScript estrito, organizada por `auth`, `products` e componentes transversais mínimos.
 - Casos de uso para cadastro, autenticação e CRUD paginado de produtos.
 - Adaptadores de DynamoDB, Argon2id, JWT, relógio e geração de identificadores.
-- Pipeline HTTP para correlação, CORS, rate limit, CSRF, autenticação, validação e mapeamento de erros.
+- Pipeline HTTP para correlação, CORS, rate limit, validação de origem, autenticação, validação e mapeamento de erros.
 - OpenAPI, endpoint de readiness e observabilidade operacional.
 - DynamoDB Local e recursos isolados de teste.
 - Container, proxy reverso, infraestrutura AWS, CI/CD, publicação e rollback.
@@ -81,7 +83,7 @@ A solução será um monólito modular. Os módulos de negócio se comunicam ape
 
 - **Borda Cloudflare e NGINX** — termina o acesso público, encaminha requisições à única instância, reconstrói cabeçalhos de proxy confiáveis e aplica controles operacionais. Não autentica usuários nem executa regras de domínio.
 - **Bootstrap e composition root** — valida a configuração, conecta implementações às portas, habilita o pipeline HTTP e inicializa os módulos. Não contém regra de negócio.
-- **Pipeline HTTP transversal** — atribui `correlationId`, trata CORS/preflight, identifica o IP efetivo, aplica rate limit, valida CSRF/origem, autentica o cookie, valida DTOs e converte erros. Preflight termina antes do rate limiter; requisições de negócio passam pelo rate limiter antes de autenticação, validação de payload ou acesso ao banco, conforme a [ADR-004](../../docs/adr/ADR-004-rate-limit.md).
+- **Pipeline HTTP transversal** — atribui `correlationId`, trata CORS/preflight, identifica o IP efetivo, aplica rate limit, valida `Origin`/`Referer` em métodos não seguros, autentica o cookie, valida DTOs e converte erros. `GET`, `HEAD` e `OPTIONS` não passam pela verificação de origem; preflight termina antes do rate limiter; demais requisições passam pelo rate limiter antes de autenticação, validação de payload ou acesso ao banco, conforme a [ADR-004](../../docs/adr/ADR-004-rate-limit.md).
 - **Módulo Auth — domínio** — representa usuário, e-mail normalizado e invariantes que não dependem do transporte.
 - **Módulo Auth — aplicação** — coordena `RegisterUser` e `AuthenticateUser` por portas de repositório, hash, token, relógio e identificador. Logout apenas expira o cookie e não cria estado de sessão, conforme a [ADR-005](../../docs/adr/ADR-005-autenticacao-cookie-http-only.md).
 - **Módulo Auth — infraestrutura** — implementa persistência de usuários, Argon2id e assinatura/verificação de JWT.
@@ -127,8 +129,8 @@ Como o código ainda não existe, “introduzida” indica implementação nova;
 |------------------------|-----------------------------|--------------------------------|-------------------------------------|---------------------------------|
 | Node.js LTS | Runtime suportado para a API | Introduzido; exigido em [Decisões de tecnologia](../../docs/Decisao-tecnologias.md) | Restrição de runtime; `EXPECT-08` | Compatibilidade entre versão LTS e NestJS. |
 | TypeScript estrito | Tipagem dos contratos, portas e domínio | Introduzido; exigido em [Decisões de tecnologia](../../docs/Decisao-tecnologias.md) | Restrição de linguagem; `EXPECT-08` | Exige tipos explícitos nas fronteiras externas. |
-| NestJS | Composition root, módulos, controllers, guards e DI | Introduzido; definido na [ADR-001](../../docs/adr/ADR-001-clean-architecture-backend.md) | `AAP-01`–`AAP-59` | Risco de acoplar domínio ao framework, mitigado pelas camadas. |
-| REST com JSON | Contrato síncrono entre cliente e API | Introduzido; definido no [Contrato da API](../../docs/Contrato-da-API.md) | `AAP-01`–`AAP-59` | Mudanças incompatíveis exigem coordenação com clientes. |
+| NestJS | Composition root, módulos, controllers, guards e DI | Introduzido; definido na [ADR-001](../../docs/adr/ADR-001-clean-architecture-backend.md) | `AAP-01`–`AAP-60` | Risco de acoplar domínio ao framework, mitigado pelas camadas. |
+| REST com JSON | Contrato síncrono entre cliente e API | Introduzido; definido no [Contrato da API](../../docs/Contrato-da-API.md) | `AAP-01`–`AAP-60` | Mudanças incompatíveis exigem coordenação com clientes. |
 | Validação e transformação de DTOs | Rejeição, normalização e whitelist das entradas | Introduzida; definida em [Decisões de tecnologia](../../docs/Decisao-tecnologias.md) | `AAP-02`–`AAP-07`, `AAP-26`–`AAP-29`, `AAP-34`, `AAP-37`, `AAP-41`–`AAP-44`, `AAP-51`, `AAP-52` | Validação apenas na apresentação não substitui invariantes do domínio. |
 | DynamoDB | Persistência de usuários e produtos | Introduzido; definido na [ADR-003](../../docs/adr/ADR-003-modelagem-dynamodb.md) | `AAP-01`–`AAP-09`, `AAP-25`–`AAP-49`, `AAP-58`, `AAP-59` | `Scan` cresce em custo; consistência e condicionais devem ser explícitas. |
 | Capacidade sob demanda | Eliminar dimensionamento de capacidade na demonstração | Introduzida; decisão aprovada neste design | Restrição de baixo volume e simplicidade operacional | Custo varia com uso; orçamento e métricas continuam necessários. |
@@ -136,7 +138,7 @@ Como o código ainda não existe, “introduzida” indica implementação nova;
 | Argon2id | Hash adaptativo de senhas | Introduzido; definido na [ADR-002](../../docs/adr/ADR-002-cadastro-de-usuarios.md) | `EXPECT-01`, `EXPECT-02` | Consome CPU e memória; parâmetros precisam ser calibrados e testados. |
 | JWT com HS256 | Credencial stateless com emissor, audiência e expiração verificáveis | Introduzido; transporte definido na [ADR-005](../../docs/adr/ADR-005-autenticacao-cookie-http-only.md), algoritmo aprovado neste design | `AAP-09`–`AAP-19`, `EXPECT-03`, `EXPECT-05` | Todas as instâncias validadoras precisariam compartilhar o segredo; rotação não está coberta. |
 | Cookie HttpOnly host-only | Transportar JWT sem expô-lo ao JavaScript | Introduzido; definido na [ADR-005](../../docs/adr/ADR-005-autenticacao-cookie-http-only.md) | `AAP-11`–`AAP-19`, `EXPECT-03` | Exige HTTPS publicado, configuração consistente e mitigação de CSRF. |
-| CORS exato + cabeçalho CSRF | Restringir clientes web credenciados e bloquear requisições simples forjadas | Introduzido; definido na [ADR-005](../../docs/adr/ADR-005-autenticacao-cookie-http-only.md) | `AAP-20`–`AAP-24` | Uma origem permissiva invalida a proteção; previews de terceiros não funcionam. |
+| CORS exato + `SameSite=Strict` + validação de origem | Restringir clientes web credenciados e bloquear mutações forjadas | Introduzido; definido na [ADR-006](../../docs/adr/ADR-006-protecao-csrf-origem.md) | `AAP-20`–`AAP-24`, `AAP-60` | Uma origem permissiva ou subdomínio não controlado invalida a proteção; headers ausentes deixam um risco residual aceito. |
 | Fixed Window em memória | Limitar abuso por IP, método e template de rota | Introduzido; definido na [ADR-004](../../docs/adr/ADR-004-rate-limit.md) | `AAP-23`, `AAP-24`, `AAP-53`–`AAP-55` | Reinício limpa contadores; múltiplas instâncias tornam o limite não global. |
 | OpenAPI | Fonte operacional dos contratos | Introduzido; definido em [Decisões de tecnologia](../../docs/Decisao-tecnologias.md) | `AAP-56`, `AAP-57`, `EXPECT-06` | DTOs e respostas precisam permanecer alinhados ao comportamento real. |
 | Jest, Supertest e DynamoDB Local | Testes unitários, de integração e E2E isolados | Introduzidos; definidos na [ADR-001](../../docs/adr/ADR-001-clean-architecture-backend.md) | `EXPECT-07`, `EXPECT-08` | Ambiente local deve reproduzir condicionais e paginação relevantes. |
@@ -152,7 +154,7 @@ Alternativas e justificativas estão consolidadas em [Decisões, alternativas e 
 1. **Cadastro** — navegador → pipeline HTTP → `RegisterUser` → hash Argon2id → escrita condicional em `users` → resposta pública (`HTTPS/REST`, síncrono).
 2. **Login** — navegador → pipeline HTTP → `AuthenticateUser` → leitura de `users` pelo e-mail normalizado → verificação Argon2id → JWT HS256 → `Set-Cookie` (`HTTPS/REST`, síncrono).
 3. **Logout** — navegador → pipeline HTTP → expiração do cookie com os mesmos atributos de escopo; nenhuma leitura ou escrita de sessão ocorre (`HTTPS/REST`, síncrono).
-4. **Requisição de produto** — navegador → CORS/rate limit/CSRF quando aplicável → validação do JWT do cookie → controller → caso de uso → porta de produto → DynamoDB (`HTTPS/REST` e AWS SDK, síncrono).
+4. **Requisição de produto** — cliente → CORS/rate limit → validação de `Origin`/`Referer` quando aplicável → JWT do cookie → controller → caso de uso → porta de produto → DynamoDB (`HTTPS/REST` e AWS SDK, síncrono).
 5. **Listagem** — `ListProducts` solicita `Scan` com `Limit` e chave inicial → adaptador recebe `LastEvaluatedKey` → codifica cursor versionado em Base64 URL-safe → resposta entrega `items` e `nextCursor` quando aplicável.
 6. **Atualização** — `UpdateProduct` valida o patch no domínio → adaptador monta somente atributos enviados → `UpdateItem` condicional à existência → retorna o produto atualizado.
 7. **Exclusão** — `DeleteProduct` executa `DeleteItem` condicional à existência → ausência mapeia para `PRODUCT_NOT_FOUND` → sucesso retorna sem corpo.
@@ -161,7 +163,7 @@ Alternativas e justificativas estão consolidadas em [Decisões, alternativas e 
 
 ### Integrações externas
 
-- **Cliente web:** envia `credentials: include`; em mutações envia `X-CSRF-Protection: 1`; armazena cursores sem interpretá-los. Uma origem fora da allowlist não recebe acesso credenciado.
+- **Cliente web:** envia `credentials: include` e uma origem autorizada nas mutações; armazena cursores sem interpretá-los. Swagger, CLI e back-ends que usam cookie podem omitir `Origin` e `Referer`.
 - **DynamoDB:** fornece persistência e condicionais. Falhas de domínio condicionais são mapeadas para conflito ou não encontrado; indisponibilidade não expõe detalhes internos.
 - **Cloudflare/NGINX:** preservam somente a cadeia confiável de IP. O NGINX descarta cabeçalhos de encaminhamento não confiáveis recebidos do cliente.
 - **GHCR/GitHub Actions/VPS:** entregam imagens identificadas por SHA. Falha na verificação de readiness interrompe a conclusão do deploy e permite reapontar para a imagem anterior.
@@ -175,16 +177,16 @@ O [Contrato da API](../../docs/Contrato-da-API.md) e o OpenAPI gerado são as fo
 
 | Contrato | Consumidor | Forma | Esquema resumido |
 |----------|------------|-------|------------------|
-| `POST /auth/register` | Visitante e cliente web | REST público + CSRF | Entrada `{ name: string, email: string, password: string }`; `201` com `{ id, name, email }`. |
-| `POST /auth/login` | Pessoa cadastrada | REST público + CSRF | Entrada `{ email, password }`; `204` com `Set-Cookie`; sem corpo. |
-| `POST /auth/logout` | Cliente web | REST + CSRF; cookie opcional | `204` com cookie expirado; operação idempotente. |
+| `POST /auth/register` | Visitante e cliente web | REST público + origem | Entrada `{ name: string, email: string, password: string }`; `201` com `{ id, name, email }`. |
+| `POST /auth/login` | Pessoa cadastrada | REST público + origem | Entrada `{ email, password }`; `204` com `Set-Cookie`; sem corpo. |
+| `POST /auth/logout` | Cliente web | REST + origem; cookie opcional | `204` com cookie expirado; operação idempotente. |
 | `GET /products` | Pessoa autenticada | REST + cookie | Query `limit?: integer` e `cursor?: string`; `200` com `{ items: Product[], nextCursor?: string }`. |
-| `POST /products` | Pessoa autenticada | REST + cookie + CSRF | Entrada `{ name, description, price, imageUrl }`; `201` com `Product`. |
+| `POST /products` | Pessoa autenticada | REST + cookie + origem | Entrada `{ name, description, price, imageUrl }`; `201` com `Product`. |
 | `GET /products/:id` | Pessoa autenticada | REST + cookie | `200` com `Product`; `404` quando ausente. |
-| `PATCH /products/:id` | Pessoa autenticada | REST + cookie + CSRF | Subconjunto não vazio de campos editáveis; `200` com `Product`. |
-| `DELETE /products/:id` | Pessoa autenticada | REST + cookie + CSRF | `204` sem corpo; `Content-Type` não é exigido sem corpo. |
+| `PATCH /products/:id` | Pessoa autenticada | REST + cookie + origem | Subconjunto não vazio de campos editáveis; `200` com `Product`. |
+| `DELETE /products/:id` | Pessoa autenticada | REST + cookie + origem | `204` sem corpo; `Content-Type` não é exigido sem corpo. |
 | `GET /health` | Pipeline, monitor e operador | REST público | `200 { status: "ok" }`; `503` no erro padrão quando não pronto. |
-| `/docs` | Desenvolvedor e avaliador | OpenAPI UI | Interface navegável com autenticação por cookie e cabeçalho CSRF. |
+| `/docs` | Desenvolvedor e avaliador | OpenAPI UI | Interface navegável com autenticação por cookie. |
 | `/docs-json` | Ferramentas e avaliador | OpenAPI JSON | Documento OpenAPI exportável. |
 
 ### Produto público
@@ -221,17 +223,19 @@ ApiError = {
 - Claims: `sub` com o identificador opaco do usuário, `iss`, `aud`, `iat` e `exp`; nome, e-mail e permissões não entram no token.
 - `exp - iat = 900` segundos; emissor, audiência e segredo são configuração obrigatória.
 - O segredo terá entropia mínima de 256 bits e nunca terá valor padrão no ambiente publicado.
-- Cookie publicado: `__Host-stone_access_token`, `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, sem `Domain`, `Max-Age=900`.
+- Cookie publicado: `__Host-stone_access_token`, `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/`, sem `Domain`, `Max-Age=900`.
 - Desenvolvimento HTTP usa nome distinto sem prefixo `__Host-`; essa configuração não pode ser usada no ambiente publicado.
 
 ### CORS e CSRF
 
 - Origens credenciadas são comparadas por correspondência exata com configuração explícita.
 - Métodos permitidos: `GET`, `POST`, `PATCH`, `DELETE` e `OPTIONS`.
-- Cabeçalhos de requisição permitidos: `Content-Type` e `X-CSRF-Protection`.
+- Cabeçalhos de requisição permitidos: `Content-Type`.
 - Cabeçalho exposto: `Retry-After`.
-- Toda requisição `POST`, `PATCH` ou `DELETE` exige `X-CSRF-Protection: 1`.
-- Quando `Origin` existir, deve corresponder à origem da API ou a uma origem permitida.
+- `GET`, `HEAD` e `OPTIONS` não passam pela verificação de origem.
+- Nos demais métodos, `Origin` presente deve ser HTTP(S), bem formado e corresponder exatamente à origem da API ou a uma origem permitida.
+- Somente quando `Origin` estiver ausente, `Referer` é interpretado; sua origem deve ser autorizada. `Origin` inválido nunca usa `Referer` como compensação.
+- Com ambos ausentes, a chamada é aceita e segue para autenticação, validação e caso de uso.
 - `OPTIONS` termina antes de autenticação e rate limit de negócio.
 
 Não há contrato de eventos nesta versão porque todos os fluxos são síncronos.
@@ -289,7 +293,7 @@ Não há dados existentes a alterar. O provisionamento cria as duas tabelas de f
 - No ambiente publicado, credenciais são aceitas somente no corpo de requisições HTTPS e nunca são registradas.
 - A senha é transformada por Argon2id antes de qualquer persistência; a string em texto puro não sai do fluxo da requisição.
 - JWT usa `HS256` com segredo de no mínimo 256 bits e valida algoritmo, assinatura, emissor, audiência e expiração.
-- Produtos exigem guard JWT; mutações exigem CSRF e origem autorizada antes do caso de uso.
+- Produtos exigem guard JWT; métodos não seguros validam `Origin` ou `Referer` antes do caso de uso conforme a [ADR-006](../../docs/adr/ADR-006-protecao-csrf-origem.md).
 - DTOs rejeitam propriedades desconhecidas; o domínio repete invariantes essenciais para não depender da apresentação.
 - Escritas condicionais garantem unicidade e existência sem janela de corrida.
 - Segredos residem apenas em GitHub Secrets e no ambiente protegido da VPS; a imagem e o repositório não os contêm.
@@ -337,10 +341,10 @@ A demonstração possui uma API, uma VPS e uma região do DynamoDB; não há SLA
 | ID | Decisão | Alternativas consideradas | Motivo da escolha | Trade-offs aceitos |
 |----|---------|---------------------------|-------------------|--------------------|
 | `DEC-01` | Monólito modular com Clean Architecture por domínio, conforme a [ADR-001](../../docs/adr/ADR-001-clean-architecture-backend.md). | Estrutura NestJS por tipo; repositório genérico; microsserviços. | Isola domínio, facilita testes e mantém complexidade proporcional ao desafio. | Mais portas, mapeadores e arquivos. |
-| `DEC-02` | Cliente web consome a API REST diretamente, sem BFF, conforme a [ADR-005](../../docs/adr/ADR-005-autenticacao-cookie-http-only.md). | Route Handlers/BFF; API GraphQL. | Mantém a API como única autoridade e evita duplicar contratos. | A API assume CORS, cookies e CSRF. |
-| `DEC-03` | JWT stateless em cookie HttpOnly host-only, conforme a [ADR-005](../../docs/adr/ADR-005-autenticacao-cookie-http-only.md). | `localStorage`; sessão opaca; cookie e Bearer simultâneos. | Reduz exposição ao JavaScript e mantém um único fluxo. | Logout não revoga cópia do token; exige proteção CSRF. |
+| `DEC-02` | Cliente web consome a API REST diretamente, sem BFF, conforme a [ADR-005](../../docs/adr/ADR-005-autenticacao-cookie-http-only.md). | Route Handlers/BFF; API GraphQL. | Mantém a API como única autoridade e evita duplicar contratos. | A API assume CORS, cookies e validação de origem. |
+| `DEC-03` | JWT stateless em cookie HttpOnly host-only, conforme a [ADR-005](../../docs/adr/ADR-005-autenticacao-cookie-http-only.md). | `localStorage`; sessão opaca; cookie e Bearer simultâneos. | Reduz exposição ao JavaScript e mantém um único fluxo. | Logout não revoga cópia do token; a proteção CSRF depende de `SameSite` e origem. |
 | `DEC-04` | Assinatura JWT `HS256`, segredo mínimo de 256 bits, claims mínimas e validação explícita de algoritmo, emissor, audiência e expiração. | `RS256`/`ES256`; algoritmo inferido da mensagem. | A mesma API emite e valida; chave assimétrica não traz separação útil nesta versão. | Futuras validações por terceiros exigirão migração e rotação coordenada. |
-| `DEC-05` | CORS por origem exata mais cabeçalho CSRF obrigatório, conforme a [ADR-005](../../docs/adr/ADR-005-autenticacao-cookie-http-only.md). | Token CSRF server-side; `SameSite` como única defesa; origens curinga. | Mantém a API stateless e bloqueia requisições simples forjadas. | Depende de allowlist correta e impede previews de terceiros. |
+| `DEC-05` | CORS por origem exata mais cabeçalho CSRF obrigatório, conforme a [ADR-005](../../docs/adr/ADR-005-autenticacao-cookie-http-only.md). **Decisão histórica substituída pela `DEC-20`.** | Token CSRF server-side; `SameSite` como única defesa; origens curinga. | Registro da decisão anterior e de seus trade-offs. | Não é a estratégia ativa; consultar a `DEC-20`. |
 | `DEC-06` | Duas tabelas DynamoDB independentes, conforme a [ADR-003](../../docs/adr/ADR-003-modelagem-dynamodb.md). | Single Table Design; banco relacional. | Espelha os dois padrões de acesso sem modelagem antecipada. | Consultas novas podem exigir índice ou migração. |
 | `DEC-07` | Capacidade DynamoDB sob demanda (`PAY_PER_REQUEST`). | Capacidade provisionada; provisionada com Auto Scaling. | Evita previsão de capacidade em uma demonstração de baixo volume. | Custo acompanha uso e não há teto rígido sem controles externos. |
 | `DEC-08` | Listagem por `Scan` e cursor derivado de `LastEvaluatedKey`, conforme a [ADR-003](../../docs/adr/ADR-003-modelagem-dynamodb.md). | `Query` com partição fixa/GSI; `OFFSET`; carregar tudo. | É o padrão mais simples para catálogo global pequeno e respeita a paginação nativa. | Não escala bem, não ordena globalmente e só navega sequencialmente. |
@@ -355,13 +359,14 @@ A demonstração possui uma API, uma VPS e uma região do DynamoDB; não há SLA
 | `DEC-17` | Readiness consulta as duas tabelas; liveness permanece no runtime, conforme o [Contrato da API](../../docs/Contrato-da-API.md) e a [Decisão de deploy](../../docs/Decisao-deploy.md). | Health superficial; endpoints separados de liveness/readiness. | Impede declarar pronta uma instância sem acesso aos dados necessários. | Readiness depende da latência e disponibilidade do DynamoDB. |
 | `DEC-18` | Pirâmide de testes com domínio isolado, repositórios no DynamoDB Local e E2E HTTP, conforme a [ADR-001](../../docs/adr/ADR-001-clean-architecture-backend.md). | Somente E2E; mocks do DynamoDB em todos os níveis. | Equilibra velocidade e fidelidade para condicionais e paginação. | Ambiente de integração adiciona custo de manutenção. |
 | `DEC-19` | Publicação híbrida Cloudflare → NGINX/VPS → DynamoDB e imagens por SHA, conforme a [Decisão de deploy](../../docs/Decisao-deploy.md). | Serverless AWS; ECS Fargate imediato; deploy manual. | Reaproveita a VPS e demonstra AWS/DynamoDB com rollback rastreável. | Ponto único de falha, credencial AWS duradoura e origem sem TLS. |
+| `DEC-20` | Cookie `SameSite=Strict` com validação exata de `Origin` e fallback de `Referer`, conforme a [ADR-006](../../docs/adr/ADR-006-protecao-csrf-origem.md). | Header customizado; token CSRF; `Sec-Fetch-Site`; `SameSite` sozinho. | Combina defesa nativa do navegador com verificação de origem e mantém compatibilidade com clientes sem contexto de navegador. | Headers ausentes não permitem classificar o cliente; integração máquina-a-máquina própria permanece adiada. |
 
 ## Riscos, dependências e migração
 
 | Risco | Impacto | Probabilidade | Mitigação |
 |-------|---------|---------------|-----------|
 | Interceptação no trecho HTTP Cloudflare–VPS | Alto | Baixa | Restringir origem à Cloudflare, evitar exposição direta e priorizar TLS ponta a ponta antes de uso real. |
-| Allowlist CORS ou validação CSRF permissiva | Alto | Média | Correspondência exata, configuração validada no startup e E2E de origens autorizadas e recusadas. |
+| Allowlist CORS ou validação de origem permissiva | Alto | Média | Correspondência exata, parsing de `Origin`/`Referer`, configuração validada no startup e E2E de origens autorizadas e recusadas. |
 | Vazamento do segredo JWT ou credenciais AWS | Alto | Baixa | Secrets fora da imagem e Git, permissões mínimas, rotação operacional e sanitização de logs. |
 | `Scan` degradar com crescimento do catálogo | Médio | Média | Limite máximo de 100, métricas de consumo e gatilho explícito para GSI/remodelagem. |
 | Rate limit inconsistente ao reiniciar ou escalar | Médio | Média | Manter uma instância, documentar perda de buckets e exigir armazenamento compartilhado antes da segunda. |
@@ -409,11 +414,12 @@ Não aplicável — não há código ou dados legados. O primeiro provisionament
 | `AAP-17` | Contrato de logout; resiliência | Logout não consulta sessão nem exige JWT válido. |
 | `AAP-18` | Guard JWT de produtos; `DEC-03` | Aplicado a todo controller de produtos. |
 | `AAP-19` | Guard JWT; mapeamento de erros | Ausência, falha ou expiração mapeia para `UNAUTHORIZED`. |
-| `AAP-20` | Pipeline CORS; `DEC-05` | Allowlist exata com credenciais. |
-| `AAP-21` | Guard CSRF; `DEC-05` | Toda mutação exige valor literal aprovado. |
-| `AAP-22` | Guard de origem; `DEC-05` | Origem presente precisa ser própria ou permitida. |
-| `AAP-23` | Pipeline CORS; `DEC-05` | Preflight encerra sem autenticação. |
+| `AAP-20` | Pipeline CORS; `DEC-20` | Allowlist exata com credenciais. |
+| `AAP-21` | Cookie e middleware de origem; `DEC-20` | `SameSite=Strict` e validação de origem protegem métodos não seguros. |
+| `AAP-22` | Middleware de origem; `DEC-20` | `Origin` ou origem extraída de `Referer` precisa ser própria ou permitida. |
+| `AAP-23` | Pipeline CORS; `DEC-20` | Preflight encerra sem autenticação. |
 | `AAP-24` | Pipeline CORS/rate limit; `DEC-12` | Preflight não chega ao bucket de negócio. |
+| `AAP-60` | Middleware de origem; `DEC-20` | Ausência simultânea de `Origin` e `Referer` segue para autenticação e validação. |
 | `AAP-25` | `CreateProduct`; contrato de criação | Requer os quatro campos editáveis. |
 | `AAP-26` | Domínio Product; validação de DTO | Nome entre 2 e 100. |
 | `AAP-27` | Domínio Product; validação de DTO | Descrição entre 1 e 500. |
@@ -451,7 +457,7 @@ Não aplicável — não há código ou dados legados. O primeiro provisionament
 | `AAP-59` | Módulo Health; filtro global de erros | Falha retorna `503 SERVICE_UNAVAILABLE`. |
 | `EXPECT-01` | Adaptador Argon2id; `DEC-11` | Somente hash é persistido. |
 | `EXPECT-02` | Sanitização de respostas e logs | Segredos e credenciais são campos proibidos. |
-| `EXPECT-03` | Cookie publicado; `DEC-03` | Atributos e expiração definidos pela ADR-005. |
+| `EXPECT-03` | Cookie publicado; `DEC-03`, `DEC-20` | Atributos, `SameSite=Strict` e expiração definidos pelas ADR-005 e ADR-006. |
 | `EXPECT-04` | Filtro global de erros | Resposta pública não carrega detalhes internos. |
 | `EXPECT-05` | Serviço JWT; `DEC-03`, `DEC-04` | Validação não depende de sessão persistida. |
 | `EXPECT-06` | OpenAPI; `DEC-13` | DTOs e respostas compõem o contrato operacional. |

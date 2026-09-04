@@ -64,7 +64,6 @@ async function register(app: INestApplication, email: string, name: string): Pro
   await request(httpServer(app))
     .post('/auth/register')
     .set('Origin', allowedOrigin)
-    .set('X-CSRF-Protection', '1')
     .send({ email, name, password: 'senha-super-secreta' })
     .expect(201);
 }
@@ -73,7 +72,6 @@ async function login(app: INestApplication, email: string): Promise<string> {
   const response = await request(httpServer(app))
     .post('/auth/login')
     .set('Origin', allowedOrigin)
-    .set('X-CSRF-Protection', '1')
     .send({ email, password: 'senha-super-secreta' });
   const cookie = response.headers['set-cookie']?.[0];
 
@@ -137,7 +135,6 @@ describe('GET /products/:id', () => {
     const createResponse = await request(httpServer(app))
       .post('/products')
       .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1')
       .set('Cookie', creatorCookie)
       .send({
         description: 'Produto compartilhado',
