@@ -9,7 +9,7 @@
     "db:provision": "tsx scripts/provision-dynamodb.ts",
     "lint": "eslint . --max-warnings=0",
     "start": "node dist/main.js",
-    "start:dev": "tsx watch src/main.ts",
+    "start:dev": "tsc-watch -p tsconfig.build.json --onSuccess \"node dist/main.js\"",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.config.cjs --runInBand",
     "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.e2e.config.cjs --runInBand --passWithNoTests",
     "test:integration": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.integration.config.cjs --runInBand --passWithNoTests",
@@ -50,6 +50,7 @@
     "prettier": "3.9.6",
     "supertest": "^7.2.2",
     "ts-jest": "29.4.12",
+    "tsc-watch": "^7.2.1",
     "tsx": "^4.23.13",
     "typescript": "5.9.3",
     "typescript-eslint": "8.69.0"
