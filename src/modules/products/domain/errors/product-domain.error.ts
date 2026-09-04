@@ -3,6 +3,7 @@ export type ProductDomainErrorCode =
   | 'INVALID_ID'
   | 'INVALID_IMAGE_URL'
   | 'INVALID_NAME'
+  | 'INVALID_PATCH'
   | 'INVALID_PRICE'
   | 'INVALID_TIMESTAMP';
 

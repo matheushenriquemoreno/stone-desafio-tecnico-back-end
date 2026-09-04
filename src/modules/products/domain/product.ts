@@ -26,6 +26,27 @@ export interface PublicProductData {
   readonly updatedAt: string;
 }
 
+export type ProductEditableField = 'description' | 'imageUrl' | 'name' | 'price';
+
+export interface ProductPatch {
+  readonly description?: string;
+  readonly imageUrl?: string;
+  readonly name?: string;
+  readonly price?: number;
+}
+
+export interface ProductUpdate {
+  readonly changedFields: readonly ProductEditableField[];
+  readonly product: Product;
+}
+
+const PRODUCT_EDITABLE_FIELDS: readonly ProductEditableField[] = [
+  'name',
+  'description',
+  'price',
+  'imageUrl',
+];
+
 function validateTextLength(
   value: unknown,
   minimum: number,
@@ -100,6 +121,44 @@ function validateIdentifier(value: unknown): asserts value is string {
   }
 }
 
+function invalidPatch(): never {
+  throw new InvalidProductDataError(
+    'INVALID_PATCH',
+    'O patch do produto deve conter campos editáveis válidos.',
+  );
+}
+
+function hasOwnProperty(value: object, property: string): boolean {
+  return Object.prototype.hasOwnProperty.call(value, property);
+}
+
+export function getProductPatchFields(patch: unknown): ProductEditableField[] {
+  if (typeof patch !== 'object' || patch === null) {
+    return invalidPatch();
+  }
+
+  const patchObject = patch as Record<string, unknown>;
+  const patchKeys = Object.keys(patchObject);
+
+  if (
+    patchKeys.length === 0 ||
+    patchKeys.some((key) => !PRODUCT_EDITABLE_FIELDS.includes(key as ProductEditableField))
+  ) {
+    return invalidPatch();
+  }
+
+  for (const field of PRODUCT_EDITABLE_FIELDS) {
+    if (
+      hasOwnProperty(patchObject, field) &&
+      (patchObject[field] === undefined || patchObject[field] === null)
+    ) {
+      return invalidPatch();
+    }
+  }
+
+  return PRODUCT_EDITABLE_FIELDS.filter((field) => hasOwnProperty(patchObject, field));
+}
+
 function validateDate(value: unknown): asserts value is Date {
   if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
     throw new InvalidProductDataError(
@@ -150,6 +209,30 @@ export class Product {
 
   static create(props: ProductProps): Product {
     return new Product(props);
+  }
+
+  applyPatch(patch: ProductPatch, updatedAt: Date): ProductUpdate {
+    const changedFields = getProductPatchFields(patch);
+    const patchValues = patch as Record<string, unknown>;
+    const updatedProduct = Product.create({
+      createdAt: this.createdAt,
+      description: hasOwnProperty(patchValues, 'description')
+        ? (patchValues.description as string)
+        : this.description,
+      id: this.id,
+      imageUrl: hasOwnProperty(patchValues, 'imageUrl')
+        ? (patchValues.imageUrl as string)
+        : this.imageUrl,
+      name: hasOwnProperty(patchValues, 'name')
+        ? (patchValues.name as string)
+        : this.name,
+      price: hasOwnProperty(patchValues, 'price')
+        ? (patchValues.price as number)
+        : this.price,
+      updatedAt,
+    });
+
+    return { changedFields, product: updatedProduct };
   }
 
   get createdAt(): Date {

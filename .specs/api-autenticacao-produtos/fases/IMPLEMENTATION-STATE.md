@@ -86,6 +86,20 @@ A Fase 05 está `Em execução`, iniciada após o review aprovado da Fase 04.
   controlado.
 - Conflitos: nenhum.
 
+### Preparação da tarefa T26
+
+- Premissas: o adaptador usará `UpdateItem` com `attribute_exists(id)`,
+  `ReturnValues=ALL_NEW` e expressões construídas somente da lista fechada de
+  campos alterados; ausência condicional será traduzida pelo caso de uso.
+- Abstrações: `ProductMaintenanceRepository` será a porta para atualização e
+  `UpdateProduct` permanecerá independente do SDK; controller/DTO cuidarão de
+  cookie, CSRF, validação e serialização pública.
+- Arquivos: adaptador/porta DynamoDB, `UpdateProduct`, módulo Products,
+  controller/DTO de patch e testes unitários, integração e E2E.
+- Verificação: cada combinação de campos, ausência, falha técnica, duas contas,
+  proteção HTTP, OpenAPI e preservação dos campos omitidos.
+- Conflitos: nenhum.
+
 ### Encerramento da Fase 03
 
 - T13–T17 concluídas com evidências unitárias e E2E.
@@ -311,8 +325,8 @@ A Fase 05 está `Em execução`, iniciada após o review aprovado da Fase 04.
 | T23 | 05 | Em execução | — |
 | T23 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/list-products/list-products.spec.ts src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (2 suítes/15 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/4 testes), `npm run lint` e `npm run typecheck` aprovados; `Scan`, `Limit`, cursor nativo, padrão 20 e limites 1–100 comprovados. |
 | T24 | 05 | Concluída | `npm run test:e2e -- --runTestsByPath test/e2e/list-products.e2e.spec.ts` (1 suíte/11 testes), `npm run lint` e `npm run typecheck` aprovados; `GET /products` cobre catálogo vazio, limite padrão/limites, cursores consecutivos, erros seguros, autenticação e OpenAPI. |
-| T25 | 05 | Em execução | — |
-| T26 | 05 | Pendente | — |
+| T25 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/update-product/update-product.spec.ts src/modules/products/domain/product.spec.ts` (2 suítes/37 testes), `npm run lint` e `npm run typecheck` aprovados; patch não vazio e estrito, invariantes reutilizadas, campos omitidos preservados e relógio controlado comprovados. |
+| T26 | 05 | Em execução | — |
 | T27 | 05 | Pendente | — |
 | T28 | 06 | Pendente | — |
 | T29 | 06 | Pendente | — |
