@@ -5,68 +5,70 @@
 | Created      | 2026-09-04 |
 | Last Updated | 2026-09-04 |
 
-**Escopo revisado:** fase 05 — Paginação, atualização e exclusão de produtos
-**Versão da avaliação:** 5
+**Escopo revisado:** fase 06 — Rate limit e conformidade operacional da API
+**Versão da avaliação:** 6
 
 ## Artefatos analisados
 
 - PRD: [PRODUCT-REQUIREMENTS.md](PRODUCT-REQUIREMENTS.md)
 - Design técnico: [TECHNICAL-DESIGN.md](TECHNICAL-DESIGN.md)
 - Plano: [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md)
-- Fase: [fases/fase-05-paginacao-manutencao-produtos.md](fases/fase-05-paginacao-manutencao-produtos.md)
+- Fase: [fases/fase-06-rate-limit-conformidade.md](fases/fase-06-rate-limit-conformidade.md)
 - Estado: [fases/IMPLEMENTATION-STATE.md](fases/IMPLEMENTATION-STATE.md)
 - Convenções: `rules/README.md`, `rules/principios-de-design.md`, `rules/codigo-como-um-livro.md` e `rules/checklist-de-implementacao.md`
 - Decisões reutilizadas: [ADR-001](../../docs/adr/ADR-001-clean-architecture-backend.md), [ADR-003](../../docs/adr/ADR-003-modelagem-dynamodb.md), [ADR-004](../../docs/adr/ADR-004-rate-limit.md) e [ADR-005](../../docs/adr/ADR-005-autenticacao-cookie-http-only.md)
 
 ## Resumo executivo
 
-A Fase 05 foi revisada contra os artefatos aprovados, as regras do repositório,
-as ADRs aplicáveis, a implementação e as evidências versionadas de T22–T27.
-A entrega completa o catálogo compartilhado com paginação nativa por cursor,
-atualização parcial estrita e exclusão condicional, mantendo cookie JWT,
-CSRF/origem, erros públicos e ausência de proprietário por produto.
+A Fase 06 foi revisada contra os artefatos aprovados, as regras do repositório,
+as ADRs aplicáveis, a implementação e as evidências versionadas de T28–T33.
+A entrega conecta Fixed Window em memória à API, resolve IP somente pela cadeia
+de proxies configurada, aplica políticas por método/template antes dos handlers,
+retorna `429` com `Retry-After`, documenta o contrato OpenAPI e adiciona matriz
+automatizada dos 27 critérios do PRD.
 
-Os gates oficiais passaram sem achados bloqueadores, altos ou médios. A revisão
-confirma que `LastEvaluatedKey` permanece encapsulado na infraestrutura, que o
-patch só constrói expressões a partir da lista fechada de campos editáveis e que
-ausência, atualização e exclusão seguem `PRODUCT_NOT_FOUND` conforme o contrato.
+Os gates oficiais passaram sem achados bloqueadores, altos ou médios. A política
+da ADR-004 foi preservada integralmente. O design previa `@nestjs/throttler`,
+mas a implementação usa componente próprio porque a versão disponível no
+projeto NestJS 12 não é compatível; os testes comprovam a mesma semântica e o
+desvio está documentado no estado.
 
 ## Resultado das verificações obrigatórias
 
 | Verificação | Resultado | Evidência |
 | ------------ | --------- | --------- |
-| Requisitos | Atendida no recorte da fase | T22–T27 cobrem `AAP-18`–`AAP-22`, `AAP-30`–`AAP-37`, `AAP-39`–`AAP-50`, `EXPECT-02` e `EXPECT-04`–`EXPECT-08`. |
-| Critérios de aceitação | Atendida | Listagem vazia/paginada, cursor inválido, patch estrito, `204` sem corpo, ausência condicional e duas contas foram exercitados. |
-| Testes | Atendida | 28 suítes/142 testes unitários, 3 suítes/9 testes de integração e 13 suítes/84 testes E2E passaram. |
-| Design técnico | Atendida | `Scan`/cursor nativo, `UpdateItem` dinâmico condicional e `DeleteItem` condicional seguem `DEC-03`, `DEC-05`, `DEC-08`, `DEC-09`, `DEC-10`, `DEC-13`, `DEC-15` e `DEC-16`. |
-| Plano | Atendida | T22–T27 estão concluídas, com commits, testes dirigidos e evidências no estado. |
-| Escopo | Atendida | Não foram introduzidos offset, ordenação, filtros, upload, proprietário, ETag, versão ou rate limit antecipado. |
-| Qualidade | Atendida | Lint, typecheck, suítes unitárias, integração, E2E, build e `git diff --check` passaram. |
-| Padrões do projeto | Atendida | Casos de uso dependem de portas; controllers traduzem HTTP; SDK e cursores ficam na infraestrutura; serializer mantém saída explícita. |
-| Manutenibilidade | Atendida | Codec, invariantes de patch e portas isolam decisões de persistência e HTTP; testes cobrem as fronteiras relevantes. |
-| Riscos | Atendida com ressalvas informativas | A-01 permanece herdado; A-02 registra comportamento observado do DynamoDB Local sem alterar o contrato da aplicação. |
+| Requisitos | Atendida no recorte da fase | T28–T33 cobrem `AAP-23`, `AAP-24`, `AAP-50`–`AAP-57`, `EXPECT-01`–`EXPECT-08` e `EXPECT-11`; os demais requisitos permanecem cobertos pelas fases anteriores. |
+| Critérios de aceitação | Atendida no recorte implementável | `429`, `Retry-After`, buckets independentes, preflight, OpenAPI e matriz 1–27 foram verificados. A imagem publicada permanece evidência operacional da Fase 07. |
+| Testes | Atendida | 35 suítes/168 testes unitários, 3 suítes/9 testes de integração e 15 suítes/87 testes E2E passaram. |
+| Design técnico | Atendida com desvio registrado | IP efetivo, Fixed Window, pipeline, erro comum, cookie/CSRF e OpenAPI seguem `DEC-02`, `DEC-03`, `DEC-05`, `DEC-12`, `DEC-13`, `DEC-18` e `DEC-19`; somente a biblioteca de integração foi substituída. |
+| Plano | Atendida | T28–T33 estão concluídas, cada uma com teste dirigido, evidência no estado e commit. |
+| Escopo | Atendida | Não foram introduzidos Redis, múltiplas instâncias, limite por usuário, Bearer, ordenação, BFF ou dados pessoais nas métricas. |
+| Qualidade | Atendida | Lint, typecheck, testes unitários, integração, E2E, build e `git diff --check` passaram. |
+| Padrões do projeto | Atendida | Resolução de IP e middleware ficam na borda; o armazenamento depende de `Clock`; controllers só descrevem o contrato; métricas não recebem IP. |
+| Manutenibilidade | Atendida | Políticas, chave, armazenamento, métricas, filtro e matriz têm responsabilidades isoladas e testes focados. |
+| Riscos | Atendida com ressalvas informativas | A-01/A-02 são herdados; A-03 registra a ausência de imagem/Dockerfile neste checkout e é encaminhado à Fase 07. |
 
 ## Matriz de rastreabilidade
 
 | Requisito | Código | Teste | Evidência | Status |
 | --------- | ------ | ----- | --------- | ------ |
-| `AAP-31`–`AAP-37` | `list-products.ts`, `dynamodb-product-repository.ts`, `dynamodb-cursor-codec.ts` | `list-products.spec.ts`, `dynamodb-product.repository.spec.ts`, `list-products.e2e.spec.ts` | `Scan` usa `Limit` e `ExclusiveStartKey`; somente `LastEvaluatedKey` gera `nextCursor`; padrão 20 e limites 1–100 são aplicados. | Comprovado |
-| `AAP-32`, `AAP-37`, `AAP-50`, `AAP-52` | `dynamodb-cursor-codec.ts`, `invalid-product-cursor.error.ts` | `dynamodb-cursor-codec.spec.ts`, `list-products.e2e.spec.ts` | Envelope versionado e Base64 URL-safe são validados de forma estrita; falhas retornam erro público sem payload interno. | Comprovado |
-| `AAP-39`–`AAP-44` | `product.ts`, `update-product.ts`, `update-product.dto.ts` | `product.spec.ts`, `update-product.spec.ts`, `update-product.e2e.spec.ts` | Patch aceita somente os quatro campos editáveis, exige propriedade, rejeita `null`/desconhecidos, preserva omitidos e mantém `createdAt`. | Comprovado |
-| `AAP-45`, `AAP-47`, `AAP-48` | `delete-product.ts`, `dynamodb-product-repository.ts`, `products.controller.ts` | `delete-product.spec.ts`, integração, `delete-product.e2e.spec.ts` | `DeleteItem` usa condição de existência; sucesso é `204` sem corpo e repetição retorna `404 PRODUCT_NOT_FOUND`. | Comprovado |
-| `AAP-46`, `AAP-49` | `product-not-found.error.ts`, casos de uso Products, `AccessTokenGuard` | testes unitários e E2E de listagem/atualização/exclusão | Ausência mantém código/mensagem estáveis e qualquer usuário autenticado opera no catálogo compartilhado. | Comprovado |
-| `AAP-50`–`AAP-52`, `EXPECT-05`–`EXPECT-08` | DTOs, controllers, `ApiExceptionFilter`, módulo Products | E2E Products e OpenAPI | Query/body estritos, cookie, CSRF/origem, serialização, correlação, respostas de erro e contrato OpenAPI permanecem alinhados. | Comprovado |
+| `AAP-23`, `AAP-24` | CORS existente, `rate-limit.middleware.ts` | `rate-limit.e2e.spec.ts`, `cors.e2e.spec.ts` | Preflight autorizado retorna antes do contador de negócio e não altera a janela da operação. | Comprovado |
+| `AAP-50`, `AAP-54`, `AAP-55` | `RateLimitExceededError`, `ApiExceptionFilter` | `api-exception.filter.spec.ts`, `rate-limit.e2e.spec.ts` | Erro comum `429`, código estável, correlação e header `Retry-After` inteiro são retornados sem contador/IP no corpo. | Comprovado |
+| `AAP-53` | `effective-client-ip.ts`, `rate-limit-policies.ts`, `in-memory-fixed-window-rate-limiter.ts`, `rate-limit.middleware.ts` | testes de resolvedor, políticas, armazenamento, middleware e E2E | Chave usa IP efetivo, método e template; os onze buckets da ADR-004 e o fallback são uma tabela única. | Comprovado |
+| `AAP-56`, `AAP-57` | `setup-openapi.ts`, `api-rate-limit-response.ts`, decorators dos controllers | `openapi.e2e.spec.ts` e E2E de rotas | `/docs` e `/docs-json` estão disponíveis; seis caminhos/nove operações descrevem cookie, CSRF, DTOs, erros, `429` e `Retry-After`. | Comprovado |
+| `AAP-58`, `AAP-59` | Health existente | `health.e2e.spec.ts`, matriz de conformidade | Readiness permanece 200 quando dependências estão disponíveis e 503 seguro quando uma tabela falta. | Comprovado |
+| `EXPECT-01`, `EXPECT-02`, `EXPECT-04`, `EXPECT-07`, `EXPECT-08`, `EXPECT-11` | matriz e audit `test/conformance` | `acceptance-criteria.matrix.spec.ts`, `sensitive-artifacts.spec.ts`, gates completos | Cada critério 1–27 aponta para teste versionado; fontes de produção e placeholder de ambiente não contêm sentinelas sensíveis; execução é determinística. | Comprovado no checkout |
 
 ## Critérios de aceitação da fase
 
 | Critério | Evidência | Status |
 | -------- | --------- | ------ |
-| Listagem vazia e paginada obedece limites, cursor e omissão de `nextCursor`. | `list-products.e2e.spec.ts` cobre vazio, padrão, limites 1/100, cursores consecutivos e página final. | Atendido |
-| Cursor inválido não expõe sua estrutura interna. | Testes unitários e E2E verificam `400 VALIDATION_ERROR` e mensagem sem payload decodificado. | Atendido |
-| PATCH modifica somente campos presentes e rejeita corpos vazios, nulos ou desconhecidos. | Domínio, caso de uso, DTO e E2E cobrem campos isolados, combinações, inválidos, preservação e ausência de escrita indevida. | Atendido |
-| DELETE retorna `204` apenas quando remove produto existente. | Integração e E2E verificam status, corpo vazio, ausência de `Content-Type` exigido e repetição `404`. | Atendido |
-| Consulta, atualização e exclusão ausentes retornam o mesmo `PRODUCT_NOT_FOUND`. | Casos de uso, integração e E2E cobrem as três operações. | Atendido |
-| As três capacidades permanecem compartilhadas entre usuários autenticados. | E2E usa contas distintas para listar, atualizar e excluir produto sem filtro de proprietário. | Atendido |
+| Fixed Window, chave e ordem do pipeline coincidem com a ADR-004. | T28–T30 cobrem cadeia confiável, janela fixa, chave estruturada, políticas e ordem CORS → correlation → rate limit → CSRF → guards. | Atendido |
+| Cada operação aceita seu limite e rejeita a próxima com `429` e `Retry-After`. | T30 testa o pipeline/fallback; a tabela unitária contém os limites exatos de cadastro, login, logout, Products, health e documentação; T31 valida resposta. | Atendido |
+| IP, método e template produzem buckets independentes; IDs compartilham template. | T28/T29/T30 cobrem IP confiável, isolamento e normalização `/products/:id`. | Atendido |
+| `OPTIONS` não autentica nem consome o bucket da operação real. | CORS E2E e rate-limit E2E validam preflight `204` antes do contador. | Atendido |
+| OpenAPI UI/JSON e comportamento E2E descrevem o mesmo contrato. | T32 verifica caminhos, operações, cookie, ausência de Bearer, `429` e `Retry-After`; E2E existentes validam respostas. | Atendido |
+| Todos os critérios do PRD têm evidência automatizada e não há vazamento sensível. | T33 mantém matriz 1–27, varredura de sentinelas, respostas/logs sanitizados existentes e gates completos; imagem publicada é Fase 07. | Atendido no checkout |
 
 ## Resultado dos gates executados
 
@@ -74,9 +76,9 @@ ausência, atualização e exclusão seguem `PRODUCT_NOT_FOUND` conforme o contr
 | ------- | --------- |
 | `npm run lint` | Passou |
 | `npm run typecheck` | Passou |
-| `npm test -- --runInBand` | 28 suítes e 142 testes passaram |
+| `npm test -- --runInBand` | 35 suítes e 168 testes passaram |
 | `npm run test:integration` | 3 suítes e 9 testes passaram |
-| `npm run test:e2e` | 13 suítes e 84 testes passaram |
+| `npm run test:e2e` | 15 suítes e 87 testes passaram |
 | `npm run build` | Passou |
 | `git diff --check` | Passou |
 
@@ -84,37 +86,42 @@ ausência, atualização e exclusão seguem `PRODUCT_NOT_FOUND` conforme o contr
 
 | ID | Severidade | Achado | Evidência | Impacto | Recomendação | Encaminhamento |
 | -- | ---------- | ------ | --------- | ------- | ------------ | ------------ |
-| A-01 | Informativo | O DynamoDB Local continua executando como `root` para compatibilizar o volume nomeado. | Desvio T04 no estado da implementação e reviews anteriores. | Limitação somente do auxiliar local; não altera a aplicação publicada nem os contratos desta fase. | Reavaliar no endurecimento da infraestrutura da Fase 07. | `implement` — acompanhar na Fase 07. |
-| A-02 | Informativo | Em uma fixture de 21 itens, o DynamoDB Local pode devolver `LastEvaluatedKey` após o último item, produzindo uma página terminal vazia no request seguinte. | `list-products.e2e.spec.ts` cobre o comportamento sem converter a ordem incidental do `Scan` em contrato. | Pode exigir uma requisição sequencial adicional em ambiente local; a aplicação segue o contrato nativo e não descarta o cursor fornecido pelo banco. | Confirmar o comportamento e a observabilidade em DynamoDB gerenciado na Fase 07. | `review` — acompanhar na Fase 07. |
+| A-01 | Informativo | O DynamoDB Local continua executando como `root` para compatibilizar o volume nomeado. | Desvio T04 no estado e reviews anteriores. | Limitação somente do auxiliar local. | Reavaliar no endurecimento da infraestrutura. | `implement` — Fase 07. |
+| A-02 | Informativo | O DynamoDB Local pode emitir `LastEvaluatedKey` após o último item da fixture. | Review v5 e `list-products.e2e.spec.ts`. | Pode exigir página terminal vazia em ambiente local; o contrato nativo é preservado. | Confirmar no DynamoDB gerenciado. | `review` — Fase 07. |
+| A-03 | Informativo | Não há Dockerfile nem imagem publicada neste checkout para inspeção final. | `rg --files` não encontrou artefato de imagem; T34–T38 pertencem à Fase 07. | A varredura da imagem não pode ser afirmada nesta fase. | Executar scan e validação de usuário não privilegiado no artefato da Fase 07. | `implement` — Fase 07. |
 
-Não foram identificados achados bloqueadores, altos ou médios na Fase 05.
+Não foram identificados achados bloqueadores, altos ou médios na Fase 06.
 
 ## Riscos residuais e ressalvas aceitas
 
-- A-01 permanece limitado ao ambiente auxiliar local e encaminhado à Fase 07.
-- A-02 é uma observação do DynamoDB Local; não há ordenação global prometida,
-  conforme ADR-003 e o design aprovado.
-- O rate limit ainda não está conectado às rotas; essa capacidade pertence à
-  Fase 06 e não foi antecipada nesta revisão.
+- O rate limit é em memória por instância; a topologia continua exigindo uma
+  única instância até uma decisão futura de armazenamento distribuído.
+- O trust proxy local aceita IPs explícitos, enquanto a cadeia Cloudflare →
+  NGINX → NestJS será validada operacionalmente na Fase 07.
+- A-01, A-02 e A-03 são informativos e não alteram o contrato funcional desta
+  API; a ausência de imagem é uma limitação de entrega, não uma alegação de
+  que o artefato publicado já foi validado.
 
 ## Veredito
 
 **Veredito:** Aprovado
-**Fundamentação:** T22–T27, os seis critérios de aceitação da Fase 05 e os
-requisitos atribuídos à etapa possuem implementação e evidência objetiva. Os
-gates oficiais passaram; as ressalvas são informativas, conhecidas e não
-impedem o avanço para a Fase 06.
+**Fundamentação:** T28–T33, os seis critérios de aceitação da Fase 06 e os
+requisitos atribuídos à etapa possuem implementação e evidência objetiva no
+checkout. Os gates oficiais passaram; o desvio de biblioteca é compatível com
+NestJS 12 e semanticamente coberto; as ressalvas operacionais estão claramente
+encaminhadas à Fase 07.
 
 ## Próxima ação
 
-Marcar a Fase 05 como `Concluída` e iniciar a preparação da Fase 06, conforme a
-regra de execução faseada.
+Marcar a Fase 06 como `Concluída` e manter a Fase 07 como `Pendente`, sem
+iniciar sua implementação nesta solicitação.
 
 ## Histórico de revisões anteriores
 
 | Versão | Data | Escopo | Veredito | Resumo |
 | ------ | ---- | ------ | -------- | ------ |
-| 4 | 2026-09-04 | Fase 04 — Criação e consulta de produtos | Aprovado | Domínio Product, persistência, `POST /products` e `GET /products/:id` passaram os gates; A-01 permaneceu informativo. |
-| 3 | 2026-09-04 | Fase 03 — Autenticação e proteção do cliente web | Aprovado | JWT HS256, cookie, login, logout e guard passaram os gates; Products ficou encaminhado para a Fase 04. |
+| 5 | 2026-09-04 | Fase 05 — Paginação, atualização e exclusão de produtos | Aprovado | Cursor, listagem, atualização e exclusão passaram os gates; A-01/A-02 permaneceram informativos. |
+| 4 | 2026-09-04 | Fase 04 — Criação e consulta de produtos | Aprovado | Domínio Product, persistência, `POST /products` e `GET /products/:id` passaram os gates. |
+| 3 | 2026-09-04 | Fase 03 — Autenticação e proteção do cliente web | Aprovado | JWT HS256, cookie, login, logout e guard passaram os gates. |
 | 2 | 2026-09-04 | Fase 02 — Cadastro seguro de usuários | Aprovado | Cadastro, Argon2id, persistência condicional, CORS/CSRF e OpenAPI passaram os gates. |
-| 1 | 2026-09-04 | Fase 01 — Tracer bullet e fundação observável | Aprovado | Bootstrap, fronteiras, erros/correlação, DynamoDB Local e readiness passaram os gates; A-01 foi registrado. |
+| 1 | 2026-09-04 | Fase 01 — Tracer bullet e fundação observável | Aprovado | Bootstrap, fronteiras, erros/correlação, DynamoDB Local e readiness passaram os gates. |
