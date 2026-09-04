@@ -240,4 +240,29 @@ describe('DynamoDbProductRepository', () => {
 
     await expect(repository.update(createProduct(), ['price'])).resolves.toBeNull();
   });
+
+  it('deletes conditionally and maps an absent item to false', async () => {
+    let callCount = 0;
+    const fake = createFakeClient(async () => {
+      callCount += 1;
+
+      if (callCount === 2) {
+        const conditionalFailure = Object.assign(new Error('condition failed'), {
+          name: 'ConditionalCheckFailedException',
+        });
+        throw conditionalFailure;
+      }
+
+      return {};
+    });
+    const repository = new DynamoDbProductRepository(fake.client, 'products', cursorCodec);
+
+    await expect(repository.delete('product-123')).resolves.toBe(true);
+    await expect(repository.delete('missing-product')).resolves.toBe(false);
+    expect(fake.commands[0]?.input).toEqual({
+      ConditionExpression: 'attribute_exists(id)',
+      Key: { id: 'product-123' },
+      TableName: 'products',
+    });
+  });
 });

@@ -1,4 +1,5 @@
 import {
+  DeleteCommand,
   GetCommand,
   PutCommand,
   ScanCommand,
@@ -204,6 +205,25 @@ export class DynamoDbProductRepository implements ProductUpdateRepository {
     } catch (error: unknown) {
       if (isConditionalCheckFailed(error)) {
         return null;
+      }
+
+      throw error;
+    }
+  }
+
+  async delete(id: string): Promise<boolean> {
+    try {
+      await this.client.send(
+        new DeleteCommand({
+          ConditionExpression: 'attribute_exists(id)',
+          Key: { id },
+          TableName: this.tableName,
+        }),
+      );
+      return true;
+    } catch (error: unknown) {
+      if (isConditionalCheckFailed(error)) {
+        return false;
       }
 
       throw error;

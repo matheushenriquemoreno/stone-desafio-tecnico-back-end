@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -16,6 +17,7 @@ import {
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiHeader,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -27,6 +29,7 @@ import {
 import { ApiErrorDto } from '../../../shared/presentation/errors/api-error.dto';
 import { AccessTokenGuard } from '../../auth/presentation/access-token.guard';
 import { CreateProduct } from '../application/create-product/create-product';
+import { DeleteProduct } from '../application/delete-product/delete-product';
 import { GetProduct } from '../application/get-product/get-product';
 import { ListProducts } from '../application/list-products/list-products';
 import { UpdateProduct } from '../application/update-product/update-product';
@@ -48,6 +51,7 @@ import { UpdateProductDto } from './update-product.dto';
 export class ProductsController {
   constructor(
     private readonly createProduct: CreateProduct,
+    private readonly deleteProduct: DeleteProduct,
     private readonly getProduct: GetProduct,
     private readonly listProducts: ListProducts,
     private readonly updateProduct: UpdateProduct,
@@ -131,6 +135,25 @@ export class ProductsController {
       productId: id,
     });
     return product.toPublicData();
+  }
+
+  @ApiForbiddenResponse({
+    description: 'Proteção CSRF ou origem inválida.',
+    type: ApiErrorDto,
+  })
+  @ApiHeader({
+    description: 'Deve ser enviado com o valor literal 1.',
+    name: 'X-CSRF-Protection',
+    required: true,
+  })
+  @ApiNoContentResponse({ description: 'Produto excluído.' })
+  @ApiNotFoundResponse({ description: 'Produto não encontrado.', type: ApiErrorDto })
+  @ApiOperation({ summary: 'Exclui um produto do catálogo compartilhado.' })
+  @ApiUnauthorizedResponse({ description: 'Cookie inválido ou ausente.', type: ApiErrorDto })
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async delete(@Param('id') id: string): Promise<void> {
+    await this.deleteProduct.execute(id);
   }
 
   private toPublicPage(page: ProductPage): PublicProductsPage {

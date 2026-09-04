@@ -16,11 +16,13 @@ import { DynamoDbModule } from '../../shared/infrastructure/dynamodb/dynamodb.mo
 import { SecureIdGenerator } from '../../shared/infrastructure/identifiers/secure-id-generator';
 import { AuthModule } from '../auth/auth.module';
 import { CreateProduct } from './application/create-product/create-product';
+import { DeleteProduct } from './application/delete-product/delete-product';
 import { GetProduct } from './application/get-product/get-product';
 import { ListProducts } from './application/list-products/list-products';
 import { UpdateProduct } from './application/update-product/update-product';
 import {
   PRODUCT_REPOSITORY,
+  type ProductMaintenanceRepository,
   type ProductUpdateRepository,
   type ProductRepository,
 } from './application/ports/product-repository';
@@ -66,6 +68,12 @@ import { ProductsController } from './presentation/products.controller';
         clock: Clock,
         productRepository: ProductUpdateRepository,
       ): UpdateProduct => new UpdateProduct(clock, productRepository),
+    },
+    {
+      inject: [PRODUCT_REPOSITORY],
+      provide: DeleteProduct,
+      useFactory: (productRepository: ProductMaintenanceRepository): DeleteProduct =>
+        new DeleteProduct(productRepository),
     },
     { provide: PRODUCT_CURSOR_CODEC, useClass: DynamoDbCursorCodec },
     {

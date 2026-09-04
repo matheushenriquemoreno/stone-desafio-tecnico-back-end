@@ -152,4 +152,12 @@ describe('DynamoDB product repository', () => {
       updatedAt: '2026-09-04T13:00:00.000Z',
     });
   });
+
+  it('deletes an existing product and reports repeated deletion as absent', async () => {
+    await repository.save(createProduct('product-delete'));
+
+    await expect(repository.delete('product-delete')).resolves.toBe(true);
+    await expect(repository.findById('product-delete')).resolves.toBeNull();
+    await expect(repository.delete('product-delete')).resolves.toBe(false);
+  });
 });
