@@ -1,9 +1,9 @@
 # Fase 01 — Tracer bullet e fundação observável
 
-| Status       | Pendente   |
-|--------------|------------|
-| Created      | 2026-09-03 |
-| Last Updated | 2026-09-03 |
+| Status       | Em execução |
+| ------------ | ----------- |
+| Created      | 2026-09-03  |
+| Last Updated | 2026-09-04  |
 
 **Objetivo e resultado esperado:** disponibilizar a menor fatia executável da solução, do bootstrap NestJS ao DynamoDB Local, demonstrada por um endpoint de readiness com correlação, erros seguros e testes automatizados.
 
@@ -15,6 +15,9 @@
 
 ## Tarefa T01 — Criar o projeto NestJS reproduzível e seus comandos oficiais
 
+| Status | Concluída |
+| ------ | --------- |
+
 Estruturar o projeto Node.js/NestJS em TypeScript estrito com `npm`, `package-lock.json`, configuração de compilação, lint e formatação. Registrar os scripts `lint`, `typecheck`, `test`, `test:integration`, `test:e2e` e `build`, além das convenções de pastas por domínio e camada. A configuração obrigatória deve ser tipada e falhar no startup quando ausente ou inválida, sem valores secretos padrão.
 
 - **Requisitos relacionados:** `EXPECT-08`, `EXPECT-10`.
@@ -24,6 +27,23 @@ Estruturar o projeto Node.js/NestJS em TypeScript estrito com `npm`, `package-lo
 - **Testes e verificações:** executar `npm ci`, todos os scripts criados e um teste de bootstrap com configuração válida e inválida; confirmar que `.env` e segredos permanecem ignorados.
 - **Critérios de conclusão:** instalação reproduzível pelo lockfile; TypeScript estrito ativo; seis scripts oficiais executáveis; aplicação inicia somente com configuração válida; nenhum segredo real versionado.
 - **Riscos ou premissas:** não há código anterior a preservar; as versões exatas serão fixadas pelo lockfile e precisam ser compatíveis com a versão LTS escolhida.
+
+### Evidência de execução T01
+
+- `npm ci --ignore-scripts --no-audit --no-fund` — concluído; 477 pacotes
+  instalados pelo lockfile.
+- `npm run lint` — concluído sem erros.
+- `npm run typecheck` — concluído com TypeScript estrito.
+- `npm test` — concluído; 1 suíte e 4 testes de configuração aprovados.
+- `npm run test:integration` e `npm run test:e2e` — concluídos com código 0 e
+  sem testes, pois essas suítes serão criadas nas tarefas posteriores.
+- `npm run build` — concluído.
+- `node dist/main.js` sem ambiente — falhou como esperado com código 1 e
+  mensagem sanitizada de configuração inválida.
+- Bootstrap com ambiente válido — processo iniciou e abriu a porta 3010; foi
+  encerrado após a verificação.
+- `git diff --check` — concluído; apenas avisos de normalização LF/CRLF do
+  Git foram emitidos.
 
 ## Tarefa T02 — Definir fronteiras transversais de tempo, identidade e camadas
 
@@ -107,4 +127,3 @@ Executar também o provisionamento local duas vezes e capturar evidências de `/
 - A imagem do DynamoDB Local é uma dependência externa; fixar sua versão no Compose.
 - Se a versão LTS corrente do Node.js não for suportada pela versão NestJS escolhida, usar a LTS suportada e registrar a combinação no README e lockfile.
 - A fase não configura infraestrutura AWS publicada; apenas cria a fronteira que a Fase 07 reutilizará.
-

@@ -23,3 +23,27 @@ A interface Next.js é um cliente externo e consome esta API diretamente pelo na
 - [Decisão de deploy](./docs/Decisao-deploy.md)
 - [Architecture Decision Records](./docs/adr/README.md)
 - [Regras de desenvolvimento](./rules/README.md)
+
+## Desenvolvimento
+
+Copie `.env.example` para `.env`, ajuste os valores locais e instale as
+dependências pelo lockfile:
+
+```bash
+npm ci
+```
+
+Os comandos oficiais de verificação são:
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run test:integration
+npm run test:e2e
+npm run build
+```
+
+O bootstrap valida todas as variáveis obrigatórias antes de iniciar a API. O
+valor de `JWT_SECRET` no arquivo de exemplo é apenas um placeholder e deve ser
+substituído por um segredo local aleatório.

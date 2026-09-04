@@ -1,9 +1,9 @@
 # Estado da Implementação — API de cadastro, autenticação e catálogo de produtos
 
-| Status       | Pendente   |
-|--------------|------------|
+| Status       | Em execução |
+|--------------|-------------|
 | Created      | 2026-09-03 |
-| Last Updated | 2026-09-03 |
+| Last Updated | 2026-09-04 |
 
 ## Regra de execução
 
@@ -11,13 +11,50 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 ## Fase ativa
 
-Nenhuma — implementação não iniciada.
+Fase 01 — Tracer bullet e fundação observável.
+
+### Registro de preparação
+
+- Padrões: TypeScript estrito; nomes de domínio em inglês no código; Clean
+  Architecture por domínio e camada; controllers sem regra de negócio;
+  adaptadores externos atrás de portas; testes unitários, integração e E2E.
+- Abstrações reutilizadas: portas explícitas para relógio, identificadores e
+  readiness; composition root NestJS; filtro global de erros; cliente
+  `DynamoDBDocumentClient` injetado.
+- Arquivos inicialmente afetados: `package.json`, lockfile, configurações de
+  TypeScript/ESLint/Jest/Nest, `.env.example`, `.gitignore`, `src/`,
+  `compose.yaml`, scripts locais e testes da Fase 01.
+- Premissas: Node.js `v24.15.0` será usado como runtime disponível; DynamoDB
+  Local será a dependência externa local; nenhuma credencial real será
+  necessária ou versionada.
+- Conflitos: nenhum encontrado entre PRD, design, plano, ADRs e repositório
+  vazio.
+
+### Preparação da tarefa T01
+
+- Premissas: a validação de ambiente será a única fonte de parsing e não terá
+  defaults para segredos; `DYNAMODB_ENDPOINT` será explícito para tornar o
+  ambiente local reproduzível; os comandos de integração e E2E usarão
+  `--passWithNoTests` até suas respectivas fases criarem testes.
+- Abstrações: `ConfigModule` global e `ConfigService<AppConfig>` no bootstrap;
+  `validateEnvironment` como função pura para testes; Jest com configurações
+  separadas por nível.
+- Arquivos: `package.json`, `tsconfig*.json`, `eslint.config.mjs`,
+  `.prettierrc.json`, `jest*.config.cjs`, `.env.example`, `.gitignore`,
+  `src/app.module.ts`, `src/main.ts`, `src/shared/infrastructure/configuration.ts`
+  e seu teste unitário.
+- Verificação: `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`,
+  `npm run test:integration`, `npm run test:e2e` e `npm run build`, incluindo
+  cenários de configuração válida, segredo curto e variável ausente.
+- Conflitos previstos: a versão atual do NestJS e do TypeScript será fixada no
+  lockfile; qualquer incompatibilidade de runtime será registrada como desvio
+  antes de ajustar versões.
 
 ## Fases
 
 | #  | Fase | Arquivo | Status | Concluída em |
 |----|------|---------|--------|--------------|
-| 01 | Tracer bullet e fundação observável | [fase-01-tracer-bullet-fundacao.md](fase-01-tracer-bullet-fundacao.md) | Pendente | — |
+| 01 | Tracer bullet e fundação observável | [fase-01-tracer-bullet-fundacao.md](fase-01-tracer-bullet-fundacao.md) | Em execução | — |
 | 02 | Cadastro seguro de usuários | [fase-02-cadastro-usuarios.md](fase-02-cadastro-usuarios.md) | Pendente | — |
 | 03 | Autenticação e proteção do cliente web | [fase-03-autenticacao-protecao-web.md](fase-03-autenticacao-protecao-web.md) | Pendente | — |
 | 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fase-04-criacao-consulta-produtos.md) | Pendente | — |
@@ -29,7 +66,7 @@ Nenhuma — implementação não iniciada.
 
 | ID  | Fase | Status | Evidências |
 |-----|------|--------|------------|
-| T01 | 01 | Pendente | — |
+| T01 | 01 | Concluída | `npm ci --ignore-scripts --no-audit --no-fund`, lint, typecheck, teste unitário (1 suíte/4 testes), scripts de integração/E2E, build, bootstrap válido na porta 3010 e startup inválido com saída 1 sanitizada; `git diff --check` sem erros. |
 | T02 | 01 | Pendente | — |
 | T03 | 01 | Pendente | — |
 | T04 | 01 | Pendente | — |
