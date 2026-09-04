@@ -11,8 +11,37 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 ## Fase ativa
 
-Nenhuma — Fase 02 concluída; a Fase 03 permanece `Pendente` por solicitação do
-usuário.
+Fase 03 — Autenticação e proteção do cliente web.
+
+### Preparação da Fase 03
+
+- Padrões: manter JWT, cookie e Express restritos às camadas de infraestrutura
+  e apresentação; os casos de uso dependem somente de portas e do domínio.
+- Abstrações reutilizadas: `Clock`, `UserRepository`, `PasswordHasher`,
+  `ConfigService`, `ApiExceptionFilter`, `PublicValidationPipe` e o middleware
+  global de CORS/CSRF já aprovados nas fases anteriores.
+- Arquivos previstos: porta e adaptador de token, caso de uso de autenticação,
+  fábrica de cookie, DTOs/controllers Auth, guard JWT e testes unitários/E2E.
+- Premissas: o segredo, emissor, audiência, TTL e nome do cookie continuam
+  obrigatórios na configuração; o TTL publicado permanece 900 segundos e o
+  ambiente de teste pode usar relógio controlado.
+- Verificação: testes dirigidos por tarefa, depois lint, typecheck, suíte
+  unitária, integração, E2E, build e inspeção negativa de tokens/segredos em
+  respostas e logs.
+- Conflitos: nenhum encontrado entre PRD, design, ADRs, plano e código atual.
+
+### Preparação da tarefa T13
+
+- Premissas: `jsonwebtoken` será o adaptador técnico; o TTL publicado será
+  exatamente 900 segundos e a configuração continuará sem default de segredo.
+- Abstrações: `AccessTokenService` expõe somente emissão e validação; a
+  identidade validada contém apenas sujeito e instantes de validade.
+- Arquivos: porta em `auth/application/ports`, adaptador e teste em
+  `auth/infrastructure/security`, além do teste de configuração.
+- Verificação: claims decodificadas, algoritmo, assinatura, emissor, audiência,
+  expiração, TTL e relógio controlado; lint e typecheck.
+- Conflitos previstos: a biblioteca pode adicionar/remover claims de tempo
+  implicitamente; o teste deve detectar isso antes de concluir a tarefa.
 
 ### Registro de preparação
 
@@ -149,7 +178,7 @@ usuário.
 |----|------|---------|--------|--------------|
 | 01 | Tracer bullet e fundação observável | [fase-01-tracer-bullet-fundacao.md](fase-01-tracer-bullet-fundacao.md) | Concluída | 2026-09-04 |
 | 02 | Cadastro seguro de usuários | [fase-02-cadastro-usuarios.md](fase-02-cadastro-usuarios.md) | Concluída | 2026-09-04 |
-| 03 | Autenticação e proteção do cliente web | [fase-03-autenticacao-protecao-web.md](fase-03-autenticacao-protecao-web.md) | Pendente | — |
+| 03 | Autenticação e proteção do cliente web | [fase-03-autenticacao-protecao-web.md](fase-03-autenticacao-protecao-web.md) | Em execução | — |
 | 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fase-04-criacao-consulta-produtos.md) | Pendente | — |
 | 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fase-05-paginacao-manutencao-produtos.md) | Pendente | — |
 | 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fase-06-rate-limit-conformidade.md) | Pendente | — |
@@ -171,7 +200,7 @@ usuário.
 | T10 | 02 | Concluída | Política CORS exata registrada no bootstrap; preflight autorizado `204`, credenciais, métodos/cabeçalhos e `Retry-After` cobertos; E2E (3/9), suíte total (17/52), lint, typecheck, build e diff aprovados. |
 | T11 | 02 | Concluída | `CsrfProtectionMiddleware` global para mutações, origem própria/allowlist exata e `403 REQUEST_FORBIDDEN`; E2E dirigido (1/8), suíte total (17/52), lint, typecheck, build e diff aprovados. |
 | T12 | 02 | Concluída | Controller/DTOs, serialização pública, OpenAPI, CORS/CSRF no bootstrap e E2E de cadastro implementados; E2E dirigido (1/11), suíte total (17/52), integração (2/3), E2E completo (5/28), lint, typecheck, build e diff aprovados. |
-| T13 | 03 | Pendente | — |
+| T13 | 03 | Concluída | `npm test -- --runTestsByPath src/modules/auth/infrastructure/security/jsonwebtoken-access-token.service.spec.ts src/shared/infrastructure/configuration.spec.ts` (2 suítes/13 testes), `npm run lint` e `npm run typecheck` aprovados. |
 | T14 | 03 | Pendente | — |
 | T15 | 03 | Pendente | — |
 | T16 | 03 | Pendente | — |

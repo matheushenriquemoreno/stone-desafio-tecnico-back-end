@@ -75,4 +75,14 @@ describe('environment configuration', () => {
     expect(() => validateEnvironment(environment)).toThrow('COOKIE_NAME');
     expect(() => validateEnvironment(environment)).toThrow('COOKIE_SECURE');
   });
+
+  it('requires the published token lifetime when running in production', () => {
+    const environment = validEnvironment();
+    environment.NODE_ENV = 'production';
+    environment.JWT_ACCESS_TTL_SECONDS = '899';
+    environment.COOKIE_NAME = '__Host-stone_access_token';
+    environment.COOKIE_SECURE = 'true';
+
+    expect(() => validateEnvironment(environment)).toThrow('JWT_ACCESS_TTL_SECONDS');
+  });
 });
