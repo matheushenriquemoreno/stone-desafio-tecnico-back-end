@@ -233,7 +233,7 @@ Fase 04 — Criação e consulta de produtos.
 | T18 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/domain/product.spec.ts` (1 suíte/24 testes), `npm run lint` e `npm run typecheck` aprovados; invariantes e serialização pública do domínio isoladas do framework. |
 | T19 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (1 suíte/5 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/3 testes), `npm run lint` e `npm run typecheck` aprovados; condição atômica, mapeamento exato, ausência e colisão sem sobrescrita comprovados. |
 | T20 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/create-product/create-product.spec.ts` (1 suíte/3 testes), `npm run test:e2e -- --runTestsByPath test/e2e/create-product.e2e.spec.ts` (1 suíte/10 testes), `npm run lint` e `npm run typecheck` aprovados; `POST /products` protegido, estrito e sem persistência em entradas inválidas. |
-| T21 | 04 | Pendente | — |
+| T21 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/get-product/get-product.spec.ts` (1 suíte/3 testes), `npm run test:e2e -- --runTestsByPath test/e2e/get-product.e2e.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados; `GET /products/:id` retorna catálogo compartilhado ou `404 PRODUCT_NOT_FOUND` e rejeita cookie ausente/inválido/expirado. |
 | T22 | 05 | Pendente | — |
 | T23 | 05 | Pendente | — |
 | T24 | 05 | Pendente | — |
@@ -312,6 +312,19 @@ Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permiss�
   CSRF/origem, ausência de escrita em falha e contrato OpenAPI.
 - Conflitos previstos: a validação HTTP duplica apenas a forma declarativa do
   contrato; a invariável do domínio continua sendo a autoridade final.
+
+### Preparação da tarefa T21
+
+- Premissas: `GET /products/:id` recebe um identificador opaco não vazio,
+  consulta diretamente a chave simples e não avalia proprietário.
+- Abstrações: `GetProduct` conhece apenas `ProductRepository`; ausência vira
+  `ProductNotFoundError` com o código estável `PRODUCT_NOT_FOUND`; o
+  controller serializa os mesmos sete campos públicos da criação.
+- Arquivos: caso de uso/teste, erro, controller/módulo e E2E de consulta.
+- Verificação: existente `200`, ausente `404`, cookies ausente/inválido/expirado,
+  duas contas, falha de infraestrutura e OpenAPI.
+- Conflitos previstos: o guard continua sendo a única barreira de autenticação;
+  não introduzir autorização por recurso nem `createdBy`.
 
 ### Encerramento da Fase 02
 

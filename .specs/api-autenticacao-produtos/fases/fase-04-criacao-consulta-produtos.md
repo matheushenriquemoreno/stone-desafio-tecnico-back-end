@@ -84,6 +84,10 @@ Implementar `GetProduct` e a rota de consulta protegida. Identificador existente
   estrito e serializer público. Testes dirigidos: 1 suíte/3 testes unitários e
   1 suíte/10 testes E2E; sucesso, limites, ausência/nulo/desconhecido,
   autenticação, proteção CSRF, persistência e OpenAPI comprovados.
+- **T21 — concluída em 2026-09-04:** `GetProduct` e `GET /products/:id`
+  implementados com `PRODUCT_NOT_FOUND`, serialização pública e proteção pelo
+  cookie. Testes dirigidos: 1 suíte/3 testes unitários e 1 suíte/6 testes E2E;
+  duas contas, ausência, cookies inválidos/expirados e OpenAPI comprovados.
 
 ## Testes e verificações da fase
 

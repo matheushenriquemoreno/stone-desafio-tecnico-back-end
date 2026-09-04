@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -12,6 +14,8 @@ import {
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiHeader,
+  ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
@@ -20,6 +24,7 @@ import {
 import { ApiErrorDto } from '../../../shared/presentation/errors/api-error.dto';
 import { AccessTokenGuard } from '../../auth/presentation/access-token.guard';
 import { CreateProduct } from '../application/create-product/create-product';
+import { GetProduct } from '../application/get-product/get-product';
 import type { PublicProductData } from '../domain/product';
 import { CreateProductDto } from './create-product.dto';
 import { ProductResponseDto } from './product.response.dto';
@@ -29,7 +34,10 @@ import { ProductResponseDto } from './product.response.dto';
 @Controller('products')
 @UseGuards(AccessTokenGuard)
 export class ProductsController {
-  constructor(private readonly createProduct: CreateProduct) {}
+  constructor(
+    private readonly createProduct: CreateProduct,
+    private readonly getProduct: GetProduct,
+  ) {}
 
   @ApiBadRequestResponse({ description: 'Dados inválidos.', type: ApiErrorDto })
   @ApiCreatedResponse({ description: 'Produto criado.', type: ProductResponseDto })
@@ -48,6 +56,16 @@ export class ProductsController {
   @Post()
   async create(@Body() input: CreateProductDto): Promise<PublicProductData> {
     const product = await this.createProduct.execute(input);
+    return product.toPublicData();
+  }
+
+  @ApiNotFoundResponse({ description: 'Produto não encontrado.', type: ApiErrorDto })
+  @ApiOkResponse({ description: 'Produto encontrado.', type: ProductResponseDto })
+  @ApiOperation({ summary: 'Consulta um produto pelo identificador.' })
+  @ApiUnauthorizedResponse({ description: 'Cookie inválido ou ausente.', type: ApiErrorDto })
+  @Get(':id')
+  async get(@Param('id') id: string): Promise<PublicProductData> {
+    const product = await this.getProduct.execute(id);
     return product.toPublicData();
   }
 }

@@ -16,6 +16,7 @@ import { DynamoDbModule } from '../../shared/infrastructure/dynamodb/dynamodb.mo
 import { SecureIdGenerator } from '../../shared/infrastructure/identifiers/secure-id-generator';
 import { AuthModule } from '../auth/auth.module';
 import { CreateProduct } from './application/create-product/create-product';
+import { GetProduct } from './application/get-product/get-product';
 import {
   PRODUCT_REPOSITORY,
   type ProductRepository,
@@ -37,6 +38,12 @@ import { ProductsController } from './presentation/products.controller';
         idGenerator: IdGenerator,
         productRepository: ProductRepository,
       ): CreateProduct => new CreateProduct(clock, idGenerator, productRepository),
+    },
+    {
+      inject: [PRODUCT_REPOSITORY],
+      provide: GetProduct,
+      useFactory: (productRepository: ProductRepository): GetProduct =>
+        new GetProduct(productRepository),
     },
     {
       inject: [DYNAMODB_DOCUMENT_CLIENT, ConfigService],
