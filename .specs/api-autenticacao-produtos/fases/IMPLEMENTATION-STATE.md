@@ -230,7 +230,7 @@ Fase 04 — Criação e consulta de produtos.
 | T15 | 03 | Concluída | `npm test -- --runTestsByPath src/modules/auth/presentation/auth-cookie.spec.ts` (1 suíte/1 teste), `npm run test:e2e -- --runTestsByPath test/e2e/login.e2e.spec.ts` (1 suíte/3 testes), `npm run lint` e `npm run typecheck` aprovados; primeiro gate E2E ajustado para aceitar `Expires` adicional emitido pelo Express, mantendo os atributos exigidos. |
 | T16 | 03 | Concluída | `npm test -- --runTestsByPath src/modules/auth/presentation/auth-cookie.spec.ts` (1 suíte/2 testes), `npm run test:e2e -- --runTestsByPath test/e2e/logout.e2e.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados. |
 | T17 | 03 | Concluída | `npm run test:e2e -- --runTestsByPath test/e2e/access-token-guard.e2e.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados. |
-| T18 | 04 | Pendente | — |
+| T18 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/domain/product.spec.ts` (1 suíte/24 testes), `npm run lint` e `npm run typecheck` aprovados; invariantes e serialização pública do domínio isoladas do framework. |
 | T19 | 04 | Pendente | — |
 | T20 | 04 | Pendente | — |
 | T21 | 04 | Pendente | — |
@@ -255,6 +255,35 @@ Fase 04 — Criação e consulta de produtos.
 ## Bloqueios e desvios
 
 Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permissão do volume nomeado criado como `root:root`; é limitado ao serviço auxiliar local e não antecipa a política de usuário não privilegiado da imagem da API na Fase 07.
+
+### Preparação da Fase 04
+
+- Padrões: manter o domínio Product sem dependências do NestJS/AWS; casos de
+  uso dependem da porta `ProductRepository`; controller e DTO permanecem na
+  borda HTTP; serialização pública é explícita.
+- Abstrações reutilizadas: `Clock`, `IdentifierGenerator`,
+  `DynamoDBDocumentClient`, `ConfigService`, `AccessTokenGuard`, filtro global
+  de erros e middleware global de CORS/CSRF já aprovados nas fases anteriores.
+- Premissas: catálogo compartilhado não possui `createdBy`; `price` permanece
+  número; `imageUrl` contém somente a URL, sem upload ou bytes de imagem; a
+  tabela `products` usa chave simples `id`.
+- Verificação: cada tarefa terá teste dirigido e evidência no estado; ao final
+  serão executados lint, typecheck, suítes unitárias, integração, E2E, build e
+  `git diff --check`, seguidos de review independente.
+- Conflitos: nenhum encontrado entre PRD, design, plano, ADRs e código atual.
+
+### Preparação da tarefa T18
+
+- Premissas: datas e ID são definidos na criação e não possuem mutadores;
+  objetos `Date` serão clonados para impedir mutação externa; não haverá
+  arredondamento nem cálculo monetário.
+- Abstrações: `Product` e `InvalidProductDataError` pertencem somente ao
+  domínio; `PublicProductData` define a saída serializável aprovada.
+- Arquivos: `products/domain/product.ts`, erro de domínio e teste unitário.
+- Verificação: limites inclusivos de strings e URL, esquemas HTTP/HTTPS,
+  valores de preço e isolamento das datas; lint e typecheck.
+- Conflitos previstos: representação binária de números decimais não deve ser
+  usada como evidência de casas decimais adicionais no contrato numérico.
 
 ### Encerramento da Fase 02
 

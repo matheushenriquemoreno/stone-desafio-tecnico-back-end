@@ -1,9 +1,9 @@
 # Fase 04 — Criação e consulta de produtos
 
-| Status       | Pendente   |
+| Status       | Em execução |
 |--------------|------------|
 | Created      | 2026-09-03 |
-| Last Updated | 2026-09-03 |
+| Last Updated | 2026-09-04 |
 
 **Objetivo e resultado esperado:** permitir que qualquer pessoa autenticada crie e consulte produtos completos do catálogo compartilhado com validações consistentes e persistência atômica.
 
@@ -66,6 +66,14 @@ Implementar `GetProduct` e a rota de consulta protegida. Identificador existente
 - Controller e DTO não acessam AWS SDK; casos de uso conhecem apenas a porta de produtos.
 - Serialização pública é explícita e datas são UTC ISO 8601.
 - Não adicionar `createdBy`, proprietário, upload, cálculo de preço ou ordenação.
+
+## Registro de execução
+
+- **T18 — concluída em 2026-09-04:** entidade `Product` criada fora do
+  framework com invariantes de nome, descrição, preço, URL HTTP(S), ID e datas;
+  datas são isoladas contra mutação externa e a serialização pública preserva
+  os sete campos aprovados. Testes dirigidos: 1 suíte/24 testes; lint e
+  typecheck aprovados.
 
 ## Testes e verificações da fase
 
