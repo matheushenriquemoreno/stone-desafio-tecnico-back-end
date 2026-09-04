@@ -76,6 +76,19 @@ Definir uma porta específica `UserRepository` e implementar o adaptador DynamoD
 - **Critérios de conclusão:** `attribute_not_exists(email)` elimina janela de corrida; item contém apenas `email`, `id`, `name`, `passwordHash` e `createdAt`; falhas técnicas não viram falso conflito.
 - **Riscos ou premissas:** a chave por e-mail normalizado é a decisão aprovada; não criar índice ou tabela adicional.
 
+### Evidência de execução T08
+
+- `npm test -- --runInBand src/modules/auth/infrastructure/persistence/dynamodb-user.repository.spec.ts` — concluído; 1 suíte e 4 testes unitários aprovados para escrita, conflito condicional, falha técnica e leitura.
+- `npm run test:integration -- --runInBand` com DynamoDB Local — concluído; 2 suítes e 3 testes aprovados, incluindo persistência/leitura, inspeção do item e disputa concorrente pelo mesmo e-mail normalizado.
+- A escrita usa `PutCommand` com `attribute_not_exists(email)` e o item contém
+  somente `email`, `id`, `name`, `passwordHash` e `createdAt`; a senha em texto
+  puro não é persistida.
+- Somente `ConditionalCheckFailedException` é convertido em
+  `EmailAlreadyExistsError`; falhas técnicas são propagadas para o mapeamento
+  global de erro.
+- `npm run lint`, `npm run typecheck`, `npm test` (16 suítes/46 testes),
+  `npm run build` e `git diff --check` — concluídos sem erros.
+
 ## Tarefa T09 — Orquestrar o caso de uso RegisterUser
 
 Implementar `RegisterUser` para validar e normalizar a entrada, gerar ID e instante, criar o hash e solicitar a escrita condicional. O resultado do caso de uso deve conter somente `id`, `name` e `email`; nenhum token ou cookie é emitido.

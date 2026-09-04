@@ -165,7 +165,7 @@ Fase 02 — Cadastro seguro de usuários.
 | T05 | 01 | Concluída | Lint/typecheck, 12 suítes/24 unitários, integração, 2 suítes/6 E2E, build e Compose passaram; `/health` confirmou 200 exato com ambas as tabelas e 503 seguro para cada tabela ausente. |
 | T06 | 02 | Concluída | Lint, typecheck, `npm test` (14 suítes/39 testes), build e `git diff --check` aprovados; domínio Auth cobre limites, normalização de e-mail e nome, senha transitória e serialização pública sem hash. |
 | T07 | 02 | Concluída | Adaptador `Argon2PasswordHasher` atrás da porta `PasswordHasher`; hash Argon2id com parâmetros explícitos, verificação correta/incorreta e hash malformado cobertos; suíte dirigida (1/3), lint, typecheck, build e diff aprovados. |
-| T08 | 02 | Pendente | — |
+| T08 | 02 | Concluída | `DynamoDbUserRepository` com `PutCommand` condicional, `GetCommand`, mapeamento seguro e conflito atômico; unitário (1/4), integração (2/3), suíte total (16/46), lint, typecheck, build e diff aprovados. |
 | T09 | 02 | Pendente | — |
 | T10 | 02 | Pendente | — |
 | T11 | 02 | Pendente | — |
