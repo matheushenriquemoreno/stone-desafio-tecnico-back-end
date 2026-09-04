@@ -48,6 +48,8 @@ A janela de cada bucket começa na primeira requisição contabilizada, mantém 
 | `PATCH /products/:id` | JWT | 20 requisições | 1 minuto |
 | `DELETE /products/:id` | JWT | 10 requisições | 1 minuto |
 | `GET /health` | Pública | 120 requisições | 1 minuto |
+| `GET /docs` | Pública | 30 requisições | 1 minuto |
+| `GET /docs-json` | Pública | 30 requisições | 1 minuto |
 
 Uma rota HTTP nova que não esteja na tabela receberá provisoriamente o limite padrão de 30 requisições por minuto por IP. Antes de ser considerada concluída, a nova rota deverá ganhar uma regra explícita nesta ADR; o limite padrão é somente uma proteção contra omissão.
 
@@ -98,6 +100,7 @@ Picos de `429` em cadastro ou login devem ser investigados como possível abuso 
 - Requisições inválidas e não autenticadas consomem o limite do endpoint.
 - Cabeçalhos de IP enviados fora da cadeia de proxies confiáveis não alteram a chave do cliente.
 - O limite padrão protege uma rota ainda não configurada explicitamente.
+- `/docs` e `/docs-json` possuem buckets independentes de 30 requisições por minuto.
 - Preflight `OPTIONS` sem cookie não altera o contador da operação real; a requisição posterior começa no mesmo total observado antes do preflight.
 
 Os testes controlarão o relógio e o IP de origem para permanecerem determinísticos e não dependerem de espera real.
