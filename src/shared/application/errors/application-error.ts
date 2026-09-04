@@ -65,6 +65,6 @@ export class RateLimitExceededError extends ApplicationError {
       statusCode: 429,
     });
     this.name = 'RateLimitExceededError';
-    this.retryAfterSeconds = retryAfterSeconds;
+    this.retryAfterSeconds = Math.max(1, Math.ceil(retryAfterSeconds));
   }
 }

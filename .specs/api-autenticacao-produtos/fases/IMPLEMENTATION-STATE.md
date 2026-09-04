@@ -207,6 +207,19 @@ A Fase 06 está `Em execução`, iniciada após o review aprovado da Fase 05.
   template e ausência de IP/JWT/cookie em corpo e logs.
 - Conflitos: nenhum com o schema comum ou ADR-004.
 
+### Preparação da tarefa T32
+
+- Premissas: `/docs` e `/docs-json` continuarão sendo as únicas superfícies de
+  documentação; OpenAPI usará cookie auth, CSRF e o schema comum, sem Bearer
+  ou endpoint intermediário.
+- Abstrações: decorators de cada controller serão a fonte do documento; o
+  bootstrap continuará apenas configurando Swagger UI e JSON exportável.
+- Arquivos: controllers Auth/Products/Health, DTO de erro, setup OpenAPI e
+  teste de contrato.
+- Verificação: caminhos/métodos, segurança, headers, DTOs, query/cursor,
+  estados de sucesso/erro e presença de `429` nas rotas concluídas.
+- Conflitos: nenhum com PRD, Contrato-da-API ou DEC-02/DEC-03/DEC-05/DEC-13.
+
 ### Encerramento da Fase 03
 
 - T13–T17 concluídas com evidências unitárias e E2E.
@@ -437,6 +450,7 @@ A Fase 06 está `Em execução`, iniciada após o review aprovado da Fase 05.
 | T28 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/infrastructure/configuration.spec.ts src/shared/presentation/http/effective-client-ip.spec.ts src/shared/infrastructure/dynamodb/dynamodb.client.spec.ts` (3 suítes/16 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; allowlist explícita de proxies, cadeia confiável, normalização de IP e rejeição segura de configuração inválida comprovadas. |
 | T29 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/infrastructure/rate-limit/in-memory-fixed-window-rate-limiter.spec.ts` (1 suíte/6 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; Fixed Window, chave estruturada por IP/método/template, não prorrogação, expiração e limpeza comprovadas. |
 | T30 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/presentation/http/rate-limit-policies.spec.ts src/shared/presentation/http/rate-limit.middleware.spec.ts` (2 suítes/6 testes), `npm run test:e2e -- --runTestsByPath test/e2e/rate-limit.e2e.spec.ts test/e2e/list-products.e2e.spec.ts test/e2e/register-user.e2e.spec.ts` (3 suítes/24 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; tabela ADR-004, fallback, ordem do middleware, `OPTIONS` e isolamento das fixtures comprovados. |
+| T31 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/presentation/errors/api-exception.filter.spec.ts src/shared/infrastructure/rate-limit/in-memory-rate-limit-metrics.spec.ts` (2 suítes/5 testes), `npm run test:e2e -- --runTestsByPath test/e2e/rate-limit.e2e.spec.ts` (1 suíte/2 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; `429 RATE_LIMIT_EXCEEDED`, `Retry-After`, correlação, métrica agregada e bloqueio antes do controller comprovados. |
 | T29 | 06 | Pendente | — |
 | T30 | 06 | Pendente | — |
 | T31 | 06 | Pendente | — |

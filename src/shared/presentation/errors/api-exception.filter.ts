@@ -11,6 +11,7 @@ import type { Response } from 'express';
 import type { ApiError, ApiErrorCode } from '../../application/errors/api-error';
 import {
   ApplicationError,
+  RateLimitExceededError,
   ValidationApplicationError,
 } from '../../application/errors/application-error';
 import { ID_GENERATOR, type IdGenerator } from '../../application/ports/id-generator';
@@ -108,6 +109,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
     response.setHeader(CORRELATION_ID_HEADER, correlationId);
 
     const apiError = toApiError(exception, correlationId);
+    if (exception instanceof RateLimitExceededError) {
+      response.setHeader('Retry-After', String(exception.retryAfterSeconds));
+    }
     response.status(apiError.statusCode).json(apiError);
   }
 }

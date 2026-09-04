@@ -80,10 +80,12 @@ describe('rate limit HTTP pipeline', () => {
       true,
     );
     expect(blockedResponse?.status).toBe(429);
+    expect(blockedResponse?.headers['retry-after']).toMatch(/^\d+$/);
     expect(blockedResponse?.body).toMatchObject({
       code: 'RATE_LIMIT_EXCEEDED',
       statusCode: 429,
     });
+    expect(JSON.stringify(blockedResponse?.body)).not.toContain('203.0.113');
     expect(blockedResponse?.headers['x-correlation-id']).toMatch(/^[0-9a-f-]{36}$/i);
     expect(RateLimitProbeController.calls).toBe(30);
   });

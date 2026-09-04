@@ -1,10 +1,12 @@
+import { jest } from '@jest/globals';
 import { HttpException } from '@nestjs/common';
 
 import {
   ApplicationError,
+  RateLimitExceededError,
   ValidationApplicationError,
 } from '../../application/errors/application-error';
-import { toApiError } from './api-exception.filter';
+import { ApiExceptionFilter, toApiError } from './api-exception.filter';
 
 describe('toApiError', () => {
   it('keeps the public contract of an expected application error', () => {
@@ -61,5 +63,33 @@ describe('toApiError', () => {
       message: 'A requisição é inválida.',
       statusCode: 400,
     });
+  });
+
+  it('exposes only the integer Retry-After header for rate-limit errors', () => {
+    const filter = new ApiExceptionFilter({ generate: () => 'generated-id' });
+    const response = {
+      json: jest.fn(),
+      setHeader: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+    };
+    const request = { correlationId: 'request-id' };
+    const host = {
+      switchToHttp: () => ({
+        getRequest: () => request,
+        getResponse: () => response,
+      }),
+    };
+
+    filter.catch(new RateLimitExceededError(0.1), host as never);
+
+    expect(response.setHeader).toHaveBeenCalledWith('Retry-After', '1');
+    expect(response.status).toHaveBeenCalledWith(429);
+    expect(response.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: 'RATE_LIMIT_EXCEEDED',
+        correlationId: 'request-id',
+        statusCode: 429,
+      }),
+    );
   });
 });
