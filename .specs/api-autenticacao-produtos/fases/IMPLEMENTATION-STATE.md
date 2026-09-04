@@ -11,7 +11,8 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 ## Fase ativa
 
-Fase 02 — Cadastro seguro de usuários.
+Nenhuma — Fase 02 concluída; a Fase 03 permanece `Pendente` por solicitação do
+usuário.
 
 ### Registro de preparação
 
@@ -147,7 +148,7 @@ Fase 02 — Cadastro seguro de usuários.
 | #  | Fase | Arquivo | Status | Concluída em |
 |----|------|---------|--------|--------------|
 | 01 | Tracer bullet e fundação observável | [fase-01-tracer-bullet-fundacao.md](fase-01-tracer-bullet-fundacao.md) | Concluída | 2026-09-04 |
-| 02 | Cadastro seguro de usuários | [fase-02-cadastro-usuarios.md](fase-02-cadastro-usuarios.md) | Em execução | — |
+| 02 | Cadastro seguro de usuários | [fase-02-cadastro-usuarios.md](fase-02-cadastro-usuarios.md) | Concluída | 2026-09-04 |
 | 03 | Autenticação e proteção do cliente web | [fase-03-autenticacao-protecao-web.md](fase-03-autenticacao-protecao-web.md) | Pendente | — |
 | 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fase-04-criacao-consulta-produtos.md) | Pendente | — |
 | 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fase-05-paginacao-manutencao-produtos.md) | Pendente | — |
@@ -200,3 +201,14 @@ Fase 02 — Cadastro seguro de usuários.
 ## Bloqueios e desvios
 
 Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permissão do volume nomeado criado como `root:root`; é limitado ao serviço auxiliar local e não antecipa a política de usuário não privilegiado da imagem da API na Fase 07.
+
+### Encerramento da Fase 02
+
+- Gate: review independente da Fase 02 aprovado na versão 2, registrado em
+  `REVIEW.md`.
+- Decisão: a Fase 02 foi marcada como `Concluída` após T06–T12 e a Fase 03
+  permanece `Pendente`; nenhuma tarefa, preparação ou implementação da Fase 03
+  foi iniciada.
+- Ressalvas: autenticação por JWT/cookie permanece na Fase 03; rate limit e
+  conformidade operacional permanecem na Fase 06; o desvio local do DynamoDB
+  segue encaminhado à Fase 07.
