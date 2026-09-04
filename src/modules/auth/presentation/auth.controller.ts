@@ -24,7 +24,7 @@ import type { AppConfig } from '../../../shared/infrastructure/configuration';
 import { AuthenticateUser } from '../application/authenticate-user/authenticate-user';
 import type { RegisterUserOutput } from '../application/register-user/register-user';
 import { RegisterUser } from '../application/register-user/register-user';
-import { setAccessTokenCookie } from './auth-cookie';
+import { expireAccessTokenCookie, setAccessTokenCookie } from './auth-cookie';
 import { LoginDto } from './login.dto';
 import { ApiErrorDto } from '../../../shared/presentation/errors/api-error.dto';
 import { RegisterUserDto } from './register-user.dto';
@@ -81,6 +81,23 @@ export class AuthController {
   ): Promise<void> {
     const { accessToken } = await this.authenticateUser.execute(input);
     setAccessTokenCookie(response, accessToken, this.cookieSettings());
+  }
+
+  @ApiForbiddenResponse({
+    description: 'Proteção CSRF ou origem inválida.',
+    type: ApiErrorDto,
+  })
+  @ApiHeader({
+    description: 'Deve ser enviado com o valor literal 1.',
+    name: 'X-CSRF-Protection',
+    required: true,
+  })
+  @ApiNoContentResponse({ description: 'Cookie de autenticação expirado.' })
+  @ApiOperation({ summary: 'Expira o cookie de autenticação de forma idempotente.' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('logout')
+  logout(@Res({ passthrough: true }) response: Response): void {
+    expireAccessTokenCookie(response, this.cookieSettings());
   }
 
   private cookieSettings(): { cookieName: string; cookieSecure: boolean } {

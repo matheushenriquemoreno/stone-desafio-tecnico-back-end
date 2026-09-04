@@ -31,3 +31,14 @@ export function setAccessTokenCookie(
     createAuthCookieOptions(settings),
   );
 }
+
+export function expireAccessTokenCookie(
+  response: Response,
+  settings: AuthCookieSettings,
+): void {
+  response.cookie(
+    settings.cookieName,
+    '',
+    createAuthCookieOptions(settings, 0),
+  );
+}

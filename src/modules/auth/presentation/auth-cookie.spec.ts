@@ -15,4 +15,19 @@ describe('auth cookie policy', () => {
       secure: true,
     });
   });
+
+  it('sets the same scope with zero lifetime when the cookie is expired', () => {
+    expect(
+      createAuthCookieOptions({
+        cookieName: '__Host-stone_access_token',
+        cookieSecure: true,
+      }, 0),
+    ).toEqual({
+      httpOnly: true,
+      maxAge: 0,
+      path: '/',
+      sameSite: 'lax',
+      secure: true,
+    });
+  });
 });
