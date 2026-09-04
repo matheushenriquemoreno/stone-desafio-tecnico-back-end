@@ -28,6 +28,7 @@ describe('environment configuration', () => {
       cookieName: 'stone_access_token',
       cookieSecure: false,
       dynamodbEndpoint: 'http://localhost:8000',
+      dynamodbTablePrefix: undefined,
       jwtAccessTtlSeconds: 900,
       jwtAudience: 'stone-web',
       jwtIssuer: 'stone-api',
@@ -52,6 +53,17 @@ describe('environment configuration', () => {
     delete environment.DYNAMODB_ENDPOINT;
 
     expect(() => validateEnvironment(environment)).toThrow('DYNAMODB_ENDPOINT');
+  });
+
+  it('applies the optional table prefix consistently to application settings', () => {
+    const environment = validEnvironment();
+    environment.DYNAMODB_TABLE_PREFIX = 'integration_123';
+
+    expect(createAppConfig(environment)).toMatchObject({
+      dynamodbTablePrefix: 'integration_123',
+      productsTableName: 'integration_123_stone_products_test',
+      usersTableName: 'integration_123_stone_users_test',
+    });
   });
 
   it('requires the published cookie policy when running in production', () => {

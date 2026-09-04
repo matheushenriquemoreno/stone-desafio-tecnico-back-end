@@ -107,6 +107,9 @@ Implementar o contexto de requisição que cria ou propaga um `correlationId` op
 
 ## Tarefa T04 — Disponibilizar DynamoDB Local e provisionamento isolado
 
+| Status | Concluída |
+| ------ | --------- |
+
 Criar o serviço DynamoDB Local no Compose e scripts idempotentes para provisionar as tabelas `users` e `products` com chave de partição simples e capacidade compatível com o ambiente local. Configurar o `DynamoDBDocumentClient` por injeção e garantir tabelas ou prefixos exclusivos para testes de integração e E2E.
 
 - **Requisitos relacionados:** `AAP-58`, `AAP-59`, `EXPECT-07`, `EXPECT-08`.
@@ -116,6 +119,28 @@ Criar o serviço DynamoDB Local no Compose e scripts idempotentes para provision
 - **Testes e verificações:** `docker compose config`; subir DynamoDB Local; executar provisionamento duas vezes sem erro; testar isolamento e `DescribeTable` das duas tabelas.
 - **Critérios de conclusão:** ambiente local sobe sem credenciais reais; provisionamento é idempotente; testes nunca usam tabelas publicadas; ambas as tabelas possuem somente as chaves aprovadas.
 - **Riscos ou premissas:** dados locais podem persistir para desenvolvimento, mas cada execução automatizada deve limpar ou isolar seu próprio namespace.
+
+### Evidência de execução T04
+
+- `docker compose config` — concluído com `amazon/dynamodb-local:2.6.1`,
+  volume nomeado e credenciais dummy.
+- `docker compose up -d --force-recreate dynamodb-local` — concluído; o
+  container ficou `Up` e a porta 8000 aceitou conexão TCP.
+- `npm run db:provision` — executado duas vezes; ambas criaram/verificaram
+  `stone_users` e `stone_products` sem erro.
+- `npm run test:integration` com DynamoDB Local — concluído; 1 suíte e 1 teste
+  criaram tabelas com prefixo isolado do processo, conferiram `DescribeTable`,
+  chave simples `email`/`id`, atributo `S` e status `ACTIVE`, e removeram
+  somente as tabelas temporárias.
+- `npm run lint`, `npm run typecheck`, `npm test` (9 suítes/19 testes),
+  `npm run test:e2e` (1 suíte/3 testes) e `npm run build` — concluídos.
+- Bootstrap com `DynamoDbModule` injetado — processo iniciou e abriu a porta
+  3011 com prefixo de tabelas `bootstrap`.
+- Desvio registrado: o volume novo da imagem inicia como `root:root`, enquanto
+  a imagem roda como UID 1000; o serviço local usa `user: "0:0"` exclusivamente
+  para permitir o volume persistente. A exigência de container sem privilégios
+  da aplicação publicada permanece na Fase 07.
+- `git diff --check` — sem erros.
 
 ## Tarefa T05 — Entregar readiness ponta a ponta
 

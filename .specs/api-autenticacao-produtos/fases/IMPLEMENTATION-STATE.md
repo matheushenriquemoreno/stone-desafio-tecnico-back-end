@@ -85,6 +85,23 @@ Fase 01 — Tracer bullet e fundação observável.
 - Conflitos: nenhum; falhas inesperadas manterão detalhes somente fora da
   resposta pública e sem stack trace no log estruturado.
 
+### Preparação da tarefa T04
+
+- Premissas: DynamoDB Local será fixado em `amazon/dynamodb-local:2.6.1`;
+  `users` usará `email` e `products` usará `id`, ambas como única chave de
+  partição e com `PAY_PER_REQUEST`; o endpoint local usará credenciais dummy.
+- Abstrações: `DYNAMODB_DOCUMENT_CLIENT` será o único token consumido pelos
+  módulos; o provisionador terá uma checagem explícita de esquema para tornar
+  a idempotência segura; prefixo opcional será validado e aplicado aos nomes.
+- Arquivos: `compose.yaml`, cliente/módulo DynamoDB em
+  `src/shared/infrastructure`, configuração de prefixo, script de
+  provisionamento, testes unitários e integração com DynamoDB Local.
+- Verificação: `docker compose config`, subida do serviço, provisionamento
+  repetido, `DescribeTable` das duas tabelas, isolamento por prefixo e gates
+  oficiais do projeto.
+- Conflitos: nenhum; não haverá exclusão de tabelas nem fallback para dados
+  publicados.
+
 ## Fases
 
 | #  | Fase | Arquivo | Status | Concluída em |
@@ -104,7 +121,7 @@ Fase 01 — Tracer bullet e fundação observável.
 | T01 | 01 | Concluída | `npm ci --ignore-scripts --no-audit --no-fund`, lint, typecheck, teste unitário (1 suíte/4 testes), scripts de integração/E2E, build, bootstrap válido na porta 3010 e startup inválido com saída 1 sanitizada; `git diff --check` sem erros. |
 | T02 | 01 | Concluída | Lint com fronteiras, typecheck e `npm test` (6 suítes/11 testes) aprovados; produção usa `node:crypto.randomUUID`, fakes são determinísticos e teste arquitetural não encontrou dependências proibidas. |
 | T03 | 01 | Concluída | Lint/typecheck, `npm test` (8 suítes/16 testes), E2E (1 suíte/3 testes), integração, build e diff passaram; respostas 409/400/500 correlacionadas e logs sanitizados comprovados, sem senha/token/stack. |
-| T04 | 01 | Pendente | — |
+| T04 | 01 | Concluída | Compose, cliente injetado, provisionamento repetido, integração com duas tabelas isoladas e todos os gates (lint/typecheck/19 unitários/3 E2E/build) passaram; bootstrap real abriu a porta 3011. |
 | T05 | 01 | Pendente | — |
 | T06 | 02 | Pendente | — |
 | T07 | 02 | Pendente | — |
@@ -142,4 +159,4 @@ Fase 01 — Tracer bullet e fundação observável.
 
 ## Bloqueios e desvios
 
-Nenhum.
+Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permissão do volume nomeado criado como `root:root`; é limitado ao serviço auxiliar local e não antecipa a política de usuário não privilegiado da imagem da API na Fase 07.

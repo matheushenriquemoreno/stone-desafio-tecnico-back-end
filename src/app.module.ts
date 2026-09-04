@@ -12,12 +12,14 @@ import {
 } from './shared/infrastructure/configuration';
 import { SecureIdGenerator } from './shared/infrastructure/identifiers/secure-id-generator';
 import { ConsoleRequestLogger } from './shared/infrastructure/logging/console-request.logger';
+import { DynamoDbModule } from './shared/infrastructure/dynamodb/dynamodb.module';
 import { ApiExceptionFilter } from './shared/presentation/errors/api-exception.filter';
 import { CorrelationIdMiddleware } from './shared/presentation/http/correlation-id.middleware';
 import { RequestLoggingInterceptor } from './shared/presentation/logging/request-logging.interceptor';
 
 @Module({
   imports: [
+    DynamoDbModule,
     ConfigModule.forRoot({
       cache: true,
       isGlobal: true,

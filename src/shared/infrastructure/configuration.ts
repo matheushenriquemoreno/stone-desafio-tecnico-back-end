@@ -8,8 +8,10 @@ import {
   IsIn,
   IsInt,
   IsNotEmpty,
+  IsOptional,
   IsString,
   IsUrl,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -18,12 +20,15 @@ import {
 } from 'class-validator';
 import type { ConfigFactory } from '@nestjs/config';
 
+import { resolveTableName } from './dynamodb/table-names';
+
 export type NodeEnvironment = 'development' | 'test' | 'production';
 
 export interface AppConfig {
   readonly nodeEnv: NodeEnvironment;
   readonly port: number;
   readonly dynamodbEndpoint: string;
+  readonly dynamodbTablePrefix?: string;
   readonly awsRegion: string;
   readonly usersTableName: string;
   readonly productsTableName: string;
@@ -67,6 +72,19 @@ class EnvironmentVariables {
   @MinLength(1)
   @MaxLength(255)
   PRODUCTS_TABLE_NAME!: string;
+
+  @Transform(({ value }: { value: unknown }): unknown => {
+    if (typeof value !== 'string') {
+      return value;
+    }
+
+    const normalizedValue = value.trim();
+    return normalizedValue.length > 0 ? normalizedValue : undefined;
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Za-z0-9_.-]{1,50}$/)
+  DYNAMODB_TABLE_PREFIX?: string;
 
   @IsString()
   @MinLength(32)
@@ -127,6 +145,7 @@ interface ValidatedEnvironment {
   readonly NODE_ENV: NodeEnvironment;
   readonly PORT: number;
   readonly DYNAMODB_ENDPOINT: string;
+  readonly DYNAMODB_TABLE_PREFIX?: string;
   readonly AWS_REGION: string;
   readonly USERS_TABLE_NAME: string;
   readonly PRODUCTS_TABLE_NAME: string;
@@ -177,6 +196,7 @@ function parseEnvironment(input: EnvironmentInput): ValidatedEnvironment {
     COOKIE_NAME: variables.COOKIE_NAME,
     COOKIE_SECURE: variables.COOKIE_SECURE,
     DYNAMODB_ENDPOINT: variables.DYNAMODB_ENDPOINT,
+    DYNAMODB_TABLE_PREFIX: variables.DYNAMODB_TABLE_PREFIX,
     JWT_ACCESS_TTL_SECONDS: variables.JWT_ACCESS_TTL_SECONDS,
     JWT_AUDIENCE: variables.JWT_AUDIENCE,
     JWT_ISSUER: variables.JWT_ISSUER,
@@ -201,14 +221,21 @@ export function createAppConfig(input: EnvironmentInput): AppConfig {
     cookieName: environment.COOKIE_NAME,
     cookieSecure: environment.COOKIE_SECURE,
     dynamodbEndpoint: environment.DYNAMODB_ENDPOINT,
+    dynamodbTablePrefix: environment.DYNAMODB_TABLE_PREFIX,
     jwtAccessTtlSeconds: environment.JWT_ACCESS_TTL_SECONDS,
     jwtAudience: environment.JWT_AUDIENCE,
     jwtIssuer: environment.JWT_ISSUER,
     jwtSecret: environment.JWT_SECRET,
     nodeEnv: environment.NODE_ENV,
     port: environment.PORT,
-    productsTableName: environment.PRODUCTS_TABLE_NAME,
-    usersTableName: environment.USERS_TABLE_NAME,
+    productsTableName: resolveTableName(
+      environment.PRODUCTS_TABLE_NAME,
+      environment.DYNAMODB_TABLE_PREFIX,
+    ),
+    usersTableName: resolveTableName(
+      environment.USERS_TABLE_NAME,
+      environment.DYNAMODB_TABLE_PREFIX,
+    ),
   };
 }
 

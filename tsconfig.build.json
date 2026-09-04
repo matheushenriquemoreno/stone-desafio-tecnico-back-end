@@ -3,5 +3,5 @@
   "compilerOptions": {
     "outDir": "./dist"
   },
-  "exclude": ["node_modules", "dist", "coverage", "test", "**/*.spec.ts"]
+  "exclude": ["node_modules", "dist", "coverage", "test", "scripts", "**/*.spec.ts"]
 }
