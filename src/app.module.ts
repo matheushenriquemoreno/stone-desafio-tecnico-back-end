@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 
+import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { CLOCK } from './shared/application/ports/clock';
 import { ID_GENERATOR } from './shared/application/ports/id-generator';
@@ -28,6 +29,7 @@ import { RequestLoggingInterceptor } from './shared/presentation/logging/request
       load: [configuration],
       validate: validateEnvironment,
     }),
+    AuthModule,
     HealthModule,
   ],
   providers: [

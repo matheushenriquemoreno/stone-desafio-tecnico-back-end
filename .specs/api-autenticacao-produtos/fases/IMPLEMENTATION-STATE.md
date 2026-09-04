@@ -169,7 +169,7 @@ Fase 02 — Cadastro seguro de usuários.
 | T09 | 02 | Concluída | Caso de uso `RegisterUser` validado com ordem hash→persistência, ID/instante únicos, resposta pública, rejeição de entrada inválida e propagação de falhas; 1 suíte/6 testes, lint, typecheck, build e diff aprovados. |
 | T10 | 02 | Concluída | Política CORS exata registrada no bootstrap; preflight autorizado `204`, credenciais, métodos/cabeçalhos e `Retry-After` cobertos; E2E (3/9), suíte total (17/52), lint, typecheck, build e diff aprovados. |
 | T11 | 02 | Concluída | `CsrfProtectionMiddleware` global para mutações, origem própria/allowlist exata e `403 REQUEST_FORBIDDEN`; E2E dirigido (1/8), suíte total (17/52), lint, typecheck, build e diff aprovados. |
-| T12 | 02 | Pendente | — |
+| T12 | 02 | Concluída | Controller/DTOs, serialização pública, OpenAPI, CORS/CSRF no bootstrap e E2E de cadastro implementados; E2E dirigido (1/11), suíte total (17/52), integração (2/3), E2E completo (5/28), lint, typecheck, build e diff aprovados. |
 | T13 | 03 | Pendente | — |
 | T14 | 03 | Pendente | — |
 | T15 | 03 | Pendente | — |

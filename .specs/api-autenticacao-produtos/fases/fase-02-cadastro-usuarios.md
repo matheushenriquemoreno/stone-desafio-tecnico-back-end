@@ -177,6 +177,26 @@ Criar DTO, controller, serialização e documentação OpenAPI do cadastro. A ro
 - **Critérios de conclusão:** respostas e status coincidem com os critérios 1–3 do PRD; OpenAPI descreve entrada, sucesso e erros; não há cookie ou JWT no cadastro.
 - **Riscos ou premissas:** cadastro continua público quanto a autenticação, mas não é isento das proteções de origem, CSRF e do rate limit que será conectado na Fase 06.
 
+### Evidência de execução T12
+
+- `npm run test:e2e -- --runInBand test/e2e/register-user.e2e.spec.ts` — 1
+  suíte e 11 testes aprovados, cobrindo cadastro válido, normalização,
+  limites, campo desconhecido, duplicidade, ausência de CSRF, origem não
+  autorizada, persistência sem senha/hash público e documentação OpenAPI.
+- `npm run lint`, `npm run typecheck`, `npm test -- --runInBand` (17 suítes/52
+  testes), `npm run test:integration -- --runInBand` (2 suítes/3 testes),
+  `npm run test:e2e -- --runInBand` (5 suítes/28 testes), `npm run build` e
+  `git diff --check` — concluídos sem erros.
+- `POST /auth/register` retorna `201` com somente `id`, `name` e e-mail
+  normalizado; duplicidade retorna `409 EMAIL_ALREADY_EXISTS`; entradas
+  inválidas retornam `400 VALIDATION_ERROR`; CSRF/origem inválidos retornam
+  `403 REQUEST_FORBIDDEN`; não há `Set-Cookie`, JWT, senha ou hash na resposta.
+- `GET /docs-json` e `GET /docs` respondem com sucesso e documentam a entrada,
+  resposta `201`, erros `400`/`403`/`409` e o cabeçalho obrigatório de CSRF.
+- O adaptador persistiu apenas os atributos públicos e o hash Argon2id no
+  DynamoDB Local, com condição de unicidade preservada; os logs E2E não
+  expuseram dados sensíveis.
+
 ## Orientações de implementação
 
 - Repetir invariantes essenciais no domínio mesmo que o DTO já tenha sido validado.

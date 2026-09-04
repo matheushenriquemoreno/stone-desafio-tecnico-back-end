@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { createAppConfig, type AppConfig } from './shared/infrastructure/configuration';
 import { createCorsOptions } from './shared/presentation/http/cors-options';
+import { setupOpenApi } from './shared/presentation/openapi/setup-openapi';
 import { PublicValidationPipe } from './shared/presentation/validation/public-validation.pipe';
 
 export async function bootstrap(): Promise<void> {
@@ -11,11 +12,10 @@ export async function bootstrap(): Promise<void> {
 
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService<AppConfig>);
-  app.enableCors(
-    createCorsOptions(configService.getOrThrow('allowedOrigins')),
-  );
+  app.enableCors(createCorsOptions(configService.getOrThrow('allowedOrigins')));
   app.useGlobalPipes(new PublicValidationPipe());
   const port = configService.getOrThrow<number>('port');
+  setupOpenApi(app, configService.getOrThrow('cookieName'));
 
   await app.listen(port);
 }
