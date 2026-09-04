@@ -22,6 +22,41 @@ export default tseslint.config(
     },
   },
   {
+    files: [
+      'src/shared/domain/**/*.ts',
+      'src/shared/application/**/*.ts',
+      'src/modules/*/domain/**/*.ts',
+      'src/modules/*/application/**/*.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@nestjs/*',
+                '@aws-sdk/*',
+                'aws-sdk',
+                'jsonwebtoken',
+                'jose',
+                'passport',
+                'passport-*',
+                'express',
+                'fastify',
+                'node:http',
+                'node:https',
+                'node:net',
+              ],
+              message:
+                'Camadas internas não podem depender de framework, HTTP, persistência ou JWT.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['**/*.ts'],
     languageOptions: {
       parserOptions: {

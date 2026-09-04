@@ -50,6 +50,22 @@ Fase 01 — Tracer bullet e fundação observável.
   lockfile; qualquer incompatibilidade de runtime será registrada como desvio
   antes de ajustar versões.
 
+### Preparação da tarefa T02
+
+- Premissas: relógio e geração de identificadores são portas pequenas e
+  compartilhadas; implementações determinísticas ficam em `application` para
+  uso explícito nos testes; a fonte real de IDs será `node:crypto.randomUUID`.
+- Abstrações: `Clock` com `now()` e `IdGenerator` com `generate()`; fakes
+  fixos não terão dependência de NestJS, HTTP, AWS SDK ou JWT.
+- Arquivos: portas em `src/shared/application/ports`, fakes em
+  `src/shared/application/testing`, implementações reais em
+  `src/shared/infrastructure`, teste arquitetural em `test/architecture` e
+  regras de importação em `eslint.config.mjs`.
+- Verificação: testes unitários dos relógios/IDs, teste de reprodutibilidade
+  dos fakes, teste arquitetural e lint com regras de fronteira.
+- Conflitos: nenhum; não será criado repositório ou tipo genérico sem uso
+  concreto.
+
 ## Fases
 
 | #  | Fase | Arquivo | Status | Concluída em |
@@ -67,7 +83,7 @@ Fase 01 — Tracer bullet e fundação observável.
 | ID  | Fase | Status | Evidências |
 |-----|------|--------|------------|
 | T01 | 01 | Concluída | `npm ci --ignore-scripts --no-audit --no-fund`, lint, typecheck, teste unitário (1 suíte/4 testes), scripts de integração/E2E, build, bootstrap válido na porta 3010 e startup inválido com saída 1 sanitizada; `git diff --check` sem erros. |
-| T02 | 01 | Pendente | — |
+| T02 | 01 | Concluída | Lint com fronteiras, typecheck e `npm test` (6 suítes/11 testes) aprovados; produção usa `node:crypto.randomUUID`, fakes são determinísticos e teste arquitetural não encontrou dependências proibidas. |
 | T03 | 01 | Pendente | — |
 | T04 | 01 | Pendente | — |
 | T05 | 01 | Pendente | — |

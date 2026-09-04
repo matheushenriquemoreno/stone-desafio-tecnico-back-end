@@ -47,6 +47,9 @@ Estruturar o projeto Node.js/NestJS em TypeScript estrito com `npm`, `package-lo
 
 ## Tarefa T02 — Definir fronteiras transversais de tempo, identidade e camadas
 
+| Status | Concluída |
+| ------ | --------- |
+
 Criar as portas de relógio e geração de identificadores criptograficamente seguros, os tipos comuns estritamente necessários e as regras de importação que impeçam domínio e aplicação de dependerem de NestJS, HTTP, AWS SDK ou JWT. Fornecer implementações de produção e substitutos determinísticos para testes.
 
 - **Requisitos relacionados:** `EXPECT-05`, `EXPECT-07`.
@@ -56,6 +59,18 @@ Criar as portas de relógio e geração de identificadores criptograficamente se
 - **Testes e verificações:** testes unitários das implementações e teste arquitetural/lint que rejeite dependência proibida; IDs de teste e instantes devem ser repetíveis.
 - **Critérios de conclusão:** casos de uso podem receber relógio e gerador por porta; implementação real usa fonte criptograficamente segura; teste automatizado protege a direção das dependências.
 - **Riscos ou premissas:** abstrações comuns ficam limitadas às fontes realmente compartilhadas; não criar repositório genérico.
+
+### Evidência de execução T02
+
+- `npm run lint` — concluído, incluindo regras de imports proibidos nas
+  camadas internas.
+- `npm run typecheck` — concluído com TypeScript estrito.
+- `npm test` — concluído; 6 suítes e 11 testes aprovados, cobrindo relógio do
+  sistema, relógio fixo, gerador seguro, gerador determinístico e fronteiras
+  de dependência.
+- A implementação de produção usa `node:crypto.randomUUID`; os substitutos
+  de teste retornam instantes e IDs configurados de forma repetível.
+- `git diff --check` — sem erros.
 
 ## Tarefa T03 — Padronizar correlação, erros e logs sanitizados
 
