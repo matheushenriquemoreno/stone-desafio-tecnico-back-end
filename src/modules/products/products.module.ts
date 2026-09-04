@@ -18,8 +18,10 @@ import { AuthModule } from '../auth/auth.module';
 import { CreateProduct } from './application/create-product/create-product';
 import { GetProduct } from './application/get-product/get-product';
 import { ListProducts } from './application/list-products/list-products';
+import { UpdateProduct } from './application/update-product/update-product';
 import {
   PRODUCT_REPOSITORY,
+  type ProductUpdateRepository,
   type ProductRepository,
 } from './application/ports/product-repository';
 import { DynamoDbProductRepository } from './infrastructure/persistence/dynamodb-product.repository';
@@ -56,6 +58,14 @@ import { ProductsController } from './presentation/products.controller';
       provide: ListProducts,
       useFactory: (productRepository: ProductRepository): ListProducts =>
         new ListProducts(productRepository),
+    },
+    {
+      inject: [CLOCK, PRODUCT_REPOSITORY],
+      provide: UpdateProduct,
+      useFactory: (
+        clock: Clock,
+        productRepository: ProductUpdateRepository,
+      ): UpdateProduct => new UpdateProduct(clock, productRepository),
     },
     { provide: PRODUCT_CURSOR_CODEC, useClass: DynamoDbCursorCodec },
     {

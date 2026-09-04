@@ -184,4 +184,60 @@ describe('DynamoDbProductRepository', () => {
       TableName: 'products',
     });
   });
+
+  it('updates only changed fields with an existence condition and returns the item', async () => {
+    const fake = createFakeClient(async () => ({
+      Attributes: {
+        createdAt: '2026-09-04T12:00:00.000Z',
+        description: 'Descrição nova',
+        id: 'product-123',
+        imageUrl: 'https://example.com/product.png',
+        name: 'Produto',
+        price: 109.9,
+        updatedAt: '2026-09-04T13:00:00.000Z',
+      },
+    }));
+    const repository = new DynamoDbProductRepository(fake.client, 'products', cursorCodec);
+
+    const updatedProduct = await repository.update(createProduct(), ['description', 'price']);
+
+    expect(updatedProduct?.toPublicData()).toEqual({
+      createdAt: '2026-09-04T12:00:00.000Z',
+      description: 'Descrição nova',
+      id: 'product-123',
+      imageUrl: 'https://example.com/product.png',
+      name: 'Produto',
+      price: 109.9,
+      updatedAt: '2026-09-04T13:00:00.000Z',
+    });
+    expect(fake.commands[0]?.input).toEqual({
+      ConditionExpression: 'attribute_exists(id)',
+      ExpressionAttributeNames: {
+        '#description': 'description',
+        '#price': 'price',
+        '#updatedAt': 'updatedAt',
+      },
+      ExpressionAttributeValues: {
+        ':description': 'Descrição do produto',
+        ':price': 99.9,
+        ':updatedAt': '2026-09-04T12:00:00.000Z',
+      },
+      Key: { id: 'product-123' },
+      ReturnValues: 'ALL_NEW',
+      TableName: 'products',
+      UpdateExpression: 'SET #price = :price, #description = :description, #updatedAt = :updatedAt',
+    });
+  });
+
+  it('maps a conditional update failure to absence', async () => {
+    const conditionalFailure = Object.assign(new Error('condition failed'), {
+      name: 'ConditionalCheckFailedException',
+    });
+    const fake = createFakeClient(async () => {
+      throw conditionalFailure;
+    });
+    const repository = new DynamoDbProductRepository(fake.client, 'products', cursorCodec);
+
+    await expect(repository.update(createProduct(), ['price'])).resolves.toBeNull();
+  });
 });

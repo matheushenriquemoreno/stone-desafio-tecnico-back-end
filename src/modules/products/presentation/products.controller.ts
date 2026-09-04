@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -28,6 +29,7 @@ import { AccessTokenGuard } from '../../auth/presentation/access-token.guard';
 import { CreateProduct } from '../application/create-product/create-product';
 import { GetProduct } from '../application/get-product/get-product';
 import { ListProducts } from '../application/list-products/list-products';
+import { UpdateProduct } from '../application/update-product/update-product';
 import type { ProductPage } from '../application/ports/product-repository';
 import type { PublicProductData } from '../domain/product';
 import { CreateProductDto } from './create-product.dto';
@@ -37,6 +39,7 @@ import {
   ProductsPageResponseDto,
   type PublicProductsPage,
 } from './products-page.response.dto';
+import { UpdateProductDto } from './update-product.dto';
 
 @ApiCookieAuth()
 @ApiTags('products')
@@ -47,6 +50,7 @@ export class ProductsController {
     private readonly createProduct: CreateProduct,
     private readonly getProduct: GetProduct,
     private readonly listProducts: ListProducts,
+    private readonly updateProduct: UpdateProduct,
   ) {}
 
   @ApiBadRequestResponse({ description: 'Query inválida.', type: ApiErrorDto })
@@ -100,6 +104,32 @@ export class ProductsController {
   @Get(':id')
   async get(@Param('id') id: string): Promise<PublicProductData> {
     const product = await this.getProduct.execute(id);
+    return product.toPublicData();
+  }
+
+  @ApiBadRequestResponse({ description: 'Patch inválido.', type: ApiErrorDto })
+  @ApiForbiddenResponse({
+    description: 'Proteção CSRF ou origem inválida.',
+    type: ApiErrorDto,
+  })
+  @ApiHeader({
+    description: 'Deve ser enviado com o valor literal 1.',
+    name: 'X-CSRF-Protection',
+    required: true,
+  })
+  @ApiNotFoundResponse({ description: 'Produto não encontrado.', type: ApiErrorDto })
+  @ApiOkResponse({ description: 'Produto atualizado.', type: ProductResponseDto })
+  @ApiOperation({ summary: 'Atualiza parcialmente um produto.' })
+  @ApiUnauthorizedResponse({ description: 'Cookie inválido ou ausente.', type: ApiErrorDto })
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() input: UpdateProductDto,
+  ): Promise<PublicProductData> {
+    const product = await this.updateProduct.execute({
+      patch: input,
+      productId: id,
+    });
     return product.toPublicData();
   }
 

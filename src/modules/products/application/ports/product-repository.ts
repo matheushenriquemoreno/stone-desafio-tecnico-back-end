@@ -13,10 +13,13 @@ export interface ProductRepository {
   save(product: Product): Promise<void>;
 }
 
-export interface ProductMaintenanceRepository extends ProductRepository {
-  delete(id: string): Promise<boolean>;
+export interface ProductUpdateRepository extends ProductRepository {
   update(
     product: Product,
     changedFields: readonly ProductEditableField[],
   ): Promise<Product | null>;
+}
+
+export interface ProductMaintenanceRepository extends ProductUpdateRepository {
+  delete(id: string): Promise<boolean>;
 }

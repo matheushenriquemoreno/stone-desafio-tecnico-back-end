@@ -126,4 +126,30 @@ describe('DynamoDB product repository', () => {
     expect(new Set(listedIds).size).toBe(listedIds.length);
     expect(listedIds).toEqual(expect.arrayContaining(products));
   });
+
+  it('updates only selected attributes and preserves the remaining product data', async () => {
+    const original = createProduct('product-update');
+    await repository.save(original);
+    const updated = Product.create({
+      createdAt: original.createdAt,
+      description: 'Descrição atualizada',
+      id: original.id,
+      imageUrl: original.imageUrl,
+      name: original.name,
+      price: 109.9,
+      updatedAt: new Date('2026-09-04T13:00:00.000Z'),
+    });
+
+    const persisted = await repository.update(updated, ['description', 'price']);
+
+    expect(persisted?.toPublicData()).toEqual({
+      createdAt: '2026-09-04T12:00:00.000Z',
+      description: 'Descrição atualizada',
+      id: 'product-update',
+      imageUrl: 'https://example.com/product.png',
+      name: 'Produto',
+      price: 109.9,
+      updatedAt: '2026-09-04T13:00:00.000Z',
+    });
+  });
 });

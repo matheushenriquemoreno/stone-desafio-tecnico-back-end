@@ -7,7 +7,7 @@ import {
   type ProductPatch,
 } from '../../domain/product';
 import { InvalidProductDataError } from '../../domain/errors/product-domain.error';
-import type { ProductMaintenanceRepository } from '../ports/product-repository';
+import type { ProductUpdateRepository } from '../ports/product-repository';
 
 export interface UpdateProductInput {
   readonly patch: ProductPatch;
@@ -17,7 +17,7 @@ export interface UpdateProductInput {
 export class UpdateProduct {
   constructor(
     private readonly clock: Clock,
-    private readonly productRepository: ProductMaintenanceRepository,
+    private readonly productRepository: ProductUpdateRepository,
   ) {}
 
   async execute(input: UpdateProductInput): Promise<Product> {

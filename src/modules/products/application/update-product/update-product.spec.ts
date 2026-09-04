@@ -6,12 +6,12 @@ import type {
 } from '../../domain/product';
 import { ProductNotFoundError } from '../errors/product-not-found.error';
 import type {
-  ProductMaintenanceRepository,
+  ProductUpdateRepository,
   ProductPage,
 } from '../ports/product-repository';
 import { UpdateProduct } from './update-product';
 
-class RecordingProductRepository implements ProductMaintenanceRepository {
+class RecordingProductRepository implements ProductUpdateRepository {
   product: Product | null = null;
   updatedProduct: Product | undefined;
   changedFields: readonly ProductEditableField[] | undefined;
@@ -38,9 +38,6 @@ class RecordingProductRepository implements ProductMaintenanceRepository {
     return this.updateResult === undefined ? product : this.updateResult;
   }
 
-  async delete(): Promise<boolean> {
-    return true;
-  }
 }
 
 function createProduct(): Product {
