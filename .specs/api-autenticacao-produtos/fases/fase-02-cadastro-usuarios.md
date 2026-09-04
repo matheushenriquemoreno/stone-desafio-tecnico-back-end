@@ -51,6 +51,19 @@ Definir a porta de hash de senha e seu adaptador Argon2id, com criação e verif
 - **Critérios de conclusão:** somente o hash deixa a fronteira do adaptador; parâmetros não dependem de relógio ou espera real nos testes; nenhuma senha ou hash aparece em saída pública.
 - **Riscos ou premissas:** calibrar parâmetros sem criar uma meta de latência inexistente no PRD; registrar os valores adotados no código/configuração.
 
+### Evidência de execução T07
+
+- `npm test -- --runInBand src/modules/auth/infrastructure/security/argon2-password-hasher.spec.ts` — concluído; 1 suíte e 3 testes aprovados.
+- O adaptador produz hashes na variante `Argon2id` com parâmetros explícitos
+  `memoryCost=19456`, `timeCost=2` e `parallelism=1`; o teste confirma o
+  formato e a verificação da senha correta.
+- A verificação da senha incorreta e de hash malformado retorna `false`, sem
+  exceção pública com entrada, hash ou detalhe interno.
+- `npm run lint`, `npm run typecheck`, `npm run build` e `git diff --check` —
+  concluídos sem erros.
+- A aplicação depende da porta `PasswordHasher`; Argon2id aparece somente no
+  adaptador de infraestrutura e não nas camadas internas.
+
 ## Tarefa T08 — Persistir usuários com unicidade atômica
 
 Definir uma porta específica `UserRepository` e implementar o adaptador DynamoDB para `PutItem` condicional por e-mail normalizado e `GetItem` para autenticação futura. Mapear somente a falha de condição para conflito de e-mail e tratar demais falhas como erro interno sanitizado.
