@@ -1,6 +1,9 @@
 import {
   Controller,
+  Get,
+  Head,
   Module,
+  Options,
   Post,
   type MiddlewareConsumer,
   type NestModule,
@@ -22,6 +25,22 @@ const allowedOrigin = 'https://app.example.com';
 @Controller('probe')
 class CsrfProbeController {
   static calls = 0;
+
+  @Get()
+  get(): { method: 'GET' } {
+    CsrfProbeController.calls += 1;
+    return { method: 'GET' };
+  }
+
+  @Head()
+  head(): void {
+    CsrfProbeController.calls += 1;
+  }
+
+  @Options()
+  options(): void {
+    CsrfProbeController.calls += 1;
+  }
 
   @Post()
   create(): { created: true } {
@@ -55,7 +74,7 @@ class CsrfProbeModule implements NestModule {
   }
 }
 
-describe('CSRF protection', () => {
+describe('proteção contra CSRF por SameSite e origem', () => {
   let app: INestApplication;
 
   beforeEach(async () => {
@@ -68,29 +87,41 @@ describe('CSRF protection', () => {
     await app.close();
   });
 
-  it('allows a mutation with the literal CSRF header and an allowed origin', async () => {
+  it('allows a mutation from an exact allowed Origin without a custom header', async () => {
     const response = await request(app.getHttpServer() as Server)
       .post('/probe')
-      .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1');
+      .set('Origin', allowedOrigin);
 
     expect(response.status).toBe(201);
     expect(response.body).toEqual({ created: true });
     expect(CsrfProbeController.calls).toBe(1);
   });
 
-  it.each([undefined, '0', 'true', '01'])(
-    'rejects a mutation with invalid CSRF value %j before the controller',
-    async (csrfHeader) => {
-      const requestBuilder = request(app.getHttpServer() as Server)
+  it('allows the API own origin by exact protocol and host match', async () => {
+    const response = await request(app.getHttpServer() as Server)
+      .post('/probe')
+      .set('Host', 'api.example.com')
+      .set('Origin', 'http://api.example.com');
+
+    expect(response.status).toBe(201);
+    expect(CsrfProbeController.calls).toBe(1);
+  });
+
+  it('allows a mutation with an allowed Referer when Origin is absent', async () => {
+    const response = await request(app.getHttpServer() as Server)
+      .post('/probe')
+      .set('Referer', `${allowedOrigin}/products/123`);
+
+    expect(response.status).toBe(201);
+    expect(CsrfProbeController.calls).toBe(1);
+  });
+
+  it.each(['https://evil.example.com', 'null', 'not-an-origin'])(
+    'rejects an unauthorized or malformed Origin value %j before the controller',
+    async (origin) => {
+      const response = await request(app.getHttpServer() as Server)
         .post('/probe')
-        .set('Origin', allowedOrigin);
-
-      if (csrfHeader !== undefined) {
-        requestBuilder.set('X-CSRF-Protection', csrfHeader);
-      }
-
-      const response = await requestBuilder;
+        .set('Origin', origin);
 
       expect(response.status).toBe(403);
       expect(response.body).toMatchObject({
@@ -102,37 +133,56 @@ describe('CSRF protection', () => {
     },
   );
 
-  it('rejects an unlisted origin even when the CSRF header is present', async () => {
+  it.each(['https://evil.example.com/products', 'not-a-url'])(
+    'rejects an unauthorized or malformed Referer value %j',
+    async (referer) => {
+      const response = await request(app.getHttpServer() as Server)
+        .post('/probe')
+        .set('Referer', referer);
+
+      expect(response.status).toBe(403);
+      expect(response.body).toMatchObject({
+        code: 'REQUEST_FORBIDDEN',
+        statusCode: 403,
+      });
+      expect(CsrfProbeController.calls).toBe(0);
+    },
+  );
+
+  it('does not use an allowed Referer to compensate for an invalid Origin', async () => {
     const response = await request(app.getHttpServer() as Server)
       .post('/probe')
       .set('Origin', 'https://evil.example.com')
-      .set('X-CSRF-Protection', '1');
+      .set('Referer', `${allowedOrigin}/products`);
 
     expect(response.status).toBe(403);
-    expect(response.body).toMatchObject({
-      code: 'REQUEST_FORBIDDEN',
-      statusCode: 403,
-    });
     expect(CsrfProbeController.calls).toBe(0);
   });
 
-  it('accepts a non-browser mutation without Origin when CSRF is present', async () => {
-    const response = await request(app.getHttpServer() as Server)
-      .post('/probe')
-      .set('X-CSRF-Protection', '1');
+  it('allows a client without browser context headers to continue', async () => {
+    const response = await request(app.getHttpServer() as Server).post('/probe');
 
     expect(response.status).toBe(201);
     expect(CsrfProbeController.calls).toBe(1);
   });
 
-  it('accepts the API own origin by exact protocol and host match', async () => {
-    const response = await request(app.getHttpServer() as Server)
-      .post('/probe')
-      .set('Host', 'api.example.com')
-      .set('Origin', 'http://api.example.com')
-      .set('X-CSRF-Protection', '1');
+  it('skips origin validation for GET and HEAD', async () => {
+    const getResponse = await request(app.getHttpServer() as Server)
+      .get('/probe')
+      .set('Origin', 'https://evil.example.com');
+    const headResponse = await request(app.getHttpServer() as Server)
+      .head('/probe')
+      .set('Origin', 'https://evil.example.com');
 
-    expect(response.status).toBe(201);
-    expect(CsrfProbeController.calls).toBe(1);
+    expect(getResponse.status).toBe(200);
+    expect(headResponse.status).toBe(200);
+  });
+
+  it('skips origin validation for OPTIONS preflight', async () => {
+    const response = await request(app.getHttpServer() as Server)
+      .options('/probe')
+      .set('Origin', 'https://evil.example.com');
+
+    expect(response.status).toBeLessThan(400);
   });
 });

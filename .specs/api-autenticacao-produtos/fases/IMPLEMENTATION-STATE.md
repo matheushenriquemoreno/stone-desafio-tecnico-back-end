@@ -11,8 +11,30 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 ## Fase ativa
 
-A Fase 06 está `Concluída` após o review aprovado; a Fase 07 permanece
-`Pendente` e não foi iniciada nesta solicitação.
+A Fase 06 está `Concluída` após o review aprovado. A Fase 07 está `Em execução`
+para aplicar a revisão material aprovada da proteção CSRF; a Fase 08 permanece
+`Pendente` e só poderá começar após o review da Fase 07.
+
+### Preparação da Fase 07
+
+- Padrões: reutilizar a fábrica comum de cookie, o middleware transversal, a
+  configuração CORS, o OpenAPI gerado e os testes E2E existentes; manter o
+  domínio sem dependências HTTP.
+- Premissas: `SameSite=Strict` vale em local e testes; `Secure=false` e nome sem
+  prefixo continuam somente a adaptação local HTTP já existente. `Origin` tem
+  precedência sobre `Referer`; ambos ausentes são aceitos e seguem para as
+  etapas posteriores.
+- Abstrações reutilizadas: `createAuthCookieOptions`,
+  `CsrfProtectionMiddleware`, `createCorsOptions`, `setupOpenApi` e o filtro
+  `RequestForbiddenError`.
+- Arquivos previstos: fábrica e testes de cookie, middleware e E2E de origem,
+  controllers, CORS, OpenAPI, consumidores E2E, contrato, PRD, design, ADR-006,
+  plano e matriz de conformidade.
+- Verificação: testes dirigidos da política, busca residual do header removido,
+  lint, typecheck, testes unitários, integração, E2E, build e `git diff --check`.
+- Conflitos: nenhum após a aprovação da revisão material; ADR-005 permanece
+  válida para cookie, JWT e consumo direto, com CSRF/origem substituídos pela
+  ADR-006.
 
 ### Preparação da Fase 05
 
@@ -468,11 +490,14 @@ A Fase 06 está `Concluída` após o review aprovado; a Fase 07 permanece
 | T31 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/presentation/errors/api-exception.filter.spec.ts src/shared/infrastructure/rate-limit/in-memory-rate-limit-metrics.spec.ts` (2 suítes/5 testes), `npm run test:e2e -- --runTestsByPath test/e2e/rate-limit.e2e.spec.ts` (1 suíte/2 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; `429 RATE_LIMIT_EXCEEDED`, `Retry-After`, correlação, métrica agregada e bloqueio antes do controller comprovados. |
 | T32 | 06 | Concluída | `npm run test:e2e -- --runTestsByPath test/e2e/openapi.e2e.spec.ts` (1 suíte/1 teste), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; `/docs`, `/docs-json`, seis caminhos/nove operações, cookie auth, ausência de Bearer e `429` documentado comprovados. |
 | T33 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath test/conformance/acceptance-criteria.matrix.spec.ts test/conformance/sensitive-artifacts.spec.ts` (2 suítes/4 testes), gates completos com 35 suítes/168 testes unitários, 3 suítes/9 testes de integração e 15 suítes/87 testes E2E, além de lint, typecheck, build e `git diff --check`; matriz 1–27, fonte de produção, placeholder de ambiente e artefatos opcionais foram verificados. |
-| T34 | 07 | Pendente | — |
-| T35 | 07 | Pendente | — |
+| T34 | 07 | Concluída | Cookie e testes atualizados para `SameSite=Strict`; `npm test -- --runInBand --runTestsByPath src/modules/auth/presentation/auth-cookie.spec.ts` e E2E de login/logout (2 suítes/9 testes) aprovados. |
+| T35 | 07 | Concluída | Middleware e E2E de origem implementados; `npm run lint`, `npm run typecheck` e E2E dedicado (1 suíte/12 testes) aprovados. |
 | T36 | 07 | Pendente | — |
-| T37 | 07 | Pendente | — |
-| T38 | 07 | Pendente | — |
+| T37 | 08 | Pendente | — |
+| T38 | 08 | Pendente | — |
+| T39 | 08 | Pendente | — |
+| T40 | 08 | Pendente | — |
+| T41 | 08 | Pendente | — |
 
 ## Bloqueios e desvios
 

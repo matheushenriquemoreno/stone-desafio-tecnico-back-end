@@ -11,7 +11,7 @@ describe('auth cookie policy', () => {
       httpOnly: true,
       maxAge: 900_000,
       path: '/',
-      sameSite: 'lax',
+      sameSite: 'strict',
       secure: true,
     });
   });
@@ -26,7 +26,7 @@ describe('auth cookie policy', () => {
       httpOnly: true,
       maxAge: 0,
       path: '/',
-      sameSite: 'lax',
+      sameSite: 'strict',
       secure: true,
     });
   });

@@ -15,7 +15,7 @@ export function createAuthCookieOptions(
     httpOnly: true,
     maxAge,
     path: '/',
-    sameSite: 'lax',
+    sameSite: 'strict',
     secure: settings.cookieSecure,
   };
 }

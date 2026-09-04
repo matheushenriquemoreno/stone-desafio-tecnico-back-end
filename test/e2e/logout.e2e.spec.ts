@@ -50,8 +50,7 @@ describe('POST /auth/logout', () => {
   ])('returns 204 and expires the cookie with $description', async ({ cookie }) => {
     const logoutRequest = request(app.getHttpServer())
       .post('/auth/logout')
-      .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1');
+      .set('Origin', allowedOrigin);
 
     if (cookie !== undefined) {
       logoutRequest.set('Cookie', cookie);
@@ -64,7 +63,7 @@ describe('POST /auth/logout', () => {
     expect(response.headers['set-cookie']).toHaveLength(1);
     expect(response.headers['set-cookie']?.[0]).toEqual(
       expect.stringMatching(
-        /^stone_access_token=; Max-Age=0; Path=\/; Expires=.+; HttpOnly; SameSite=Lax$/,
+        /^stone_access_token=; Max-Age=0; Path=\/; Expires=.+; HttpOnly; SameSite=Strict$/,
       ),
     );
     expect(response.headers['set-cookie']?.[0]).not.toContain('Domain=');
