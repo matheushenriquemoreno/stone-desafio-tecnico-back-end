@@ -179,6 +179,21 @@ A Fase 06 está `Em execução`, iniciada após o review aprovado da Fase 05.
 - Conflitos: nenhum com ADR-004; a topologia de instância única permanecerá
   explícita.
 
+### Preparação da tarefa T30
+
+- Premissas: a política será uma tabela única por método e template; rotas
+  conhecidas não dependerão do fallback; `OPTIONS` será ignorado antes do
+  contador e as falhas downstream continuarão consumindo o bucket.
+- Abstrações: `RateLimitMiddleware` resolverá IP, template e política e
+  delegará ao `RateLimiter`; guards, DTOs, casos de uso e repositórios não
+  conhecerão a política.
+- Arquivos: tabela/resolvedor de políticas, middleware, providers do módulo,
+  composição do pipeline e testes unitários/E2E.
+- Verificação: todos os limites da ADR-004, fallback de rota, IDs no mesmo
+  template, erros de autenticação/validação e preflight sem consumo.
+- Conflitos: nenhum; a ordem CORS → correlation → rate limit → CSRF → guards
+  será mantida explícita.
+
 ### Encerramento da Fase 03
 
 - T13–T17 concluídas com evidências unitárias e E2E.
@@ -407,6 +422,7 @@ A Fase 06 está `Em execução`, iniciada após o review aprovado da Fase 05.
 | T26 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts src/modules/products/application/update-product/update-product.spec.ts` (2 suítes/21 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/5 testes), `npm run test:e2e -- --runTestsByPath test/e2e/update-product.e2e.spec.ts` (1 suíte/10 testes), `npm run lint` e `npm run typecheck` aprovados; `UpdateItem` condicional, patch estrito, preservação, falha técnica, proteção HTTP, compartilhamento e OpenAPI comprovados. |
 | T27 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/delete-product/delete-product.spec.ts src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (2 suítes/11 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/6 testes), `npm run test:e2e -- --runTestsByPath test/e2e/delete-product.e2e.spec.ts` (1 suíte/4 testes), `npm run lint` e `npm run typecheck` aprovados; `DeleteItem` condicional, `204` vazio, repetição `404`, compartilhamento, proteções e OpenAPI comprovados. |
 | T28 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/infrastructure/configuration.spec.ts src/shared/presentation/http/effective-client-ip.spec.ts src/shared/infrastructure/dynamodb/dynamodb.client.spec.ts` (3 suítes/16 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; allowlist explícita de proxies, cadeia confiável, normalização de IP e rejeição segura de configuração inválida comprovadas. |
+| T29 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/infrastructure/rate-limit/in-memory-fixed-window-rate-limiter.spec.ts` (1 suíte/6 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; Fixed Window, chave estruturada por IP/método/template, não prorrogação, expiração e limpeza comprovadas. |
 | T29 | 06 | Pendente | — |
 | T30 | 06 | Pendente | — |
 | T31 | 06 | Pendente | — |
