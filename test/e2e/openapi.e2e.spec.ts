@@ -44,7 +44,13 @@ describe('OpenAPI export', () => {
     const jsonResponse = await request(app.getHttpServer()).get('/docs-json');
     const document = jsonResponse.body as {
       components?: {
-        schemas?: Record<string, unknown>;
+        schemas?: Record<
+          string,
+          {
+            properties?: Record<string, unknown>;
+            required?: string[];
+          }
+        >;
         securitySchemes?: Record<string, { in?: string; type?: string; scheme?: string }>;
       };
       openapi?: string;
@@ -92,5 +98,11 @@ describe('OpenAPI export', () => {
     ).toBe(false);
     expect(schemes.some((scheme) => scheme.in === 'header')).toBe(false);
     expect(document.components?.schemas?.ApiErrorDto).toBeDefined();
+    expect(document.components?.schemas?.ProductsPageResponseDto).toMatchObject({
+      properties: {
+        total: { example: 21, minimum: 0, type: 'integer' },
+      },
+      required: expect.arrayContaining(['items', 'total']),
+    });
   });
 });

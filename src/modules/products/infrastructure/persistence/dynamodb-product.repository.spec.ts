@@ -1,4 +1,5 @@
 import { Product } from '../../domain/product';
+import { InvalidProductCursorError } from '../../application/errors/invalid-product-cursor.error';
 import { ProductIdAlreadyExistsError } from '../../application/errors/product-id-already-exists.error';
 import type { DocumentClient } from '../../../../shared/infrastructure/dynamodb/dynamodb.tokens';
 import { DynamoDbProductRepository } from './dynamodb-product.repository';
@@ -145,44 +146,110 @@ describe('DynamoDbProductRepository', () => {
     );
   });
 
-  it('scans with the requested limit and translates continuation keys', async () => {
-    let callCount = 0;
-    const fake = createFakeClient(async () => {
-      callCount += 1;
+  it('lists a page and sums every internal page of the consistent count', async () => {
+    const countCursor = { id: 'count-page-1' };
+    const fake = createFakeClient(async (command) => {
+      const input = command.input as {
+        ExclusiveStartKey?: Record<string, unknown>;
+        Select?: string;
+      };
 
-      if (callCount === 1) {
-        return {
-          Items: [
-            {
-              createdAt: '2026-09-04T12:00:00.000Z',
-              description: 'Descrição do produto',
-              id: 'product-123',
-              imageUrl: 'https://example.com/product.png',
-              name: 'Produto',
-              price: 99.9,
-              updatedAt: '2026-09-04T12:00:00.000Z',
-            },
-          ],
-          LastEvaluatedKey: { id: 'product-123' },
-        };
+      if (input.Select === 'COUNT') {
+        if (input.ExclusiveStartKey === undefined) {
+          return { Count: 2, LastEvaluatedKey: countCursor };
+        }
+
+        return { Count: 1 };
+      }
+
+      return {
+        Items: [
+          {
+            createdAt: '2026-09-04T12:00:00.000Z',
+            description: 'Descrição do produto',
+            id: 'product-123',
+            imageUrl: 'https://example.com/product.png',
+            name: 'Produto',
+            price: 99.9,
+            updatedAt: '2026-09-04T12:00:00.000Z',
+          },
+        ],
+        LastEvaluatedKey: { id: 'product-123' },
+      };
+    });
+    const repository = new DynamoDbProductRepository(fake.client, 'products', cursorCodec);
+
+    const page = await repository.list(1);
+
+    expect(page.items).toHaveLength(1);
+    expect(page.total).toBe(3);
+    expect(page.nextCursor).toBe(cursorCodec.encode({ id: 'product-123' }));
+    expect(fake.commands.map((command) => command.input)).toEqual(
+      expect.arrayContaining([
+        { Limit: 1, TableName: 'products' },
+        { ConsistentRead: true, Select: 'COUNT', TableName: 'products' },
+        {
+          ConsistentRead: true,
+          ExclusiveStartKey: countCursor,
+          Select: 'COUNT',
+          TableName: 'products',
+        },
+      ]),
+    );
+  });
+
+  it('translates an opaque cursor and returns zero for an empty count', async () => {
+    const cursor = cursorCodec.encode({ id: 'product-123' });
+    const fake = createFakeClient(async (command) => {
+      const input = command.input as { Select?: string };
+
+      if (input.Select === 'COUNT') {
+        return {};
       }
 
       return { Items: [] };
     });
     const repository = new DynamoDbProductRepository(fake.client, 'products', cursorCodec);
 
-    const firstPage = await repository.list(1);
-    const secondPage = await repository.list(1, firstPage.nextCursor);
+    await expect(repository.list(1, cursor)).resolves.toEqual({ items: [], total: 0 });
+    expect(fake.commands.map((command) => command.input)).toEqual(
+      expect.arrayContaining([
+        {
+          ExclusiveStartKey: { id: 'product-123' },
+          Limit: 1,
+          TableName: 'products',
+        },
+      ]),
+    );
+  });
 
-    expect(firstPage.items).toHaveLength(1);
-    expect(firstPage.nextCursor).toBe(cursorCodec.encode({ id: 'product-123' }));
-    expect(secondPage).toEqual({ items: [] });
-    expect(fake.commands[0]?.input).toEqual({ Limit: 1, TableName: 'products' });
-    expect(fake.commands[1]?.input).toEqual({
-      ExclusiveStartKey: { id: 'product-123' },
-      Limit: 1,
-      TableName: 'products',
+  it('rejects an invalid cursor before issuing page or count reads', async () => {
+    const fake = createFakeClient(async () => {
+      throw new Error('should not read');
     });
+    const repository = new DynamoDbProductRepository(fake.client, 'products', cursorCodec);
+
+    await expect(repository.list(1, 'invalid-cursor')).rejects.toBeInstanceOf(
+      InvalidProductCursorError,
+    );
+    expect(fake.commands).toHaveLength(0);
+  });
+
+  it('fails the whole listing when the total count fails', async () => {
+    const technicalFailure = new Error('DynamoDB count unavailable');
+    const fake = createFakeClient(async (command) => {
+      const input = command.input as { Select?: string };
+
+      if (input.Select === 'COUNT') {
+        throw technicalFailure;
+      }
+
+      return { Items: [] };
+    });
+
+    const repository = new DynamoDbProductRepository(fake.client, 'products', cursorCodec);
+
+    await expect(repository.list(1)).rejects.toBe(technicalFailure);
   });
 
   it('updates only changed fields with an existence condition and returns the item', async () => {

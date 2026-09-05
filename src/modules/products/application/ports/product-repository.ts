@@ -5,6 +5,7 @@ export const PRODUCT_REPOSITORY = Symbol('PRODUCT_REPOSITORY');
 export interface ProductPage {
   readonly items: readonly Product[];
   readonly nextCursor?: string;
+  readonly total: number;
 }
 
 export interface ProductRepository {

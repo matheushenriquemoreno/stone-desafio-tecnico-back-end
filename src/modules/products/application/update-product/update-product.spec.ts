@@ -22,7 +22,7 @@ class RecordingProductRepository implements ProductUpdateRepository {
   }
 
   async list(): Promise<ProductPage> {
-    return { items: [] };
+    return { items: [], total: 0 };
   }
 
   async save(): Promise<void> {

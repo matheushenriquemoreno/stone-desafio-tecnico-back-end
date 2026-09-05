@@ -145,10 +145,12 @@ Atualização parcial aceita qualquer subconjunto desses campos:
 
 ```text
 Request:  GET /products?limit=20&cursor=<cursor-opaco>
-Response: { items: [...], nextCursor: "<cursor-opaco>" }
+Response: { items: [...], total: 42, nextCursor: "<cursor-opaco>" }
 ```
 
 A ausência de `nextCursor` indica que não há outra página. O cliente não deve interpretar o conteúdo do cursor.
+
+`total` é sempre retornado como inteiro não negativo e representa a quantidade exata de produtos existentes no catálogo, independentemente de `limit`, cursor ou quantidade de itens da página. Um catálogo vazio retorna `{ "items": [], "total": 0 }`.
 
 A API oferece navegação sequencial e não aceita número de página ou `offset`. Portanto, um cliente só consegue avançar usando o `nextCursor` recebido anteriormente. Retornar a páginas anteriores depende de o próprio cliente guardar os cursores já percorridos; não há suporte para saltar diretamente a uma página ainda não visitada.
 

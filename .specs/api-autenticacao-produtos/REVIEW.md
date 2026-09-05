@@ -3,10 +3,174 @@
 | Status       | Aprovado |
 | ------------ | -------- |
 | Created      | 2026-09-04 |
-| Last Updated | 2026-09-04 |
+| Last Updated | 2026-09-05 |
 
-**Escopo revisado:** fase 07 — Proteção CSRF por cookie e validação de origem
-**Versão da avaliação:** 7
+**Escopo revisado:** fase 08 — Total exato na listagem de produtos
+**Versão da avaliação:** 9
+
+## Avaliação independente da Fase 08 — versão 9
+
+### Revisor e escopo
+
+Esta avaliação foi executada por um subagente em contexto separado, sem
+alteração de código, documentação ou `REVIEW.md`. Foram analisados o PRD, o
+design técnico, o plano, a Fase 08, o estado, a ADR-003, o contrato da API, o
+diff da implementação e os testes dirigidos e completos.
+
+### Veredito independente
+
+**Veredito:** Aprovado
+
+Não foram encontrados achados bloqueadores, altos, médios ou baixos. O
+subagente confirmou o requisito `AAP-61`, os critérios 12, 13, 14, 15 e 28, a
+contagem consistente multipágina, a validação pré-I/O do cursor, a ausência de
+resposta parcial em falhas e o schema OpenAPI obrigatório.
+
+### Matriz de rastreabilidade independente
+
+| Requisito ou comportamento | Código | Teste/evidência | Status |
+| -------------------------- | ------ | --------------- | ------ |
+| `AAP-61`: total exato em toda listagem | `ProductPage`, `DynamoDbProductRepository`, `ProductsController` | Unitário do repositório (2/21), integração (1/6) e E2E de listagem (2/12) | Comprovado |
+| Critério 12: catálogo vazio | `list-products.e2e.spec.ts` | `{ items: [], total: 0 }` sem `nextCursor` | Comprovado |
+| Critério 13: limite e continuação | `ListProducts`, `DynamoDbProductRepository` | Página padrão com 20 itens, `nextCursor` e `total: 21` | Comprovado |
+| Critério 14: limite 1–100 | `ListProducts` e query DTO | `0`, `101`, `1.5` e `abc` retornam `400` | Comprovado |
+| Critério 15: cursor opaco | codec e adaptador DynamoDB | Cursor inválido rejeitado com zero comandos ao banco | Comprovado |
+| Critério 28: total independente de página | integração e E2E | `limit=1`, primeira/última página e total constante 21 | Comprovado |
+| Falha sem resposta parcial | `Promise.all` e filtro global | Falha da contagem rejeita a listagem e mapeia para `500 INTERNAL_ERROR` | Comprovado |
+| OpenAPI | `ProductsPageResponseDto` | `total` obrigatório, inteiro, mínimo zero e exemplo 21 | Comprovado |
+
+### Gates confirmados pelo revisor independente
+
+| Comando | Resultado |
+| ------- | --------- |
+| Testes dirigidos de aplicação/persistência | 2 suítes, 21 testes passaram |
+| Teste de integração dirigido | 1 suíte, 6 testes passaram |
+| E2E dirigido de listagem/OpenAPI | 2 suítes, 12 testes passaram |
+| `npm run lint` | Passou |
+| `npm run typecheck` | Passou |
+| `npm test` | 35 suítes, 171 testes passaram |
+| `npm run test:integration` | 3 suítes, 9 testes passaram |
+| `npm run test:e2e` | 15 suítes, 91 testes passaram |
+| `npm run build` | Passou |
+| `git diff --check` e `git status --short` | Passaram; árvore limpa |
+
+### Achados e riscos
+
+Não há achados abertos. Permanecem apenas os riscos já aceitos: o custo do
+`Scan` cresce com o catálogo e não existe snapshot transacional entre páginas
+internas; mutações concorrentes podem causar diferença momentânea, recalculada
+na requisição seguinte.
+
+### Próxima ação
+
+Manter a Fase 08 concluída e a Fase 09 `Pendente`; nenhuma tarefa da Fase 09
+deve ser iniciada sem nova autorização.
+
+## Histórico detalhado — versão 8
+
+## Avaliação da Fase 08 — versão 8
+
+### Artefatos analisados
+
+- PRD: [PRODUCT-REQUIREMENTS.md](PRODUCT-REQUIREMENTS.md)
+- Design técnico: [TECHNICAL-DESIGN.md](TECHNICAL-DESIGN.md)
+- Plano: [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md)
+- Fase: [fases/fase-08-total-exato-produtos.md](fases/fase-08-total-exato-produtos.md)
+- Estado: [fases/IMPLEMENTATION-STATE.md](fases/IMPLEMENTATION-STATE.md)
+- ADR: [ADR-003](../../docs/adr/ADR-003-modelagem-dynamodb.md)
+- Contrato: [Contrato-da-API.md](../../docs/Contrato-da-API.md)
+- Implementação: `ProductPage`, `DynamoDbProductRepository`, `ProductsController` e `ProductsPageResponseDto`
+- Testes: repositório, integração de produtos, E2E de listagem/OpenAPI e matriz de conformidade
+- Convenções: `rules/README.md`, `rules/principios-de-design.md`, `rules/codigo-como-um-livro.md` e `rules/checklist-de-implementacao.md`
+
+### Resumo executivo
+
+A Fase 08 foi revisada contra o PRD, o design, o plano, a ADR-003, o contrato
+HTTP e a implementação executável. O campo `total` é obrigatório na porta de
+aplicação e no DTO público; o adaptador valida o cursor antes de I/O, executa a
+página e a contagem em paralelo e percorre todas as páginas internas de um
+`Scan` consistente com `Select=COUNT`. Os gates completos passaram e não foram
+encontrados achados bloqueadores, altos, médios ou baixos.
+
+### Resultado das verificações obrigatórias
+
+| Verificação | Resultado | Evidência |
+| ------------ | --------- | --------- |
+| Requisitos | Atendida no recorte da fase | `AAP-61` e os requisitos de paginação `AAP-31`–`AAP-37` estão refletidos em `ProductPage`, no adaptador, no controller, no DTO e no contrato. |
+| Critérios de aceitação | Atendida | Critérios 12, 13, 14, 15 e 28 cobrem vazio, limite, cursor, fim da paginação e total global; E2E e unitários comprovam os casos. |
+| Testes | Atendida | `npm test` (35 suítes/171 testes), integração (3/9) e E2E (15/91) passaram; testes dirigidos de listagem/OpenAPI e matriz também passaram. |
+| Design técnico | Atendida | `DEC-21` e ADR-003 são respeitadas: `Scan` de contagem consistente, `Select=COUNT`, todos os `LastEvaluatedKey` e falha sem resposta parcial. |
+| Plano | Atendida | T37 e T38 estão concluídas; a Fase 09 continua `Pendente` e não foi iniciada. |
+| Escopo | Atendida | Não foram adicionados contador persistido, tabela auxiliar, cache, estimativa, alteração de cursor, limite, autenticação ou rate limit. |
+| Qualidade | Atendida | Lint, typecheck, build e `git diff --check` passaram. |
+| Padrões do projeto | Atendida | A contagem permanece no adaptador; aplicação, domínio e controller preservam suas fronteiras existentes; fakes e fixtures foram atualizados. |
+| Manutenibilidade | Atendida | O fluxo de contagem é explícito, iterativo e local ao adaptador, sem abstração genérica ou duplicação de regra HTTP. |
+| Riscos | Atendida com risco residual aceito | O custo proporcional ao catálogo e a ausência de snapshot transacional entre páginas estão documentados no PRD, design, ADR-003 e fase. |
+
+### Matriz de rastreabilidade da fase
+
+| Requisito | Código | Teste | Evidência | Status |
+| --------- | ------ | ----- | --------- | ------ |
+| `AAP-31`–`AAP-37` | `ProductPage`, `ListProducts`, `DynamoDbProductRepository`, `ProductsController` e `ProductsPageResponseDto` | `list-products.e2e.spec.ts`, testes do caso de uso e `dynamodb-cursor-codec.spec.ts` | Limite, cursor opaco, página final sem `nextCursor`, validação pré-I/O e serialização pública preservados com `total`. | Comprovado |
+| `AAP-61` | `dynamodb-product.repository.ts` (`countProducts`), `product-repository.ts`, controller e DTO | `dynamodb-product.repository.spec.ts`, `products.integration.spec.ts`, `list-products.e2e.spec.ts` | Contagem multipágina soma `Count`, usa `ConsistentRead=true`, é igual em páginas distintas, atualiza após exclusão e retorna 0 no catálogo vazio. | Comprovado |
+| `AAP-50`, `AAP-56`, `AAP-57` | `ProductsPageResponseDto` e setup OpenAPI existente | `list-products.e2e.spec.ts`, `openapi.e2e.spec.ts` | Schema publica `total` como inteiro, mínimo zero, obrigatório e com exemplo 21; documentação e contrato foram atualizados. | Comprovado |
+| `EXPECT-07`, `EXPECT-08` | Matriz de conformidade e suíte do projeto | `acceptance-criteria.matrix.spec.ts` e gates completos | Critério 28 rastreia o total exato; unitário, integração, E2E, lint, typecheck e build passam. | Comprovado |
+
+### Casos de erro e borda verificados
+
+- Catálogo vazio retorna `{ items: [], total: 0 }` sem `nextCursor`.
+- Catálogo com 21 produtos mantém `total: 21` na primeira, intermediárias e
+  última página, independentemente do limite e cursor.
+- Cursor inválido é rejeitado antes de qualquer comando ao DynamoDB.
+- Falha na leitura da contagem rejeita a listagem inteira, sem página parcial;
+  o tratamento HTTP existente mantém o mapeamento para `500 INTERNAL_ERROR`.
+- A contagem continua por múltiplos `LastEvaluatedKey` internos e cada comando
+  usa `Select=COUNT` e leitura consistente.
+
+### Achados
+
+| ID | Severidade | Achado | Evidência | Impacto | Recomendação | Encaminhamento |
+| -- | ---------- | ------ | --------- | ------- | ------------ | -------------- |
+| — | — | Nenhum achado aberto. | Código, testes e documentação alinhados ao escopo da Fase 08. | Nenhum impacto pendente. | Manter a decisão registrada e reavaliar o custo antes de escalar o catálogo. | Trabalho concluído; Fase 09 permanece pendente. |
+
+### Riscos residuais e ressalvas aceitas
+
+- Cada requisição percorre o catálogo para produzir o total; o custo e a
+  latência crescem com a tabela. O catálogo pequeno do desafio aceita esse
+  custo; escalar exige nova decisão arquitetural.
+- O DynamoDB não oferece snapshot transacional para várias páginas do `Scan`.
+  Criações ou exclusões concorrentes podem causar diferença momentânea entre
+  itens e total; a próxima requisição recalcula o valor. Esse comportamento
+  está explicitamente aceito no PRD, design e ADR-003.
+
+### Resultado dos gates executados
+
+| Comando | Resultado |
+| ------- | --------- |
+| `npm run lint` | Passou |
+| `npm run typecheck` | Passou |
+| `npm test -- --runInBand` | 35 suítes e 171 testes passaram |
+| `npm run test:integration` | 3 suítes e 9 testes passaram |
+| `npm run test:e2e` | 15 suítes e 91 testes passaram |
+| `npm run build` | Passou |
+| `git diff --check` | Passou |
+
+### Veredito
+
+**Veredito:** Aprovado
+
+**Fundamentação:** T37 e T38 atendem ao requisito `AAP-61`, aos critérios de
+aceitação e à decisão `DEC-21`, com evidência automatizada do comportamento
+funcional, do contrato OpenAPI e da propagação de falhas. A Fase 08 está
+concluída; a Fase 09 pode ser considerada somente em uma execução autorizada
+posterior.
+
+### Próxima ação
+
+Trabalho da Fase 08 concluído. Manter a Fase 09 como `Pendente` até nova
+autorização de execução.
+
+## Histórico detalhado — versão 7
 
 ## Avaliação da Fase 07 — versão 7
 
@@ -123,6 +287,8 @@ próxima fase pendente; seu início pode ocorrer somente após esta aprovação.
 
 | Versão | Data | Escopo | Veredito | Resumo |
 | ------ | ---- | ------ | -------- | ------ |
+| 9 | 2026-09-05 | Fase 08 — review independente por subagente | Aprovado | Contexto separado confirmou requisitos, critérios, evidências, gates e riscos sem achados abertos. |
+| 8 | 2026-09-05 | Fase 08 — Total exato na listagem de produtos | Aprovado | `total` obrigatório, contagem consistente multipágina, contrato/OpenAPI e gates completos passaram. |
 | 7 | 2026-09-04 | Fase 07 — Proteção CSRF por cookie e validação de origem | Aprovado | SameSite Strict, Origin/Referer, remoção do header, contratos e gates passaram; referência obsoleta do estado foi corrigida. |
 | 6 | 2026-09-04 | Fase 06 — Rate limit e conformidade operacional da API | Aprovado | Fixed Window, políticas, OpenAPI e matriz de conformidade passaram os gates. |
 | 5 | 2026-09-04 | Fase 05 — Paginação, atualização e exclusão de produtos | Aprovado | Cursor, listagem, atualização e exclusão passaram os gates; A-01/A-02 permaneceram informativos. |

@@ -1,7 +1,7 @@
 import { Product } from '../../domain/product';
 import type { Product as ProductEntity } from '../../domain/product';
 import { ProductNotFoundError } from '../errors/product-not-found.error';
-import type { ProductRepository } from '../ports/product-repository';
+import type { ProductPage, ProductRepository } from '../ports/product-repository';
 import { GetProduct } from './get-product';
 
 class RecordingProductRepository implements ProductRepository {
@@ -18,8 +18,8 @@ class RecordingProductRepository implements ProductRepository {
     return this.product;
   }
 
-  async list(): Promise<{ items: readonly ProductEntity[] }> {
-    return { items: [] };
+  async list(): Promise<ProductPage> {
+    return { items: [], total: 0 };
   }
 
   async save(): Promise<void> {
