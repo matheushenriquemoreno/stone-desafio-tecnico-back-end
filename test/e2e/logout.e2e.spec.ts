@@ -50,8 +50,7 @@ describe('POST /auth/logout', () => {
   ])('returns 204 and expires the cookie with $description', async ({ cookie }) => {
     const logoutRequest = request(app.getHttpServer())
       .post('/auth/logout')
-      .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1');
+      .set('Origin', allowedOrigin);
 
     if (cookie !== undefined) {
       logoutRequest.set('Cookie', cookie);
@@ -64,23 +63,21 @@ describe('POST /auth/logout', () => {
     expect(response.headers['set-cookie']).toHaveLength(1);
     expect(response.headers['set-cookie']?.[0]).toEqual(
       expect.stringMatching(
-        /^stone_access_token=; Max-Age=0; Path=\/; Expires=.+; HttpOnly; SameSite=Lax$/,
+        /^stone_access_token=; Max-Age=0; Path=\/; Expires=.+; HttpOnly; SameSite=Strict$/,
       ),
     );
     expect(response.headers['set-cookie']?.[0]).not.toContain('Domain=');
   });
 
-  it('rejects logout without CSRF before the controller', async () => {
+  it('accepts logout without browser context headers', async () => {
     const response = await request(app.getHttpServer())
       .post('/auth/logout')
       .set('Origin', allowedOrigin);
 
-    expect(response.status).toBe(403);
-    expect(response.body).toMatchObject({
-      code: 'REQUEST_FORBIDDEN',
-      statusCode: 403,
-    });
-    expect(response.headers['set-cookie']).toBeUndefined();
+    expect(response.status).toBe(204);
+    expect(response.headers['set-cookie']).toEqual(
+      expect.arrayContaining([expect.stringContaining('SameSite=Strict')]),
+    );
   });
 
   it('publishes idempotent logout in OpenAPI', async () => {

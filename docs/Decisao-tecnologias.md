@@ -38,7 +38,7 @@ As versões exatas das dependências serão fixadas no arquivo de lock. Será ut
 - Todas as rotas de produtos usam guard JWT.
 - O JWT será enviado ao navegador somente em cookie `HttpOnly`; não será retornado no corpo do login.
 - O logout limpará o cookie sem criar lista de sessões no servidor.
-- CORS aceitará apenas origens explícitas e credenciais; operações mutáveis exigirão proteção CSRF.
+- CORS aceitará apenas origens explícitas e credenciais; cookies terão `SameSite=Strict` e operações mutáveis validarão `Origin` ou `Referer` conforme a [ADR-006](./adr/ADR-006-protecao-csrf-origem.md).
 - Erros de credenciais usam mensagem genérica.
 - Segredos não são incluídos na imagem nem versionados.
 - Não haverá refresh token no escopo inicial.

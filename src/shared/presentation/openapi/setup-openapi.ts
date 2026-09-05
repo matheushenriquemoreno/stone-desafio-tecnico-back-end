@@ -7,14 +7,6 @@ export function setupOpenApi(app: INestApplication, cookieName: string): void {
     .setDescription('API de cadastro, autenticação e catálogo de produtos.')
     .setVersion('1.0.0')
     .addCookieAuth(cookieName)
-    .addApiKey(
-      {
-        in: 'header',
-        name: 'X-CSRF-Protection',
-        type: 'apiKey',
-      },
-      'csrf-protection',
-    )
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
 

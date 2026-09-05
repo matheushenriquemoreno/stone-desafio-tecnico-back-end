@@ -13,6 +13,11 @@
 
 **Dependências externas:** nenhuma além das dependências do projeto e do DynamoDB Local já estabelecido.
 
+> **Registro histórico:** esta fase foi executada antes da revisão material de
+> 2026-09-04. As referências à política anterior de CSRF e `SameSite=Lax` em
+> suas tarefas e evidências foram substituídas pela Fase 07 e pela ADR-006;
+> cookie, JWT e consumo direto continuam válidos.
+
 ## Tarefa T13 — Implementar emissão e validação JWT HS256 por porta
 
 Definir a porta de token e o adaptador JWT que emite somente `sub`, `iss`, `aud`, `iat` e `exp`, aceita exclusivamente `HS256` e garante `exp - iat = 900`. Validar segredo com no mínimo 256 bits, emissor e audiência no startup, usar relógio injetável e não fornecer valor padrão publicado.

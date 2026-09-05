@@ -84,7 +84,6 @@ describe('POST /auth/login', () => {
     await request(app.getHttpServer())
       .post('/auth/register')
       .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1')
       .send({
         email: 'maria@example.com',
         name: 'Maria Silva',
@@ -103,7 +102,6 @@ describe('POST /auth/login', () => {
     const response = await request(app.getHttpServer())
       .post('/auth/login')
       .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1')
       .send({ email: ' MARIA@EXAMPLE.COM ', password: 'senha-super-secreta' });
 
     expect(response.status).toBe(204);
@@ -111,7 +109,7 @@ describe('POST /auth/login', () => {
     expect(response.headers['set-cookie']).toHaveLength(1);
     expect(response.headers['set-cookie']?.[0]).toEqual(
       expect.stringMatching(
-        /^stone_access_token=.+; Max-Age=900; Path=\/; Expires=.+; HttpOnly; SameSite=Lax$/,
+        /^stone_access_token=.+; Max-Age=900; Path=\/; Expires=.+; HttpOnly; SameSite=Strict$/,
       ),
     );
     expect(response.headers['set-cookie']?.[0]).not.toContain('Domain=');
@@ -122,7 +120,6 @@ describe('POST /auth/login', () => {
     const response = await request(app.getHttpServer())
       .post('/auth/login')
       .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1')
       .send({ email: 'maria@example.com', password: 'senha-incorreta' });
 
     expect(response.status).toBe(401);

@@ -2,7 +2,7 @@
 
 ## Status
 
-Aceita
+Aceita — parcialmente substituída pela [ADR-006](./ADR-006-protecao-csrf-origem.md) somente na estratégia de proteção CSRF e origem
 
 ## Data da decisão
 
@@ -15,6 +15,11 @@ Aceita
 - [Decisões de tecnologia](../Decisao-tecnologias.md)
 - [Decisão de deploy](../Decisao-deploy.md)
 - [ADR-004: Rate limit por endpoint](./ADR-004-rate-limit.md)
+- [ADR-006: Proteção CSRF por cookie e origem](./ADR-006-protecao-csrf-origem.md)
+
+A ADR-006 substitui somente as decisões desta ADR sobre CSRF, `SameSite` e
+validação de origem. A autenticação direta, o JWT, o cookie HttpOnly host-only,
+o consumo por cookie e o logout sem sessão persistida continuam válidos.
 
 ## Contexto
 
@@ -48,7 +53,7 @@ No ambiente publicado, o cookie terá:
 - nome com prefixo `__Host-`;
 - `HttpOnly`, impedindo leitura por JavaScript;
 - `Secure`, permitindo envio somente por HTTPS;
-- `SameSite=Lax`;
+- `SameSite=Strict`;
 - `Path=/`;
 - ausência de `Domain`, mantendo-o restrito ao host da API;
 - `Max-Age=900`, exatamente igual a `exp - iat` do JWT.
@@ -67,19 +72,15 @@ O ambiente local usará HTTPS ou um nome de cookie separado, sem o prefixo `__Ho
 
 A API permitirá credenciais apenas para uma lista explícita de origens controladas. Não serão usados curingas de origem, métodos ou cabeçalhos em respostas CORS autenticadas.
 
-A política permitirá explicitamente os métodos `GET`, `POST`, `PATCH`, `DELETE` e `OPTIONS`, os cabeçalhos de requisição `Content-Type` e `X-CSRF-Protection` e a leitura do cabeçalho de resposta `Retry-After`. Preflights `OPTIONS` não exigirão cookie nem serão contabilizados no rate limit dos endpoints de negócio.
+A política permitirá explicitamente os métodos `GET`, `POST`, `PATCH`, `DELETE` e `OPTIONS`, o cabeçalho de requisição `Content-Type` e a leitura do cabeçalho de resposta `Retry-After`. Preflights `OPTIONS` não exigirão cookie nem serão contabilizados no rate limit dos endpoints de negócio. A validação detalhada de origem está na ADR-006.
 
-O front-end usará `credentials: include` em todas as chamadas. Em produção, front-end e API usarão HTTPS e domínios pertencentes ao mesmo site registrável, por exemplo `app.example.com` e `api.example.com`, para que `SameSite=Lax` seja compatível com o fluxo direto.
+O front-end usará `credentials: include` em todas as chamadas. Em produção, front-end e API usarão HTTPS e domínios pertencentes ao mesmo site registrável, por exemplo `app.example.com` e `api.example.com`, para que `SameSite=Strict` seja compatível com o fluxo direto.
 
 Previews em domínio de terceiro não terão autenticação integrada contra a API de produção. Testes integrados usarão origens explicitamente cadastradas e controladas.
 
 ## Proteção contra CSRF
 
-Todas as operações `POST`, `PATCH` e `DELETE` exigirão o cabeçalho `X-CSRF-Protection: 1`. A presença desse cabeçalho força navegadores a realizarem preflight CORS e permite que a API rejeite requisições simples forjadas.
-
-Quando o cabeçalho `Origin` estiver presente, seu valor deverá corresponder à própria origem da API ou exatamente a uma origem cliente permitida. Requisições com origem não autorizada, sem o cabeçalho de proteção ou com tipo de conteúdo simples não permitido retornarão `403 Forbidden` antes dos casos de uso.
-
-Essa estratégia não cria token ou sessão CSRF no servidor. Ela depende de uma lista CORS restrita; adicionar origens por curinga ou subdomínios não controlados invalida a proteção.
+A estratégia de proteção CSRF desta ADR foi substituída pela [ADR-006](./ADR-006-protecao-csrf-origem.md). O cookie mantém `HttpOnly`, `Secure`, prefixo `__Host-`, `Path=/`, ausência de `Domain`, `Max-Age=900` e agora usa `SameSite=Strict`; a ADR-006 define a validação de `Origin`, o fallback de `Referer` e a compatibilidade com chamadas sem headers de contexto de navegador.
 
 ## Múltiplas instâncias
 
@@ -93,7 +94,7 @@ O rate limit em memória não compartilha essa propriedade e permanece restrito 
 
 A documentação OpenAPI declarará autenticação por cookie. Swagger UI no domínio da API poderá autenticar-se pelo mesmo endpoint de login.
 
-Clientes de linha de comando poderão usar um cookie jar e deverão enviar o cabeçalho de proteção CSRF nas operações mutáveis. Não haverá contrato Bearer alternativo nesta versão, evitando dois mecanismos simultâneos de autenticação.
+Clientes de linha de comando poderão usar um cookie jar e omitir `Origin` e `Referer`; a chamada seguirá para autenticação. Não haverá contrato Bearer alternativo nesta versão, evitando dois mecanismos simultâneos de autenticação. Integrações máquina-a-máquina próprias continuam adiadas para uma decisão de API key, mTLS ou client credentials.
 
 ## Testes
 
@@ -104,7 +105,7 @@ Clientes de linha de comando poderão usar um cookie jar e deverão enviar o cab
 - Rotas protegidas aceitam cookie válido e recusam cookie ausente, inválido ou expirado.
 - Logout expira o cookie e retorna `204` mesmo sem sessão válida.
 - CORS aceita somente origens exatas configuradas e permite credenciais.
-- Operações mutáveis recusam ausência do cabeçalho CSRF e origens não autorizadas.
+- Operações mutáveis recusam origens inválidas e não autorizadas, e aceitam chamadas sem `Origin` e `Referer` para compatibilidade.
 - Preflight `OPTIONS` de origem autorizada funciona sem cookie, anuncia métodos e cabeçalhos permitidos e não altera o bucket da operação real.
 - Preflight de origem não autorizada é recusado sem executar autenticação ou caso de uso.
 - O fluxo funciona sem qualquer endpoint ou cabeçalho específico de uma camada intermediária.
@@ -123,7 +124,7 @@ Clientes de linha de comando poderão usar um cookie jar e deverão enviar o cab
 
 - A API assume responsabilidades de cookie, CORS e CSRF específicas de clientes web.
 - Front-end e API precisam de configuração coordenada de domínios e origens.
-- Previews hospedados em outro site não reutilizam o cookie `SameSite=Lax` de produção.
+- Previews hospedados em outro site não reutilizam o cookie `SameSite=Strict` de produção.
 - Logout não revoga uma cópia do JWT antes de sua expiração.
 
 ## Alternativas consideradas

@@ -16,7 +16,6 @@ import {
   ApiCookieAuth,
   ApiCreatedResponse,
   ApiForbiddenResponse,
-  ApiHeader,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -89,11 +88,6 @@ export class ProductsController {
     description: 'Proteção CSRF ou origem inválida.',
     type: ApiErrorDto,
   })
-  @ApiHeader({
-    description: 'Deve ser enviado com o valor literal 1.',
-    name: 'X-CSRF-Protection',
-    required: true,
-  })
   @ApiOperation({ summary: 'Cria um produto no catálogo compartilhado.' })
   @ApiRateLimitResponse()
   @ApiUnauthorizedResponse({ description: 'Cookie inválido ou ausente.', type: ApiErrorDto })
@@ -120,11 +114,6 @@ export class ProductsController {
     description: 'Proteção CSRF ou origem inválida.',
     type: ApiErrorDto,
   })
-  @ApiHeader({
-    description: 'Deve ser enviado com o valor literal 1.',
-    name: 'X-CSRF-Protection',
-    required: true,
-  })
   @ApiNotFoundResponse({ description: 'Produto não encontrado.', type: ApiErrorDto })
   @ApiOkResponse({ description: 'Produto atualizado.', type: ProductResponseDto })
   @ApiOperation({ summary: 'Atualiza parcialmente um produto.' })
@@ -145,11 +134,6 @@ export class ProductsController {
   @ApiForbiddenResponse({
     description: 'Proteção CSRF ou origem inválida.',
     type: ApiErrorDto,
-  })
-  @ApiHeader({
-    description: 'Deve ser enviado com o valor literal 1.',
-    name: 'X-CSRF-Protection',
-    required: true,
   })
   @ApiNoContentResponse({ description: 'Produto excluído.' })
   @ApiNotFoundResponse({ description: 'Produto não encontrado.', type: ApiErrorDto })

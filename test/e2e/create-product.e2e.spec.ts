@@ -70,7 +70,6 @@ async function login(app: INestApplication): Promise<string> {
   const response = await request(httpServer(app))
     .post('/auth/login')
     .set('Origin', allowedOrigin)
-    .set('X-CSRF-Protection', '1')
     .send({ email: 'creator@example.com', password: 'senha-super-secreta' });
   const cookie = response.headers['set-cookie']?.[0];
 
@@ -117,7 +116,6 @@ describe('POST /products', () => {
     await request(httpServer(app))
       .post('/auth/register')
       .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1')
       .send({
         email: 'creator@example.com',
         name: 'Creator',
@@ -168,7 +166,6 @@ describe('POST /products', () => {
     const response = await request(httpServer(app))
       .post('/products')
       .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1')
       .set('Cookie', accessCookie)
       .send(body);
 
@@ -187,7 +184,6 @@ describe('POST /products', () => {
     const response = await request(httpServer(app))
       .post('/products')
       .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1')
       .set('Cookie', accessCookie)
       .send({
         description: 'Descrição do produto',
@@ -222,20 +218,19 @@ describe('POST /products', () => {
     ]);
   });
 
-  it('requires both the authentication cookie and CSRF protection', async () => {
+  it('requires the authentication cookie and rejects an unauthorized origin', async () => {
     const withoutCookie = await request(httpServer(app))
       .post('/products')
       .set('Origin', allowedOrigin)
-      .set('X-CSRF-Protection', '1')
       .send({
         description: 'Descrição',
         imageUrl: 'https://example.com/p.png',
         name: 'Produto',
         price: 10,
       });
-    const withoutCsrf = await request(httpServer(app))
+    const withoutAllowedOrigin = await request(httpServer(app))
       .post('/products')
-      .set('Origin', allowedOrigin)
+      .set('Origin', 'https://evil.example.com')
       .set('Cookie', accessCookie)
       .send({
         description: 'Descrição',
@@ -246,8 +241,8 @@ describe('POST /products', () => {
 
     expect(withoutCookie.status).toBe(401);
     expect(withoutCookie.body.code).toBe('UNAUTHORIZED');
-    expect(withoutCsrf.status).toBe(403);
-    expect(withoutCsrf.body.code).toBe('REQUEST_FORBIDDEN');
+    expect(withoutAllowedOrigin.status).toBe(403);
+    expect(withoutAllowedOrigin.body.code).toBe('REQUEST_FORBIDDEN');
   });
 
   it('publishes the protected creation contract in OpenAPI', async () => {
@@ -264,10 +259,8 @@ describe('POST /products', () => {
       }),
     );
     expect(operation.security).toEqual([{ cookie: [] }]);
-    expect(operation.parameters).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ name: 'X-CSRF-Protection', in: 'header' }),
-      ]),
+    expect(operation.parameters ?? []).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ in: 'header' })]),
     );
   });
 });

@@ -48,7 +48,7 @@ describe('CORS policy', () => {
       .options('/probe')
       .set('Origin', allowedOrigin)
       .set('Access-Control-Request-Method', 'POST')
-      .set('Access-Control-Request-Headers', 'Content-Type, X-CSRF-Protection');
+      .set('Access-Control-Request-Headers', 'Content-Type');
 
     expect(response.status).toBe(204);
     expect(response.headers['access-control-allow-origin']).toBe(allowedOrigin);
@@ -71,9 +71,7 @@ describe('CORS policy', () => {
     expect(response.headers['access-control-allow-headers']).toEqual(
       expect.stringContaining('Content-Type'),
     );
-    expect(response.headers['access-control-allow-headers']).toEqual(
-      expect.stringContaining('X-CSRF-Protection'),
-    );
+    expect(response.headers['access-control-allow-headers']).toBe('Content-Type');
     expect(ProbeController.calls).toBe(0);
   });
 
@@ -101,7 +99,7 @@ describe('CORS policy', () => {
       .options('/probe')
       .set('Origin', 'https://evil.example.com')
       .set('Access-Control-Request-Method', 'POST')
-      .set('Access-Control-Request-Headers', 'X-CSRF-Protection');
+      .set('Access-Control-Request-Headers', 'Content-Type');
 
     expect(response.headers['access-control-allow-origin']).toBeUndefined();
     expect(ProbeController.calls).toBe(0);

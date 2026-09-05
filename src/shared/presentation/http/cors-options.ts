@@ -1,7 +1,7 @@
 import type { CorsOptions } from 'cors';
 
 const ALLOWED_METHODS = ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'] as const;
-const ALLOWED_HEADERS = ['Content-Type', 'X-CSRF-Protection'] as const;
+const ALLOWED_HEADERS = ['Content-Type'] as const;
 
 export function createCorsOptions(allowedOrigins: readonly string[]): CorsOptions {
   return {
