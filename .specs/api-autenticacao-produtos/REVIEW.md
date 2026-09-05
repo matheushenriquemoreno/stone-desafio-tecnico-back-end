@@ -6,7 +6,67 @@
 | Last Updated | 2026-09-05 |
 
 **Escopo revisado:** fase 08 — Total exato na listagem de produtos
-**Versão da avaliação:** 8
+**Versão da avaliação:** 9
+
+## Avaliação independente da Fase 08 — versão 9
+
+### Revisor e escopo
+
+Esta avaliação foi executada por um subagente em contexto separado, sem
+alteração de código, documentação ou `REVIEW.md`. Foram analisados o PRD, o
+design técnico, o plano, a Fase 08, o estado, a ADR-003, o contrato da API, o
+diff da implementação e os testes dirigidos e completos.
+
+### Veredito independente
+
+**Veredito:** Aprovado
+
+Não foram encontrados achados bloqueadores, altos, médios ou baixos. O
+subagente confirmou o requisito `AAP-61`, os critérios 12, 13, 14, 15 e 28, a
+contagem consistente multipágina, a validação pré-I/O do cursor, a ausência de
+resposta parcial em falhas e o schema OpenAPI obrigatório.
+
+### Matriz de rastreabilidade independente
+
+| Requisito ou comportamento | Código | Teste/evidência | Status |
+| -------------------------- | ------ | --------------- | ------ |
+| `AAP-61`: total exato em toda listagem | `ProductPage`, `DynamoDbProductRepository`, `ProductsController` | Unitário do repositório (2/21), integração (1/6) e E2E de listagem (2/12) | Comprovado |
+| Critério 12: catálogo vazio | `list-products.e2e.spec.ts` | `{ items: [], total: 0 }` sem `nextCursor` | Comprovado |
+| Critério 13: limite e continuação | `ListProducts`, `DynamoDbProductRepository` | Página padrão com 20 itens, `nextCursor` e `total: 21` | Comprovado |
+| Critério 14: limite 1–100 | `ListProducts` e query DTO | `0`, `101`, `1.5` e `abc` retornam `400` | Comprovado |
+| Critério 15: cursor opaco | codec e adaptador DynamoDB | Cursor inválido rejeitado com zero comandos ao banco | Comprovado |
+| Critério 28: total independente de página | integração e E2E | `limit=1`, primeira/última página e total constante 21 | Comprovado |
+| Falha sem resposta parcial | `Promise.all` e filtro global | Falha da contagem rejeita a listagem e mapeia para `500 INTERNAL_ERROR` | Comprovado |
+| OpenAPI | `ProductsPageResponseDto` | `total` obrigatório, inteiro, mínimo zero e exemplo 21 | Comprovado |
+
+### Gates confirmados pelo revisor independente
+
+| Comando | Resultado |
+| ------- | --------- |
+| Testes dirigidos de aplicação/persistência | 2 suítes, 21 testes passaram |
+| Teste de integração dirigido | 1 suíte, 6 testes passaram |
+| E2E dirigido de listagem/OpenAPI | 2 suítes, 12 testes passaram |
+| `npm run lint` | Passou |
+| `npm run typecheck` | Passou |
+| `npm test` | 35 suítes, 171 testes passaram |
+| `npm run test:integration` | 3 suítes, 9 testes passaram |
+| `npm run test:e2e` | 15 suítes, 91 testes passaram |
+| `npm run build` | Passou |
+| `git diff --check` e `git status --short` | Passaram; árvore limpa |
+
+### Achados e riscos
+
+Não há achados abertos. Permanecem apenas os riscos já aceitos: o custo do
+`Scan` cresce com o catálogo e não existe snapshot transacional entre páginas
+internas; mutações concorrentes podem causar diferença momentânea, recalculada
+na requisição seguinte.
+
+### Próxima ação
+
+Manter a Fase 08 concluída e a Fase 09 `Pendente`; nenhuma tarefa da Fase 09
+deve ser iniciada sem nova autorização.
+
+## Histórico detalhado — versão 8
 
 ## Avaliação da Fase 08 — versão 8
 
@@ -227,6 +287,7 @@ próxima fase pendente; seu início pode ocorrer somente após esta aprovação.
 
 | Versão | Data | Escopo | Veredito | Resumo |
 | ------ | ---- | ------ | -------- | ------ |
+| 9 | 2026-09-05 | Fase 08 — review independente por subagente | Aprovado | Contexto separado confirmou requisitos, critérios, evidências, gates e riscos sem achados abertos. |
 | 8 | 2026-09-05 | Fase 08 — Total exato na listagem de produtos | Aprovado | `total` obrigatório, contagem consistente multipágina, contrato/OpenAPI e gates completos passaram. |
 | 7 | 2026-09-04 | Fase 07 — Proteção CSRF por cookie e validação de origem | Aprovado | SameSite Strict, Origin/Referer, remoção do header, contratos e gates passaram; referência obsoleta do estado foi corrigida. |
 | 6 | 2026-09-04 | Fase 06 — Rate limit e conformidade operacional da API | Aprovado | Fixed Window, políticas, OpenAPI e matriz de conformidade passaram os gates. |

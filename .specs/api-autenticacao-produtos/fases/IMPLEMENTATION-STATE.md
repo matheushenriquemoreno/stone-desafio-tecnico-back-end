@@ -13,7 +13,7 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 A Fase 07 está `Concluída` após o review aprovado da proteção CSRF. A Fase 08,
 que adiciona o total exato à listagem de produtos, está `Concluída` após o review
-aprovado na versão 8. A entrega operacional foi movida para a Fase 09 e
+independente aprovado na versão 9. A entrega operacional foi movida para a Fase 09 e
 permanece `Pendente`.
 
 ### Preparação da Fase 08
@@ -555,7 +555,7 @@ permanece `Pendente`.
 - O contrato público agora exige `total` inteiro não negativo em toda resposta
   `200` de `GET /products`; a contagem é exata para a leitura observada e
   percorre todas as páginas internas do `Scan` consistente.
-- O review independente da versão 8 aprovou a fase sem achados abertos.
+- O review independente da versão 9 aprovou a fase sem achados abertos.
 - A Fase 09 permanece `Pendente` e não foi iniciada; sua execução depende de
   nova autorização.
 
