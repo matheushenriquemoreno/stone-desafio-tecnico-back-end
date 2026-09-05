@@ -3,7 +3,7 @@
 | Status       | Aprovado   |
 |--------------|------------|
 | Created      | 2026-09-03 |
-| Last Updated | 2026-09-04 |
+| Last Updated | 2026-09-05 |
 
 PRD de referência: [PRODUCT-REQUIREMENTS.md](./PRODUCT-REQUIREMENTS.md) (`Aprovado`)
 
@@ -15,10 +15,11 @@ PRD de referência: [PRODUCT-REQUIREMENTS.md](./PRODUCT-REQUIREMENTS.md) (`Aprov
 | 2026-09-03 | Design encaminhado para revisão após definição de HS256 e capacidade sob demanda. |
 | 2026-09-03 | Design técnico aprovado pelo solicitante. |
 | 2026-09-04 | Revisão material aprovada: `DEC-05` fica histórica e a proteção passa a usar `SameSite=Strict` com `Origin`/`Referer`. |
+| 2026-09-05 | Revisão material aprovada: `DEC-21` adiciona `total` exato à listagem por varredura consistente, sem alterar o modelo de dados. |
 
 ## Contexto técnico e estado atual
 
-O repositório contém o PRD aprovado e documentação técnica aceita, mas ainda não possui implementação da aplicação. Portanto, não há código, banco ou componente executável a reutilizar; serão reutilizadas as decisões documentais como fonte arquitetural, sem tratá-las como evidência de funcionalidade entregue.
+O repositório possui implementação aprovada até a Fase 07: aplicação NestJS, persistência DynamoDB, autenticação, CRUD paginado de produtos, rate limit e proteção de origem. Esta revisão reutiliza a porta `ProductRepository`, o caso de uso `ListProducts`, o adaptador DynamoDB, a apresentação HTTP e os testes existentes; a entrega operacional permanece pendente.
 
 As referências existentes definem:
 
@@ -123,18 +124,18 @@ Toda comunicação de negócio é síncrona por chamada em processo; a comunica�
 
 ## Tecnologias e responsabilidades
 
-Como o código ainda não existe, “introduzida” indica implementação nova; a decisão correspondente já existe na documentação quando houver referência.
+Na coluna de estado, “introduzida” registra que a tecnologia foi nova na iniciativa original; o estado executado por fase permanece documentado no plano e no estado da implementação.
 
 | Tecnologia ou mecanismo | Responsabilidade que atende | Já existe ou será introduzida | Requisito ou restrição que influencia | Dependências ou riscos que cria |
 |------------------------|-----------------------------|--------------------------------|-------------------------------------|---------------------------------|
 | Node.js LTS | Runtime suportado para a API | Introduzido; exigido em [Decisões de tecnologia](../../docs/Decisao-tecnologias.md) | Restrição de runtime; `EXPECT-08` | Compatibilidade entre versão LTS e NestJS. |
 | TypeScript estrito | Tipagem dos contratos, portas e domínio | Introduzido; exigido em [Decisões de tecnologia](../../docs/Decisao-tecnologias.md) | Restrição de linguagem; `EXPECT-08` | Exige tipos explícitos nas fronteiras externas. |
-| NestJS | Composition root, módulos, controllers, guards e DI | Introduzido; definido na [ADR-001](../../docs/adr/ADR-001-clean-architecture-backend.md) | `AAP-01`–`AAP-60` | Risco de acoplar domínio ao framework, mitigado pelas camadas. |
-| REST com JSON | Contrato síncrono entre cliente e API | Introduzido; definido no [Contrato da API](../../docs/Contrato-da-API.md) | `AAP-01`–`AAP-60` | Mudanças incompatíveis exigem coordenação com clientes. |
+| NestJS | Composition root, módulos, controllers, guards e DI | Introduzido; definido na [ADR-001](../../docs/adr/ADR-001-clean-architecture-backend.md) | `AAP-01`–`AAP-61` | Risco de acoplar domínio ao framework, mitigado pelas camadas. |
+| REST com JSON | Contrato síncrono entre cliente e API | Introduzido; definido no [Contrato da API](../../docs/Contrato-da-API.md) | `AAP-01`–`AAP-61` | Mudanças incompatíveis exigem coordenação com clientes. |
 | Validação e transformação de DTOs | Rejeição, normalização e whitelist das entradas | Introduzida; definida em [Decisões de tecnologia](../../docs/Decisao-tecnologias.md) | `AAP-02`–`AAP-07`, `AAP-26`–`AAP-29`, `AAP-34`, `AAP-37`, `AAP-41`–`AAP-44`, `AAP-51`, `AAP-52` | Validação apenas na apresentação não substitui invariantes do domínio. |
-| DynamoDB | Persistência de usuários e produtos | Introduzido; definido na [ADR-003](../../docs/adr/ADR-003-modelagem-dynamodb.md) | `AAP-01`–`AAP-09`, `AAP-25`–`AAP-49`, `AAP-58`, `AAP-59` | `Scan` cresce em custo; consistência e condicionais devem ser explícitas. |
+| DynamoDB | Persistência de usuários e produtos | Introduzido; definido na [ADR-003](../../docs/adr/ADR-003-modelagem-dynamodb.md) | `AAP-01`–`AAP-09`, `AAP-25`–`AAP-49`, `AAP-58`, `AAP-59`, `AAP-61` | `Scan` cresce em custo; consistência e condicionais devem ser explícitas. |
 | Capacidade sob demanda | Eliminar dimensionamento de capacidade na demonstração | Introduzida; decisão aprovada neste design | Restrição de baixo volume e simplicidade operacional | Custo varia com uso; orçamento e métricas continuam necessários. |
-| AWS SDK v3 Document Client | Adaptar os padrões de acesso do DynamoDB | Introduzido; definido em [Decisões de tecnologia](../../docs/Decisao-tecnologias.md) | `AAP-07`, `AAP-25`, `AAP-31`–`AAP-49` | Erros condicionais e tipos precisam de mapeamento estável. |
+| AWS SDK v3 Document Client | Adaptar os padrões de acesso do DynamoDB | Introduzido; definido em [Decisões de tecnologia](../../docs/Decisao-tecnologias.md) | `AAP-07`, `AAP-25`, `AAP-31`–`AAP-49`, `AAP-61` | Erros condicionais e tipos precisam de mapeamento estável. |
 | Argon2id | Hash adaptativo de senhas | Introduzido; definido na [ADR-002](../../docs/adr/ADR-002-cadastro-de-usuarios.md) | `EXPECT-01`, `EXPECT-02` | Consome CPU e memória; parâmetros precisam ser calibrados e testados. |
 | JWT com HS256 | Credencial stateless com emissor, audiência e expiração verificáveis | Introduzido; transporte definido na [ADR-005](../../docs/adr/ADR-005-autenticacao-cookie-http-only.md), algoritmo aprovado neste design | `AAP-09`–`AAP-19`, `EXPECT-03`, `EXPECT-05` | Todas as instâncias validadoras precisariam compartilhar o segredo; rotação não está coberta. |
 | Cookie HttpOnly host-only | Transportar JWT sem expô-lo ao JavaScript | Introduzido; definido na [ADR-005](../../docs/adr/ADR-005-autenticacao-cookie-http-only.md) | `AAP-11`–`AAP-19`, `EXPECT-03` | Exige HTTPS publicado, configuração consistente e mitigação de CSRF. |
@@ -155,7 +156,7 @@ Alternativas e justificativas estão consolidadas em [Decisões, alternativas e 
 2. **Login** — navegador → pipeline HTTP → `AuthenticateUser` → leitura de `users` pelo e-mail normalizado → verificação Argon2id → JWT HS256 → `Set-Cookie` (`HTTPS/REST`, síncrono).
 3. **Logout** — navegador → pipeline HTTP → expiração do cookie com os mesmos atributos de escopo; nenhuma leitura ou escrita de sessão ocorre (`HTTPS/REST`, síncrono).
 4. **Requisição de produto** — cliente → CORS/rate limit → validação de `Origin`/`Referer` quando aplicável → JWT do cookie → controller → caso de uso → porta de produto → DynamoDB (`HTTPS/REST` e AWS SDK, síncrono).
-5. **Listagem** — `ListProducts` solicita `Scan` com `Limit` e chave inicial → adaptador recebe `LastEvaluatedKey` → codifica cursor versionado em Base64 URL-safe → resposta entrega `items` e `nextCursor` quando aplicável.
+5. **Listagem** — após validar o cursor, o adaptador executa em paralelo o `Scan` da página e uma varredura consistente com `Select=COUNT`; a contagem percorre todos os `LastEvaluatedKey` internos e a resposta entrega `items`, `total` e `nextCursor` quando aplicável.
 6. **Atualização** — `UpdateProduct` valida o patch no domínio → adaptador monta somente atributos enviados → `UpdateItem` condicional à existência → retorna o produto atualizado.
 7. **Exclusão** — `DeleteProduct` executa `DeleteItem` condicional à existência → ausência mapeia para `PRODUCT_NOT_FOUND` → sucesso retorna sem corpo.
 8. **Readiness** — monitor ou pipeline → `/health` → verificação das tabelas `users` e `products` → `200` ou erro opaco `503`.
@@ -180,7 +181,7 @@ O [Contrato da API](../../docs/Contrato-da-API.md) e o OpenAPI gerado são as fo
 | `POST /auth/register` | Visitante e cliente web | REST público + origem | Entrada `{ name: string, email: string, password: string }`; `201` com `{ id, name, email }`. |
 | `POST /auth/login` | Pessoa cadastrada | REST público + origem | Entrada `{ email, password }`; `204` com `Set-Cookie`; sem corpo. |
 | `POST /auth/logout` | Cliente web | REST + origem; cookie opcional | `204` com cookie expirado; operação idempotente. |
-| `GET /products` | Pessoa autenticada | REST + cookie | Query `limit?: integer` e `cursor?: string`; `200` com `{ items: Product[], nextCursor?: string }`. |
+| `GET /products` | Pessoa autenticada | REST + cookie | Query `limit?: integer` e `cursor?: string`; `200` com `{ items: Product[], total: integer, nextCursor?: string }`. |
 | `POST /products` | Pessoa autenticada | REST + cookie + origem | Entrada `{ name, description, price, imageUrl }`; `201` com `Product`. |
 | `GET /products/:id` | Pessoa autenticada | REST + cookie | `200` com `Product`; `404` quando ausente. |
 | `PATCH /products/:id` | Pessoa autenticada | REST + cookie + origem | Subconjunto não vazio de campos editáveis; `200` com `Product`. |
@@ -200,6 +201,14 @@ Product = {
   imageUrl: string,
   createdAt: string ISO 8601,
   updatedAt: string ISO 8601
+}
+```
+
+```text
+ProductsPage = {
+  items: Product[],
+  total: integer >= 0,
+  nextCursor?: string
 }
 ```
 
@@ -270,6 +279,7 @@ Padrões de acesso, todos definidos na [ADR-003](../../docs/adr/ADR-003-modelage
 
 - `PutItem` condicional para criar;
 - `Scan` com `Limit` e `ExclusiveStartKey` para listar;
+- `Scan` consistente com `Select=COUNT`, repetido até esgotar `LastEvaluatedKey`, para contar todo o catálogo;
 - `GetItem` por `id` para consultar;
 - `UpdateItem` dinâmico e condicional para atualizar somente campos enviados;
 - `DeleteItem` condicional para excluir.
@@ -284,7 +294,7 @@ Base64 é apenas codificação, não criptografia. O cursor não contém senha, 
 
 ### Alterações e migração
 
-Não há dados existentes a alterar. O provisionamento cria as duas tabelas de forma idempotente no ambiente local e por Terraform no ambiente publicado. Mudanças futuras de esquema ou índice exigirão estratégia de migração separada.
+Não há dados existentes a alterar. A contagem reutiliza a tabela e a permissão `Scan` atuais, sem nova tabela, item de metadados, índice ou migração. O provisionamento cria as duas tabelas de forma idempotente no ambiente local e por Terraform no ambiente publicado. Mudanças futuras de esquema ou índice exigirão estratégia de migração separada.
 
 ## Segurança, privacidade e observabilidade
 
@@ -319,7 +329,7 @@ Não existe requisito de exclusão de conta ou prazo de retenção no PRD; por i
 
 ### Desempenho
 
-O PRD não define meta de latência ou throughput. O limite de página entre 1 e 100 reduz o tamanho de cada leitura, mas `Scan` consome capacidade proporcional ao que percorre e não é adequado a alto volume. Métricas de consumo e throttling indicarão quando revisar a [ADR-003](../../docs/adr/ADR-003-modelagem-dynamodb.md).
+O PRD não define meta de latência ou throughput. O limite de página entre 1 e 100 reduz o tamanho da página retornada, mas a contagem exata percorre a tabela inteira a cada listagem e usa leitura consistente. Latência e consumo crescem com o catálogo; métricas de consumo e throttling indicarão quando revisar a [ADR-003](../../docs/adr/ADR-003-modelagem-dynamodb.md).
 
 ### Disponibilidade
 
@@ -332,6 +342,8 @@ A demonstração possui uma API, uma VPS e uma região do DynamoDB; não há SLA
 - A API não repete automaticamente uma operação HTTP mutável iniciada pelo cliente.
 - Retentativas transitórias do adaptador devem preservar o identificador e a operação lógica da requisição; não transformam uma única execução em dois recursos.
 - Falhas inesperadas do DynamoDB são mapeadas para `INTERNAL_ERROR`; somente readiness usa `SERVICE_UNAVAILABLE`.
+- Falha em qualquer página interna da contagem falha toda a listagem; não existe resposta parcial sem `total`.
+- A varredura consistente não constitui snapshot transacional; mutações concorrentes podem produzir diferença momentânea, recalculada na próxima requisição.
 - Reinício da API perde buckets de rate limit, mas não invalida JWTs nem dados persistidos.
 - Atualizações simultâneas do mesmo produto seguem last-write-wins; controle de versão fica adiado por ausência de requisito.
 - Rollback reaponta o Compose para o SHA anterior e só conclui após validar `/health`.
@@ -360,6 +372,7 @@ A demonstração possui uma API, uma VPS e uma região do DynamoDB; não há SLA
 | `DEC-18` | Pirâmide de testes com domínio isolado, repositórios no DynamoDB Local e E2E HTTP, conforme a [ADR-001](../../docs/adr/ADR-001-clean-architecture-backend.md). | Somente E2E; mocks do DynamoDB em todos os níveis. | Equilibra velocidade e fidelidade para condicionais e paginação. | Ambiente de integração adiciona custo de manutenção. |
 | `DEC-19` | Publicação híbrida Cloudflare → NGINX/VPS → DynamoDB e imagens por SHA, conforme a [Decisão de deploy](../../docs/Decisao-deploy.md). | Serverless AWS; ECS Fargate imediato; deploy manual. | Reaproveita a VPS e demonstra AWS/DynamoDB com rollback rastreável. | Ponto único de falha, credencial AWS duradoura e origem sem TLS. |
 | `DEC-20` | Cookie `SameSite=Strict` com validação exata de `Origin` e fallback de `Referer`, conforme a [ADR-006](../../docs/adr/ADR-006-protecao-csrf-origem.md). | Header customizado; token CSRF; `Sec-Fetch-Site`; `SameSite` sozinho. | Combina defesa nativa do navegador com verificação de origem e mantém compatibilidade com clientes sem contexto de navegador. | Headers ausentes não permitem classificar o cliente; integração máquina-a-máquina própria permanece adiada. |
+| `DEC-21` | `total` é calculado por `Scan` consistente com `Select=COUNT`, percorrendo todas as páginas internas, conforme a [ADR-003](../../docs/adr/ADR-003-modelagem-dynamodb.md). | Estimativa de `DescribeTable`; contador transacional; cache. | Entrega o total exato solicitado sem alterar o modelo de dados e mantém a solução proporcional ao catálogo pequeno. | Cada listagem consome leitura proporcional ao catálogo; não há snapshot transacional sob mutações concorrentes. |
 
 ## Riscos, dependências e migração
 
@@ -368,7 +381,7 @@ A demonstração possui uma API, uma VPS e uma região do DynamoDB; não há SLA
 | Interceptação no trecho HTTP Cloudflare–VPS | Alto | Baixa | Restringir origem à Cloudflare, evitar exposição direta e priorizar TLS ponta a ponta antes de uso real. |
 | Allowlist CORS ou validação de origem permissiva | Alto | Média | Correspondência exata, parsing de `Origin`/`Referer`, configuração validada no startup e E2E de origens autorizadas e recusadas. |
 | Vazamento do segredo JWT ou credenciais AWS | Alto | Baixa | Secrets fora da imagem e Git, permissões mínimas, rotação operacional e sanitização de logs. |
-| `Scan` degradar com crescimento do catálogo | Médio | Média | Limite máximo de 100, métricas de consumo e gatilho explícito para GSI/remodelagem. |
+| `Scan` de página e contagem degradarem com crescimento do catálogo | Médio | Média | Catálogo pequeno nesta versão, métricas de consumo e gatilho explícito para contador transacional, GSI ou remodelagem. |
 | Rate limit inconsistente ao reiniciar ou escalar | Médio | Média | Manter uma instância, documentar perda de buckets e exigir armazenamento compartilhado antes da segunda. |
 | Usuários legítimos compartilharem bucket por NAT | Médio | Média | Métricas agregadas por rota, investigação de picos e revisão da chave se houver falsos positivos. |
 | Falsificação do IP efetivo | Alto | Média | Confiar somente na cadeia Cloudflare/NGINX, remover cabeçalhos do cliente e restringir acesso à origem. |
@@ -433,6 +446,7 @@ Não aplicável — não há código ou dados legados. O primeiro provisionament
 | `AAP-35` | Adaptador DynamoDB; serializer de página | Chave de continuação produz `nextCursor`. |
 | `AAP-36` | Serializer de página | Campo é omitido sem chave de continuação. |
 | `AAP-37` | Codec de cursor; erro de validação; `DEC-09` | Falhas não expõem payload interno. |
+| `AAP-61` | `ProductPage`; adaptador DynamoDB; contrato `GET /products`; `DEC-21` | Toda página inclui a contagem exata do catálogo em `total`. |
 | `AAP-38` | `GetProduct`; `GetItem` | Consulta direta por chave. |
 | `AAP-39` | `UpdateProduct`; contrato de patch | Aceita subconjunto dos quatro campos. |
 | `AAP-40` | `UpdateProduct`; `UpdateItem` dinâmico | Campos omitidos não entram na expressão. |

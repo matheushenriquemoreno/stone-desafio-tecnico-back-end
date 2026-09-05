@@ -115,16 +115,19 @@ describe('DynamoDB product repository', () => {
     }
 
     const listedIds: string[] = [];
+    const totals: number[] = [];
     let cursor: string | undefined;
 
     do {
       const page = await repository.list(1, cursor);
       listedIds.push(...page.items.map((product) => product.id));
+      totals.push(page.total);
       cursor = page.nextCursor;
     } while (cursor !== undefined);
 
     expect(new Set(listedIds).size).toBe(listedIds.length);
     expect(listedIds).toEqual(expect.arrayContaining(products));
+    expect(new Set(totals)).toEqual(new Set([listedIds.length]));
   });
 
   it('updates only selected attributes and preserves the remaining product data', async () => {
@@ -155,9 +158,13 @@ describe('DynamoDB product repository', () => {
 
   it('deletes an existing product and reports repeated deletion as absent', async () => {
     await repository.save(createProduct('product-delete'));
+    const totalBeforeDelete = (await repository.list(100)).total;
 
     await expect(repository.delete('product-delete')).resolves.toBe(true);
     await expect(repository.findById('product-delete')).resolves.toBeNull();
     await expect(repository.delete('product-delete')).resolves.toBe(false);
+    await expect(repository.list(100)).resolves.toMatchObject({
+      total: totalBeforeDelete - 1,
+    });
   });
 });

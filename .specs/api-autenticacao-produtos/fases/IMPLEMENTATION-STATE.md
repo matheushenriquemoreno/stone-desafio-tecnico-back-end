@@ -3,7 +3,7 @@
 | Status       | Em execução |
 |--------------|-------------|
 | Created      | 2026-09-03 |
-| Last Updated | 2026-09-04 |
+| Last Updated | 2026-09-05 |
 
 ## Regra de execução
 
@@ -11,9 +11,55 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 ## Fase ativa
 
-A Fase 06 está `Concluída` após o review aprovado. A Fase 07 está `Concluída`
-após o review aprovado da revisão material da proteção CSRF; a Fase 08 permanece
-`Pendente` e ainda não foi iniciada.
+A Fase 07 está `Concluída` após o review aprovado da proteção CSRF. A Fase 08,
+que adiciona o total exato à listagem de produtos, está `Em execução`; a tarefa
+ativa é `T38`. A entrega operacional foi movida para a Fase 09 e permanece
+`Pendente`.
+
+### Preparação da Fase 08
+
+- Padrões: manter domínio e caso de uso independentes do DynamoDB; a porta
+  `ProductRepository` expressa a página com `total`; apresentação serializa o
+  contrato público e OpenAPI.
+- Premissas: catálogo pequeno; `total` obrigatório e exato no catálogo estável;
+  `Scan` consistente não fornece snapshot transacional sob mutações concorrentes.
+- Abstrações reutilizadas: `ProductPage`, `ProductRepository`, `ListProducts`,
+  `DynamoDbProductRepository`, `ProductsPageResponseDto` e serializer do
+  controller.
+- Arquivos previstos: porta, adaptador e testes de produtos; DTO/controller;
+  E2E de listagem e OpenAPI; matriz de conformidade; PRD, design, ADR-003,
+  contrato, plano, fase, estado e review.
+- Verificação: testes unitários e integração dirigidos em `T37`; E2E, OpenAPI,
+  matriz e gate completo em `T38`, seguidos de review independente.
+- Conflitos: nenhum. A nova leitura reutiliza a permissão `Scan` já prevista e
+  não exige tabela, índice, contador persistido, cache ou migração.
+
+### Preparação da tarefa T37
+
+- Premissas: o cursor será decodificado antes das leituras; página e contagem
+  executarão em paralelo; a contagem seguirá todos os `LastEvaluatedKey` e
+  somará `Count ?? 0`.
+- Abstrações: `ProductPage.total` permanece na aplicação; `Select=COUNT` e
+  `ConsistentRead=true` permanecem exclusivos do adaptador DynamoDB.
+- Arquivos: porta, adaptador, caso de uso e fakes/testes unitários e de
+  integração diretamente afetados.
+- Verificação: total zero e paginado, formato dos comandos, falha técnica,
+  cursor inválido sem I/O e atualização após criar/excluir; lint e typecheck.
+- Conflitos previstos: nenhum; falha da contagem deve propagar sem página parcial.
+
+### Preparação da tarefa T38
+
+- Premissas: `total` é inteiro obrigatório e não negativo; `nextCursor`
+  continua omitido no fim; a ordem das propriedades JSON não é contratual.
+- Abstrações: `PublicProductsPage` e `ProductsPageResponseDto` publicam o
+  contrato; `ProductsController` apenas converte entidades e propaga `total`.
+- Arquivos: DTO/controller, E2E de listagem e OpenAPI, matriz de conformidade,
+  documentação e evidências da fase.
+- Verificação: vazio com zero, 21 produtos em páginas distintas, schema
+  OpenAPI obrigatório, erro técnico sem resposta parcial, gates completos e
+  busca residual por envelopes antigos.
+- Conflitos previstos: nenhum; autenticação, rate limit, limites e cursor não
+  devem mudar.
 
 ### Preparação da Fase 07
 
@@ -452,7 +498,8 @@ após o review aprovado da revisão material da proteção CSRF; a Fase 08 perma
 | 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fase-05-paginacao-manutencao-produtos.md) | Concluída | 2026-09-04 |
 | 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fase-06-rate-limit-conformidade.md) | Concluída | 2026-09-04 |
 | 07 | Proteção CSRF por cookie e validação de origem | [fase-07-protecao-csrf-origem.md](fase-07-protecao-csrf-origem.md) | Concluída | 2026-09-04 |
-| 08 | Empacotamento, infraestrutura e entrega | [fase-08-entrega-operacional.md](fase-08-entrega-operacional.md) | Pendente | — |
+| 08 | Total exato na listagem de produtos | [fase-08-total-exato-produtos.md](fase-08-total-exato-produtos.md) | Em execução | — |
+| 09 | Empacotamento, infraestrutura e entrega | [fase-09-entrega-operacional.md](fase-09-entrega-operacional.md) | Pendente | — |
 
 ## Tarefas
 
@@ -494,11 +541,13 @@ após o review aprovado da revisão material da proteção CSRF; a Fase 08 perma
 | T34 | 07 | Concluída | Cookie e testes atualizados para `SameSite=Strict`; `npm test -- --runInBand --runTestsByPath src/modules/auth/presentation/auth-cookie.spec.ts` e E2E de login/logout (2 suítes/9 testes) aprovados. |
 | T35 | 07 | Concluída | Middleware e E2E de origem implementados; `npm run lint`, `npm run typecheck` e E2E dedicado (1 suíte/12 testes) aprovados. |
 | T36 | 07 | Concluída | CORS, OpenAPI, controllers, consumidores e matriz atualizados; busca residual não encontrou o header customizado em `src`/`test` nem em contratos ativos; `npm run lint`, `npm run typecheck`, `npm test` (35 suítes/168 testes), `npm run test:integration` (3 suítes/9 testes), `npm run test:e2e` (15 suítes/91 testes), `npm run build` e `git diff --check` aprovados. |
-| T37 | 08 | Pendente | — |
-| T38 | 08 | Pendente | — |
-| T39 | 08 | Pendente | — |
-| T40 | 08 | Pendente | — |
-| T41 | 08 | Pendente | — |
+| T37 | 08 | Concluída | `npm test -- --runTestsByPath src/modules/products/application/list-products/list-products.spec.ts src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (2 suítes/21 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados; cursor pré-validado, contagem consistente multipágina, zero, falha integral e atualização após exclusão comprovados. |
+| T38 | 08 | Em execução | — |
+| T39 | 09 | Pendente | — |
+| T40 | 09 | Pendente | — |
+| T41 | 09 | Pendente | — |
+| T42 | 09 | Pendente | — |
+| T43 | 09 | Pendente | — |
 
 ### Encerramento da Fase 07 — review aprovado
 
@@ -511,12 +560,12 @@ após o review aprovado da revisão material da proteção CSRF; a Fase 08 perma
   `test`, CORS ou contratos ativos. Ocorrências em fases e ADRs antigos são
   históricas e identificadas como substituídas.
 - O review independente da Fase 07 foi aprovado na versão 7 de `REVIEW.md`.
-- A Fase 08 permanece `Pendente` e pode ser iniciada somente como próxima fase
-  da execução.
+- A fase operacional então numerada como Fase 08 permaneceu `Pendente`; na
+  revisão material de 2026-09-05 ela foi movida para a Fase 09.
 
 ## Bloqueios e desvios
 
-Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permissão do volume nomeado criado como `root:root`; é limitado ao serviço auxiliar local e não antecipa a política de usuário não privilegiado da imagem da API na Fase 08.
+Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permissão do volume nomeado criado como `root:root`; é limitado ao serviço auxiliar local e não antecipa a política de usuário não privilegiado da imagem da API na Fase 09.
 
 ### Preparação da Fase 04
 
@@ -597,7 +646,7 @@ Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permiss�
   foi iniciada.
 - Ressalvas: autenticação por JWT/cookie permanece na Fase 03; rate limit e
   conformidade operacional permanecem na Fase 06; o desvio local do DynamoDB
-  segue encaminhado à Fase 08.
+  segue encaminhado à Fase 09.
 
 ### Encerramento da Fase 04
 
@@ -609,7 +658,7 @@ Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permiss�
 - Evidência final: 24 suítes/104 testes unitários, 3 suítes/6 testes de
   integração e 10 suítes/59 testes E2E passaram, além de lint, typecheck,
   build e `git diff --check`.
-- Ressalvas: A-01 permanece restrito ao DynamoDB Local e encaminhado à Fase 08;
+- Ressalvas: A-01 permanece restrito ao DynamoDB Local e encaminhado à Fase 09;
   a Fase 05 foi iniciada após o review e agora está encerrada com aprovação.
 
 ### Encerramento da Fase 06
@@ -624,6 +673,6 @@ Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permiss�
 - O componente próprio de Fixed Window segue a política da ADR-004; o uso de
   `@nestjs/throttler` foi substituído porque a versão disponível não é
   compatível com NestJS 12, sem alterar o contrato funcional.
-- A verificação da imagem publicada permanece encaminhada à Fase 08, pois não
+- A verificação da imagem publicada permanece encaminhada à Fase 09, pois não
   há imagem/Dockerfile neste checkout; o audit T33 cobre os fontes, respostas,
   logs de teste e artefatos de runtime fornecidos à suíte.

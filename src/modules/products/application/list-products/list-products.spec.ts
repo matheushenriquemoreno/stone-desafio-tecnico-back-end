@@ -6,7 +6,7 @@ import { ListProducts } from './list-products';
 class RecordingProductRepository implements ProductRepository {
   lastLimit: number | undefined;
   lastCursor: string | undefined;
-  page: ProductPage = { items: [] };
+  page: ProductPage = { items: [], total: 0 };
 
   async findById(): Promise<Product | null> {
     return null;
@@ -26,7 +26,7 @@ class RecordingProductRepository implements ProductRepository {
 describe('ListProducts', () => {
   it('uses the default limit and forwards the opaque cursor', async () => {
     const repository = new RecordingProductRepository();
-    repository.page = { items: [], nextCursor: 'cursor-next' };
+    repository.page = { items: [], nextCursor: 'cursor-next', total: 42 };
     const useCase = new ListProducts(repository);
 
     await expect(useCase.execute({ cursor: 'cursor-current' })).resolves.toBe(

@@ -61,4 +61,4 @@ na ADR-006 e no contrato da API.
 Executar `npm run lint`, `npm run typecheck`, `npm test`,
 `npm run test:integration`, `npm run test:e2e`, `npm run build` e `git diff --check`.
 Depois do gate, a Fase 07 deve passar por review aprovado antes do início da
-Fase 08 de entrega operacional.
+Fase 09 de entrega operacional, após a revisão material de 2026-09-05.

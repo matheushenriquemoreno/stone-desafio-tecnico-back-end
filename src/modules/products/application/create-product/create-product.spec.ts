@@ -1,7 +1,7 @@
 import { FixedClock } from '../../../../shared/application/testing/fixed-clock';
 import { FixedIdGenerator } from '../../../../shared/application/testing/fixed-id-generator';
 import type { Product } from '../../domain/product';
-import type { ProductRepository } from '../ports/product-repository';
+import type { ProductPage, ProductRepository } from '../ports/product-repository';
 import { CreateProduct, type CreateProductInput } from './create-product';
 
 class RecordingProductRepository implements ProductRepository {
@@ -12,8 +12,8 @@ class RecordingProductRepository implements ProductRepository {
     return null;
   }
 
-  async list(): Promise<{ items: readonly Product[] }> {
-    return { items: [] };
+  async list(): Promise<ProductPage> {
+    return { items: [], total: 0 };
   }
 
   async save(product: Product): Promise<void> {

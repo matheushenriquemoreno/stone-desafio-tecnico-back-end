@@ -3,7 +3,7 @@
 | Status       | Aprovado   |
 |--------------|------------|
 | Created      | 2026-09-03 |
-| Last Updated | 2026-09-04 |
+| Last Updated | 2026-09-05 |
 
 ## Histórico de atualizações
 
@@ -12,6 +12,7 @@
 | 2026-09-03 | Versão inicial consolidada a partir dos requisitos, contratos e decisões aceitas do back-end. |
 | 2026-09-03 | PRD aprovado pelo solicitante após definição das validações de produto e dos limites de paginação. |
 | 2026-09-04 | Revisão material da proteção CSRF: cookie `SameSite=Strict`, validação `Origin`/`Referer` e compatibilidade explícita com clientes sem contexto de navegador. |
+| 2026-09-05 | Revisão material aprovada: a listagem passa a retornar a quantidade total exata de produtos no campo obrigatório `total`. |
 
 ## Visão geral
 
@@ -145,6 +146,7 @@ Prioridades: **Essencial** bloqueia a entrega; **Importante** deve entrar; **Des
 - **Essencial** `AAP-35` O sistema deve retornar `nextCursor` quando existir uma próxima página.
 - **Essencial** `AAP-36` O sistema deve omitir `nextCursor` quando não existir uma próxima página.
 - **Essencial** `AAP-37` O sistema deve rejeitar cursores inválidos sem expor seu conteúdo interno.
+- **Essencial** `AAP-61` O sistema deve retornar em toda listagem a quantidade total exata de produtos existentes no catálogo, independentemente do limite ou cursor solicitado.
 - **Essencial** `AAP-38` O sistema deve permitir a consulta de um produto por seu identificador.
 - **Essencial** `AAP-39` O sistema deve permitir a atualização parcial de nome, descrição, preço ou URL da imagem.
 - **Essencial** `AAP-40` O sistema deve preservar os campos editáveis que forem omitidos em uma atualização parcial.
@@ -201,6 +203,7 @@ Prioridades: **Essencial** bloqueia a entrega; **Importante** deve entrar; **Des
 - Um produto válido referencia uma imagem por URL HTTP(S) de até 2.048 caracteres.
 - O arquivo da imagem não faz parte do produto mantido pela API.
 - O cursor de paginação é um valor opaco que o cliente deve apenas armazenar e reenviar.
+- O campo `total` da listagem representa todos os produtos existentes no catálogo, e não somente a quantidade de itens da página atual.
 - A ausência de `nextCursor` representa o fim da listagem.
 - A API não garante ordenação global da listagem de produtos.
 - Uma atualização parcial modifica somente os campos editáveis recebidos e válidos.
@@ -243,6 +246,7 @@ Prioridades: **Essencial** bloqueia a entrega; **Importante** deve entrar; **Des
 ## Premissas
 
 - O volume inicial de produtos será pequeno o suficiente para sustentar uma listagem integral paginada — risco: volumes maiores aumentam custo e latência, exigindo novo padrão de acesso.
+- A contagem exata observa o catálogo durante a requisição, sem snapshot transacional entre páginas internas — risco: criações ou exclusões concorrentes podem produzir diferença momentânea, corrigida na requisição seguinte.
 - A demonstração executará somente uma instância da API — risco: uma segunda instância tornaria os limites de requisição inconsistentes entre processos.
 - O cliente web publicado e a API pertencerão ao mesmo site registrável — risco: hospedagem permanente em outro site pode impedir o envio esperado do cookie.
 - O cliente web enviará credenciais em todas as chamadas; o cookie usará `SameSite=Strict` e as mutações terão origem autorizada — risco: uma origem não cadastrada será recusada.
@@ -256,7 +260,7 @@ Prioridades: **Essencial** bloqueia a entrega; **Importante** deve entrar; **Des
 ### Fluxos principais
 
 - **Cadastro e acesso:** o visitante envia nome, e-mail e senha; a API valida e cria a conta; o visitante realiza uma chamada separada de login; a API valida as credenciais e cria o cookie; o navegador passa a enviar o cookie automaticamente.
-- **Listagem paginada:** a pessoa autenticada solicita a lista; a API retorna até o limite aplicável; o cliente usa `nextCursor` para buscar a próxima página; a navegação termina quando `nextCursor` não estiver presente.
+- **Listagem paginada:** a pessoa autenticada solicita a lista; a API retorna até o limite aplicável e a quantidade total de produtos do catálogo; o cliente usa `nextCursor` para buscar a próxima página; a navegação termina quando `nextCursor` não estiver presente.
 - **Criação:** a pessoa autenticada envia os quatro campos editáveis; a API valida os valores; um novo produto com identificador e datas é devolvido.
 - **Consulta:** a pessoa autenticada informa o identificador; a API devolve o produto correspondente ou o erro seguro de produto não encontrado.
 - **Atualização:** a pessoa autenticada envia ao menos um campo editável; a API valida apenas os campos recebidos; campos omitidos permanecem inalterados; o produto atualizado é devolvido.
@@ -265,7 +269,7 @@ Prioridades: **Essencial** bloqueia a entrega; **Importante** deve entrar; **Des
 
 ### Estados vazios
 
-- A primeira listagem de um catálogo sem produtos retorna `items` vazio e não retorna `nextCursor`.
+- A primeira listagem de um catálogo sem produtos retorna `items` vazio, `total` igual a zero e não retorna `nextCursor`.
 - Uma página final retorna os itens restantes e não retorna `nextCursor`.
 - Um logout sem cookie continua sendo tratado como concluído.
 
@@ -308,7 +312,7 @@ Prioridades: **Essencial** bloqueia a entrega; **Importante** deve entrar; **Des
 9. Dada uma origem autorizada, o preflight anuncia métodos e cabeçalhos permitidos sem consumir o limite da operação real. (`AAP-20`, `AAP-23`, `AAP-24`)
 10. Dado um produto que atende a todos os limites de campo, uma pessoa autenticada consegue criá-lo e recebe o recurso completo com `201`. (`AAP-25` a `AAP-30`)
 11. Dado um produto com nome, descrição, preço ou URL da imagem fora das regras, a API responde `400` com `VALIDATION_ERROR`. (`AAP-26` a `AAP-29`, `AAP-51`, `AAP-52`)
-12. Dado um catálogo vazio, a listagem retorna `200`, `items` vazio e nenhum `nextCursor`. (`AAP-31`, `AAP-36`)
+12. Dado um catálogo vazio, a listagem retorna `200`, `items` vazio, `total` igual a zero e nenhum `nextCursor`. (`AAP-31`, `AAP-36`, `AAP-61`)
 13. Dado um catálogo com mais itens que o limite, a listagem retorna no máximo o limite solicitado e fornece `nextCursor` para a continuação. (`AAP-32` a `AAP-35`)
 14. Quando `limit` é omitido, a listagem considera 20 produtos; quando está fora do intervalo de 1 a 100 ou não é inteiro, a API responde `400`. (`AAP-33`, `AAP-34`)
 15. Dado um cursor devolvido pela API, o cliente obtém a página seguinte sem interpretar o valor; dado um cursor inválido, recebe `400` sem detalhes internos. (`AAP-32`, `AAP-37`)
@@ -324,6 +328,7 @@ Prioridades: **Essencial** bloqueia a entrega; **Importante** deve entrar; **Des
 25. Dada a aplicação em execução, a documentação OpenAPI descreve os endpoints, cookies, cabeçalhos, entradas, respostas e erros definidos neste PRD, além de estar disponível em JSON. (`AAP-56`, `AAP-57`, `EXPECT-06`)
 26. A suíte automatizada cobre cadastro, login, logout, autorização, CORS, preflight, proteção por cookie e origem, health, paginação, CRUD, rate limit e persistência isolada; lint, tipos, testes e build concluem com sucesso. (`EXPECT-07`, `EXPECT-08`)
 27. A inspeção de respostas, logs, artefatos versionados e imagem publicada não encontra senha em texto puro, hash de senha, JWT ou credencial de infraestrutura. (`EXPECT-01`, `EXPECT-02`, `EXPECT-10`, `EXPECT-11`)
+28. Dado um catálogo estável com produtos, toda página retorna em `total` a quantidade exata de produtos do catálogo, independentemente de `limit`, cursor ou quantidade de itens da página. (`AAP-61`)
 
 ## Perguntas em aberto
 

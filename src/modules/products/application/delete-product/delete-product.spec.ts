@@ -15,7 +15,7 @@ class RecordingProductRepository implements ProductMaintenanceRepository {
   }
 
   async list(): Promise<ProductPage> {
-    return { items: [] };
+    return { items: [], total: 0 };
   }
 
   async save(): Promise<void> {

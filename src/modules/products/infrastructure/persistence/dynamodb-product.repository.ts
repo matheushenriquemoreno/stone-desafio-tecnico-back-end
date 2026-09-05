@@ -108,6 +108,10 @@ export class DynamoDbProductRepository implements ProductUpdateRepository {
   ) {}
 
   async list(limit: number, cursor?: string): Promise<ProductPage> {
+    const exclusiveStartKey =
+      cursor === undefined
+        ? undefined
+        : (this.cursorCodec.decode(cursor) as unknown as Record<string, unknown>);
     const input: {
       readonly ExclusiveStartKey?: Record<string, unknown>;
       readonly Limit: number;
@@ -115,22 +119,18 @@ export class DynamoDbProductRepository implements ProductUpdateRepository {
     } = {
       Limit: limit,
       TableName: this.tableName,
-      ...(cursor === undefined
-        ? {}
-        : {
-            ExclusiveStartKey: this.cursorCodec.decode(cursor) as unknown as Record<
-              string,
-              unknown
-            >,
-          }),
+      ...(exclusiveStartKey === undefined ? {} : { ExclusiveStartKey: exclusiveStartKey }),
     };
-    const output = await this.client.send(new ScanCommand(input));
+    const [output, total] = await Promise.all([
+      this.client.send(new ScanCommand(input)),
+      this.countProducts(),
+    ]);
     const items = (output.Items ?? []).map((item) =>
       toProduct(item as unknown as Record<string, unknown>),
     );
 
     if (output.LastEvaluatedKey === undefined) {
-      return { items };
+      return { items, total };
     }
 
     return {
@@ -138,7 +138,31 @@ export class DynamoDbProductRepository implements ProductUpdateRepository {
       nextCursor: this.cursorCodec.encode(
         output.LastEvaluatedKey as unknown as Record<string, unknown>,
       ),
+      total,
     };
+  }
+
+  private async countProducts(): Promise<number> {
+    let exclusiveStartKey: Record<string, unknown> | undefined;
+    let total = 0;
+
+    do {
+      const output = await this.client.send(
+        new ScanCommand({
+          ConsistentRead: true,
+          Select: 'COUNT',
+          TableName: this.tableName,
+          ...(exclusiveStartKey === undefined ? {} : { ExclusiveStartKey: exclusiveStartKey }),
+        }),
+      );
+
+      total += output.Count ?? 0;
+      exclusiveStartKey = output.LastEvaluatedKey as
+        | Record<string, unknown>
+        | undefined;
+    } while (exclusiveStartKey !== undefined);
+
+    return total;
   }
 
   async findById(id: string): Promise<Product | null> {
