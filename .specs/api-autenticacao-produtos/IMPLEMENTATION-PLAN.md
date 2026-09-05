@@ -17,6 +17,7 @@ Design técnico: [TECHNICAL-DESIGN.md](./TECHNICAL-DESIGN.md) (`Aprovado`)
 | 2026-09-03 | Plano aprovado; formalizado o limite de 30 requisições por minuto e IP para `/docs` e `/docs-json`. |
 | 2026-09-04 | Revisão material aprovada: inserida a Fase 07 para `SameSite=Strict` e origem; a entrega operacional foi movida para a Fase 08. |
 | 2026-09-05 | Revisão material aprovada: inserida a Fase 08 para `total` exato na listagem; a entrega operacional foi movida para a Fase 09 e suas tarefas pendentes foram renumeradas. |
+| 2026-09-05 | Fase 08 implementada e validada pelos gates completos; aguarda review independente antes da Fase 09. |
 
 ## Objetivo geral da implementação
 
@@ -39,7 +40,7 @@ A Fase 01 estabelece `npm` com lockfile e os scripts `lint`, `typecheck`, `test`
 | 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fases/fase-05-paginacao-manutencao-produtos.md) | Concluída |
 | 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fases/fase-06-rate-limit-conformidade.md) | Concluída |
 | 07 | Proteção CSRF por cookie e validação de origem | [fase-07-protecao-csrf-origem.md](fases/fase-07-protecao-csrf-origem.md) | Concluída |
-| 08 | Total exato na listagem de produtos | [fase-08-total-exato-produtos.md](fases/fase-08-total-exato-produtos.md) | Em execução |
+| 08 | Total exato na listagem de produtos | [fase-08-total-exato-produtos.md](fases/fase-08-total-exato-produtos.md) | Concluída |
 | 09 | Empacotamento, infraestrutura e entrega | [fase-09-entrega-operacional.md](fases/fase-09-entrega-operacional.md) | Pendente |
 
 ## Dependências e ordem entre as fases

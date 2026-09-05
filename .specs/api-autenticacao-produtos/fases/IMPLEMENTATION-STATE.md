@@ -1,6 +1,6 @@
 # Estado da Implementação — API de cadastro, autenticação e catálogo de produtos
 
-| Status       | Em execução |
+| Status       | Em revisão |
 |--------------|-------------|
 | Created      | 2026-09-03 |
 | Last Updated | 2026-09-05 |
@@ -12,9 +12,9 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 ## Fase ativa
 
 A Fase 07 está `Concluída` após o review aprovado da proteção CSRF. A Fase 08,
-que adiciona o total exato à listagem de produtos, está `Em execução`; a tarefa
-ativa é `T38`. A entrega operacional foi movida para a Fase 09 e permanece
-`Pendente`.
+que adiciona o total exato à listagem de produtos, está `Concluída` em espera do
+review independente. A entrega operacional foi movida para a Fase 09 e
+permanece `Pendente`.
 
 ### Preparação da Fase 08
 
@@ -498,7 +498,7 @@ ativa é `T38`. A entrega operacional foi movida para a Fase 09 e permanece
 | 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fase-05-paginacao-manutencao-produtos.md) | Concluída | 2026-09-04 |
 | 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fase-06-rate-limit-conformidade.md) | Concluída | 2026-09-04 |
 | 07 | Proteção CSRF por cookie e validação de origem | [fase-07-protecao-csrf-origem.md](fase-07-protecao-csrf-origem.md) | Concluída | 2026-09-04 |
-| 08 | Total exato na listagem de produtos | [fase-08-total-exato-produtos.md](fase-08-total-exato-produtos.md) | Em execução | — |
+| 08 | Total exato na listagem de produtos | [fase-08-total-exato-produtos.md](fase-08-total-exato-produtos.md) | Concluída | 2026-09-05 |
 | 09 | Empacotamento, infraestrutura e entrega | [fase-09-entrega-operacional.md](fase-09-entrega-operacional.md) | Pendente | — |
 
 ## Tarefas
@@ -542,12 +542,21 @@ ativa é `T38`. A entrega operacional foi movida para a Fase 09 e permanece
 | T35 | 07 | Concluída | Middleware e E2E de origem implementados; `npm run lint`, `npm run typecheck` e E2E dedicado (1 suíte/12 testes) aprovados. |
 | T36 | 07 | Concluída | CORS, OpenAPI, controllers, consumidores e matriz atualizados; busca residual não encontrou o header customizado em `src`/`test` nem em contratos ativos; `npm run lint`, `npm run typecheck`, `npm test` (35 suítes/168 testes), `npm run test:integration` (3 suítes/9 testes), `npm run test:e2e` (15 suítes/91 testes), `npm run build` e `git diff --check` aprovados. |
 | T37 | 08 | Concluída | `npm test -- --runTestsByPath src/modules/products/application/list-products/list-products.spec.ts src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (2 suítes/21 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados; cursor pré-validado, contagem consistente multipágina, zero, falha integral e atualização após exclusão comprovados. |
-| T38 | 08 | Em execução | — |
+| T38 | 08 | Concluída | `npm run lint`, `npm run typecheck`, `npm test` (35 suítes/171 testes), `npm run test:integration` (3 suítes/9 testes), `npm run test:e2e` (15 suítes/91 testes), `npm run build` e `git diff --check` aprovados; E2E de listagem/OpenAPI, matriz, contrato e DTO comprovam `total` obrigatório, zero no catálogo vazio, 21 na primeira/última página e `nextCursor` opcional. |
 | T39 | 09 | Pendente | — |
 | T40 | 09 | Pendente | — |
 | T41 | 09 | Pendente | — |
 | T42 | 09 | Pendente | — |
 | T43 | 09 | Pendente | — |
+
+### Encerramento da Fase 08 — aguardando review independente
+
+- T37 e T38 foram concluídas com evidências dirigidas e gate completo verde.
+- O contrato público agora exige `total` inteiro não negativo em toda resposta
+  `200` de `GET /products`; a contagem é exata para a leitura observada e
+  percorre todas as páginas internas do `Scan` consistente.
+- A Fase 09 permanece `Pendente` e não deve ser iniciada antes da aprovação
+  desta fase pela skill `review`.
 
 ### Encerramento da Fase 07 — review aprovado
 

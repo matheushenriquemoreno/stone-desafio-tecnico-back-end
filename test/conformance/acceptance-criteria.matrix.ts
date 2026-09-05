@@ -17,7 +17,7 @@ export const ACCEPTANCE_CRITERIA: readonly AcceptanceCriterionEvidence[] = [
   { id: 9, requirements: 'AAP-20, AAP-23, AAP-24', summary: 'Preflight autorizado não autentica nem consome operação.', testPaths: ['test/e2e/cors.e2e.spec.ts', 'test/e2e/rate-limit.e2e.spec.ts'] },
   { id: 10, requirements: 'AAP-25..30', summary: 'Produto válido é criado com o recurso completo.', testPaths: ['test/e2e/create-product.e2e.spec.ts'] },
   { id: 11, requirements: 'AAP-26..29, AAP-51, AAP-52', summary: 'Campos de produto inválidos produzem erro seguro.', testPaths: ['test/e2e/create-product.e2e.spec.ts'] },
-  { id: 12, requirements: 'AAP-31, AAP-36', summary: 'Catálogo vazio omite nextCursor.', testPaths: ['test/e2e/list-products.e2e.spec.ts'] },
+  { id: 12, requirements: 'AAP-31, AAP-36, AAP-61', summary: 'Catálogo vazio retorna total zero e omite nextCursor.', testPaths: ['test/e2e/list-products.e2e.spec.ts'] },
   { id: 13, requirements: 'AAP-32..35', summary: 'Listagem limitada devolve cursor para continuação.', testPaths: ['test/e2e/list-products.e2e.spec.ts'] },
   { id: 14, requirements: 'AAP-33, AAP-34', summary: 'Limite padrão e intervalo inteiro são aplicados.', testPaths: ['test/e2e/list-products.e2e.spec.ts'] },
   { id: 15, requirements: 'AAP-32, AAP-37', summary: 'Cursor é reenviado opacamente e inválido é rejeitado.', testPaths: ['test/e2e/list-products.e2e.spec.ts', 'src/modules/products/infrastructure/persistence/dynamodb-cursor-codec.spec.ts'] },
@@ -33,4 +33,5 @@ export const ACCEPTANCE_CRITERIA: readonly AcceptanceCriterionEvidence[] = [
   { id: 25, requirements: 'AAP-56, AAP-57, EXPECT-06', summary: 'OpenAPI UI e JSON descrevem o contrato.', testPaths: ['test/e2e/openapi.e2e.spec.ts', 'test/e2e/register-user.e2e.spec.ts'] },
   { id: 26, requirements: 'EXPECT-07, EXPECT-08', summary: 'Suítes funcionais, persistência isolada e gates são executáveis.', testPaths: ['test/integration/products.integration.spec.ts', 'test/e2e/rate-limit.e2e.spec.ts', 'package.json'] },
   { id: 27, requirements: 'EXPECT-01, EXPECT-02, EXPECT-10, EXPECT-11', summary: 'Respostas, logs e artefatos não expõem material sensível.', testPaths: ['test/e2e/errors.e2e.spec.ts', 'test/e2e/register-user.e2e.spec.ts', 'test/e2e/access-token-guard.e2e.spec.ts'] },
+  { id: 28, requirements: 'AAP-61', summary: 'Toda página retorna o total exato do catálogo.', testPaths: ['test/e2e/list-products.e2e.spec.ts', 'test/integration/products.integration.spec.ts', 'src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts'] },
 ];

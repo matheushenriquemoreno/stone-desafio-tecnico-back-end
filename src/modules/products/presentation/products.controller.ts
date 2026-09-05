@@ -150,6 +150,7 @@ export class ProductsController {
     return {
       items: page.items.map((product) => product.toPublicData()),
       ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }),
+      total: page.total,
     };
   }
 }

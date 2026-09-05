@@ -165,7 +165,7 @@ describe('GET /products', () => {
       .set('Cookie', accessCookie)
       .expect(200);
 
-    expect(response.body).toEqual({ items: [] });
+    expect(response.body).toEqual({ items: [], total: 0 });
     expect(response.body).not.toHaveProperty('nextCursor');
   });
 
@@ -179,6 +179,7 @@ describe('GET /products', () => {
 
     expect(response.body.items).toHaveLength(20);
     expect(response.body.nextCursor).toEqual(expect.any(String));
+    expect(response.body.total).toBe(21);
   });
 
   it('follows opaque cursors sequentially without assuming Scan ordering', async () => {
@@ -199,6 +200,7 @@ describe('GET /products', () => {
       }
 
       expect(response.body.items).toHaveLength(1);
+      expect(response.body.total).toBe(21);
       listedIds.push(response.body.items[0].id as string);
       cursor = response.body.nextCursor as string | undefined;
 
@@ -222,6 +224,7 @@ describe('GET /products', () => {
         .expect(200);
 
       expect(response.body.items.length).toBeLessThanOrEqual(limit);
+      expect(response.body.total).toBe(21);
     }
 
     const finalPage = await request(httpServer(app))
@@ -230,6 +233,7 @@ describe('GET /products', () => {
       .set('Cookie', accessCookie)
       .expect(200);
     expect(finalPage.body).not.toHaveProperty('nextCursor');
+    expect(finalPage.body.total).toBe(21);
   });
 
   it.each(['0', '101', '1.5', 'abc'])('rejects an invalid limit %s', async (limit) => {
@@ -278,6 +282,11 @@ describe('GET /products', () => {
         expect.objectContaining({ name: 'cursor', in: 'query' }),
       ]),
     );
-    expect(response.body.components.schemas.ProductsPageResponseDto).toBeDefined();
+    expect(response.body.components.schemas.ProductsPageResponseDto).toMatchObject({
+      properties: {
+        total: { example: 21, minimum: 0, type: 'integer' },
+      },
+      required: expect.arrayContaining(['items', 'total']),
+    });
   });
 });
