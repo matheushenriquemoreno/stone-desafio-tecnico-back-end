@@ -1,6 +1,6 @@
 # Estado da Implementação — API de cadastro, autenticação e catálogo de produtos
 
-| Status       | Em revisão |
+| Status       | Aprovado |
 |--------------|-------------|
 | Created      | 2026-09-03 |
 | Last Updated | 2026-09-05 |
@@ -12,8 +12,8 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 ## Fase ativa
 
 A Fase 07 está `Concluída` após o review aprovado da proteção CSRF. A Fase 08,
-que adiciona o total exato à listagem de produtos, está `Concluída` em espera do
-review independente. A entrega operacional foi movida para a Fase 09 e
+que adiciona o total exato à listagem de produtos, está `Concluída` após o review
+aprovado na versão 8. A entrega operacional foi movida para a Fase 09 e
 permanece `Pendente`.
 
 ### Preparação da Fase 08
@@ -549,14 +549,15 @@ permanece `Pendente`.
 | T42 | 09 | Pendente | — |
 | T43 | 09 | Pendente | — |
 
-### Encerramento da Fase 08 — aguardando review independente
+### Encerramento da Fase 08 — review aprovado
 
 - T37 e T38 foram concluídas com evidências dirigidas e gate completo verde.
 - O contrato público agora exige `total` inteiro não negativo em toda resposta
   `200` de `GET /products`; a contagem é exata para a leitura observada e
   percorre todas as páginas internas do `Scan` consistente.
-- A Fase 09 permanece `Pendente` e não deve ser iniciada antes da aprovação
-  desta fase pela skill `review`.
+- O review independente da versão 8 aprovou a fase sem achados abertos.
+- A Fase 09 permanece `Pendente` e não foi iniciada; sua execução depende de
+  nova autorização.
 
 ### Encerramento da Fase 07 — review aprovado
 

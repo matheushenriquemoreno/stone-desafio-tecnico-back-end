@@ -1,6 +1,6 @@
 # Fase 08 — Total exato na listagem de produtos
 
-| Status       | Concluída — aguardando review |
+| Status       | Concluída |
 |--------------|-------------|
 | Created      | 2026-09-05  |
 | Last Updated | 2026-09-05  |
