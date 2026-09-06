@@ -1,6 +1,6 @@
 # Bug — Rate limit de produção ignora políticas por rota
 
-| Status       | Em correção |
+| Status       | Resolvido |
 |--------------|------------|
 | Created      | 2026-09-06 |
 | Last Updated | 2026-09-06 |
@@ -114,3 +114,5 @@ correção, a sexta chamada retorna `400`; depois da correção, retorna `429` c
   absoluto ainda incorporava host/esquema à chave e usava o fallback.
 - **Versão 4 — Reprovado:** o parser de URL corrigiu absolute-form, mas também
   normalizou dot-segments codificados antes de identificar rotas dinâmicas.
+- **Versão 5 — Aprovado:** a extração preserva segmentos codificados, todas as
+  políticas foram revalidadas e o warning de fallback não expõe dados do caminho.
