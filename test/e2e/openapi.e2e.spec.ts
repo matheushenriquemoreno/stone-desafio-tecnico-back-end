@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import request from 'supertest';
 
-import { AppModule } from '../../src/app.module';
 import type { AppConfig } from '../../src/shared/infrastructure/configuration';
 import { createCorsOptions } from '../../src/shared/presentation/http/cors-options';
 import { setupOpenApi } from '../../src/shared/presentation/openapi/setup-openapi';
@@ -28,6 +27,7 @@ describe('OpenAPI export', () => {
     process.env.COOKIE_NAME = 'stone_access_token';
     process.env.COOKIE_SECURE = 'false';
 
+    const { AppModule } = await import('../../src/app.module');
     app = await NestFactory.create(AppModule, { logger: false });
     const configService = app.get(ConfigService<AppConfig>);
     app.enableCors(createCorsOptions(configService.getOrThrow('allowedOrigins')));

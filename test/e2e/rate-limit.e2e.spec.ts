@@ -4,7 +4,6 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import request from 'supertest';
 
-import { AppModule } from '../../src/app.module';
 import type { AppConfig } from '../../src/shared/infrastructure/configuration';
 import {
   RATE_LIMITER,
@@ -22,12 +21,6 @@ class RateLimitProbeController {
     return { ok: true };
   }
 }
-
-@Module({
-  controllers: [RateLimitProbeController],
-  imports: [AppModule],
-})
-class RateLimitProbeModule {}
 
 describe('rate limit HTTP pipeline', () => {
   let app: INestApplication;
@@ -49,6 +42,13 @@ describe('rate limit HTTP pipeline', () => {
     process.env.TRUSTED_PROXY_IPS = '';
     process.env.COOKIE_NAME = 'stone_access_token';
     process.env.COOKIE_SECURE = 'false';
+
+    const { AppModule } = await import('../../src/app.module');
+    @Module({
+      controllers: [RateLimitProbeController],
+      imports: [AppModule],
+    })
+    class RateLimitProbeModule {}
 
     app = await NestFactory.create(RateLimitProbeModule, { logger: false });
     const configService = app.get(ConfigService<AppConfig>);
