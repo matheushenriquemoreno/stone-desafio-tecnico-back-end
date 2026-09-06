@@ -15,6 +15,18 @@ export interface RequestLogEntry {
   readonly errorCode?: ApiErrorCode;
 }
 
+export interface RateLimitFallbackLogEntry {
+  readonly timestamp: string;
+  readonly level: 'warn';
+  readonly event: 'RATE_LIMIT_FALLBACK_APPLIED';
+  readonly correlationId: string;
+  readonly method: string;
+  readonly route: string;
+  readonly limit: number;
+  readonly windowMs: number;
+}
+
 export interface RequestLogger {
   log(entry: RequestLogEntry): void;
+  warn(entry: RateLimitFallbackLogEntry): void;
 }

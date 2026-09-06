@@ -88,9 +88,12 @@ correção, a sexta chamada retorna `400`; depois da correção, retorna `429` c
   `Retry-After` na rota canônica.
 - A regressão de rota dinâmica passou para `PATCH /products/%2e`: vinte
   respostas `401` foram seguidas de `429`, provando a política de 20 por minuto.
+- O middleware registra `RATE_LIMIT_FALLBACK_APPLIED` em nível `warn` sempre que
+  aplica a política padrão, com método, identificador estático de rota, limite,
+  janela e `correlationId`, sem registrar o caminho concreto nem o IP.
 - Reprodução original: não ocorre mais no pipeline HTTP local. A confirmação na
   URL pública depende do merge e do deploy desta correção.
-- Testes relevantes do projeto: lint e typecheck aprovados; 175 testes
+- Testes relevantes do projeto: lint e typecheck aprovados; 176 testes
   unitários, 9 de integração e 96 E2E aprovados; build concluído.
 
 ## Riscos e prevenções futuras

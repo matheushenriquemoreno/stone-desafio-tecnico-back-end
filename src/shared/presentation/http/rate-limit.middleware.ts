@@ -1,7 +1,11 @@
 import { Inject, Injectable, type NestMiddleware } from '@nestjs/common';
-import type { NextFunction, Request, Response } from 'express';
+import type { NextFunction, Response } from 'express';
 
 import { RateLimitExceededError } from '../../application/errors/application-error';
+import {
+  REQUEST_LOGGER,
+  type RequestLogger,
+} from '../../application/ports/request-logger';
 import {
   RATE_LIMIT_METRICS,
   RATE_LIMITER,
@@ -10,9 +14,11 @@ import {
   type RateLimiter,
 } from '../../application/ports/rate-limiter';
 import {
+  hasExplicitRateLimitPolicy,
   normalizeRouteTemplate,
   resolveRateLimitPolicy,
 } from './rate-limit-policies';
+import type { CorrelationRequest } from './correlation-id.middleware';
 import {
   EFFECTIVE_CLIENT_IP_RESOLVER,
   type EffectiveClientIpResolverPort,
@@ -27,9 +33,11 @@ export class RateLimitMiddleware implements NestMiddleware {
     private readonly rateLimiter: RateLimiter,
     @Inject(RATE_LIMIT_METRICS)
     private readonly metrics: RateLimitMetrics,
+    @Inject(REQUEST_LOGGER)
+    private readonly logger: RequestLogger,
   ) {}
 
-  use(request: Request, _response: Response, next: NextFunction): void {
+  use(request: CorrelationRequest, _response: Response, next: NextFunction): void {
     if (request.method.toUpperCase() === 'OPTIONS') {
       next();
       return;
@@ -44,10 +52,22 @@ export class RateLimitMiddleware implements NestMiddleware {
       method: request.method.toUpperCase(),
       routeTemplate,
     };
-    const result = this.rateLimiter.consume(
-      key,
-      resolveRateLimitPolicy(key.method, routeTemplate),
-    );
+    const policy = resolveRateLimitPolicy(key.method, routeTemplate);
+
+    if (!hasExplicitRateLimitPolicy(key.method, routeTemplate)) {
+      this.logger.warn({
+        correlationId: request.correlationId ?? 'unknown',
+        event: 'RATE_LIMIT_FALLBACK_APPLIED',
+        level: 'warn',
+        limit: policy.limit,
+        method: key.method,
+        route: 'unconfigured',
+        timestamp: new Date().toISOString(),
+        windowMs: policy.windowMs,
+      });
+    }
+
+    const result = this.rateLimiter.consume(key, policy);
 
     if (!result.allowed) {
       const retryAfterSeconds = result.retryAfterSeconds ?? 1;

@@ -29,6 +29,13 @@ export function resolveRateLimitPolicy(
   );
 }
 
+export function hasExplicitRateLimitPolicy(
+  method: string,
+  routeTemplate: string,
+): boolean {
+  return RATE_LIMIT_POLICIES[`${method.toUpperCase()} ${routeTemplate}`] !== undefined;
+}
+
 function extractPathname(requestTarget: string): string {
   const absoluteTargetPrefix = requestTarget.match(
     /^[a-z][a-z\d+.-]*:\/\/[^/?#]*/i,

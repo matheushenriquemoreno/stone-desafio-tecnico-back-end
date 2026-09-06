@@ -17,6 +17,7 @@ import { CLOCK } from '../../src/shared/application/ports/clock';
 import { ID_GENERATOR } from '../../src/shared/application/ports/id-generator';
 import {
   REQUEST_LOGGER,
+  type RateLimitFallbackLogEntry,
   type RequestLogEntry,
   type RequestLogger,
 } from '../../src/shared/application/ports/request-logger';
@@ -61,9 +62,14 @@ class ProbeController {
 
 class CapturingRequestLogger implements RequestLogger {
   readonly entries: RequestLogEntry[] = [];
+  readonly warnings: RateLimitFallbackLogEntry[] = [];
 
   log(entry: RequestLogEntry): void {
     this.entries.push(entry);
+  }
+
+  warn(entry: RateLimitFallbackLogEntry): void {
+    this.warnings.push(entry);
   }
 }
 

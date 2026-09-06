@@ -1,6 +1,7 @@
 import {
   DEFAULT_RATE_LIMIT_POLICY,
   RATE_LIMIT_POLICIES,
+  hasExplicitRateLimitPolicy,
   normalizeRouteTemplate,
   resolveRateLimitPolicy,
 } from './rate-limit-policies';
@@ -30,6 +31,9 @@ describe('rate limit policies', () => {
       limit: 60,
       windowMs: 60_000,
     });
+    expect(hasExplicitRateLimitPolicy('GET', '/products')).toBe(true);
+    expect(hasExplicitRateLimitPolicy('GET', '/docs')).toBe(true);
+    expect(hasExplicitRateLimitPolicy('POST', '/not-configured')).toBe(false);
   });
 
   it('normalizes only the product resource identifier to the route template', () => {
