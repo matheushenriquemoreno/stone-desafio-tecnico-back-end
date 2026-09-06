@@ -172,13 +172,13 @@ jobs:
           # shellcheck disable=SC2029
           ssh "${ssh_opts[@]}" "$target" \
             "mkdir -p -- '$DEPLOY_DIRECTORY/nginx/conf.d' '$DEPLOY_DIRECTORY/scripts'"
-          scp "${ssh_opts[@]}" deploy/compose.production.yaml \
+          scp "${ssh_opts[@]}" deploy/api/compose.production.yaml \
             "$target:$DEPLOY_DIRECTORY/compose.yaml"
-          scp "${ssh_opts[@]}" deploy/nginx/nginx.conf \
+          scp "${ssh_opts[@]}" deploy/api/nginx/nginx.conf \
             "$target:$DEPLOY_DIRECTORY/nginx/nginx.conf"
-          scp -r "${ssh_opts[@]}" deploy/nginx/conf.d \
+          scp -r "${ssh_opts[@]}" deploy/api/nginx/conf.d \
             "$target:$DEPLOY_DIRECTORY/nginx/"
-          scp "${ssh_opts[@]}" deploy/scripts/*.sh \
+          scp "${ssh_opts[@]}" deploy/api/scripts/*.sh \
             "$target:$DEPLOY_DIRECTORY/scripts/"
           # shellcheck disable=SC2029
           ssh "${ssh_opts[@]}" "$target" \
