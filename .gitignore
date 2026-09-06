@@ -18,3 +18,4 @@ backend.hcl
 !backend.hcl.example
 deploy/.image.env
 deploy/.runtime.env
+deploy/terraform/tfplan
