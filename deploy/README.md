@@ -69,7 +69,7 @@ manual, habilite os reviewers desse environment. Cadastre nele os secrets:
 | `DEPLOY_DIRECTORY` | Caminho absoluto, normalmente `/opt/stone-app` |
 | `DEPLOY_SSH_PRIVATE_KEY` | Chave privada dedicada do deploy |
 | `DEPLOY_KNOWN_HOSTS` | Saída previamente verificada de `ssh-keyscan` |
-| `PUBLIC_HEALTH_URL` | URL HTTPS pública sem `/health`, por exemplo `https://api.example.com` |
+| `PUBLIC_HEALTH_URL` | URL HTTPS pública sem `/health`: `https://apiproducts.devmoreno.com.br` |
 
 O workflow usa apenas o `GITHUB_TOKEN` nativo para publicar no GHCR. Na VPS,
 configure previamente o login de leitura no GHCR para o usuário que executará

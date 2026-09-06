@@ -42,9 +42,9 @@ flowchart LR
     H -->|Pull da imagem| GHCR
 ```
 
-`api.example.com` será um registro `A` com proxy da Cloudflare habilitado e apontará para o IPv4 da VPS. A configuração demonstrativa aceita TLS na borda e HTTP entre Cloudflare e NGINX; esse risco é descrito em [Segurança operacional](#segurança-operacional).
+`apiproducts.devmoreno.com.br` será um registro `A` com proxy da Cloudflare habilitado e apontará para o IPv4 da VPS. A configuração demonstrativa aceita TLS na borda e HTTP entre Cloudflare e NGINX; esse risco é descrito em [Segurança operacional](#segurança-operacional).
 
-O navegador carregado pelo front-end chamará `api.example.com` diretamente. A Vercel não encaminhará requisições para a API. O domínio de produção do front-end deverá pertencer ao mesmo site registrável da API, e sua origem exata será autorizada pela configuração CORS.
+O navegador carregado pelo front-end chamará `apiproducts.devmoreno.com.br` diretamente. A Vercel não encaminhará requisições para a API. O front-end de produção será `products.devmoreno.com.br`, e sua origem exata será autorizada pela configuração CORS.
 
 ## Organização na VPS
 
