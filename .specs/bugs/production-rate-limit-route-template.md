@@ -44,7 +44,8 @@ ativo, porém resolve a política padrão de 30 requisições por minuto.
 |---|----------|------------------------------|-----------|
 | H1 | A imagem publicada não contém o rate limiter atual. | Conferir SHA do deploy e provocar o limite padrão. | Refutada: a imagem corresponde à `main` e respondeu `429` na 31ª chamada. |
 | H2 | O contador é perdido entre requisições. | Repetir 31 chamadas na mesma janela. | Refutada: o contador acumulou e bloqueou a 31ª. |
-| H3 | O template usado pela política perde a rota no middleware montado pelo Nest. | Comparar `request.path` e `request.originalUrl` no caminho HTTP e cobrir a rota específica em E2E. | Confirmada: a política padrão é observável e o middleware atualmente prioriza `request.path`. |
+| H3 | O template usado pela política perde a rota no middleware montado pelo Nest. | Comparar `request.path` e `request.originalUrl` no caminho HTTP e cobrir a rota específica em E2E. | Confirmada: a política padrão é observável e a implementação defeituosa priorizava `request.path`. |
+| H4 | Usar `originalUrl` sem canonicalizar a barra final ainda permite o fallback. | Enviar chamadas para `/auth/register/`, que o Nest aceita como cadastro. | Confirmada no review v1: a 31ª chamada, não a 6ª, recebeu `429`. |
 
 ## Causa raiz confirmada
 
@@ -57,9 +58,10 @@ mesmo método compartilham indevidamente o mesmo bucket.
 
 ## Proposta de correção
 
-Usar `request.originalUrl` como fonte primária da rota e manter `request.path`
-somente como fallback. Adicionar um E2E que chama `POST /auth/register` pelo
-pipeline real e exige cinco respostas de validação seguidas de `429`.
+Usar `request.originalUrl` como fonte primária da rota, manter `request.path`
+somente como fallback e canonicalizar barras finais sem alterar a raiz.
+Adicionar E2E para `/auth/register` e `/auth/register/`, exigindo cinco
+respostas de validação seguidas de `429` em ambos.
 
 ## Teste de regressão
 
@@ -72,14 +74,15 @@ correção, a sexta chamada retorna `400`; depois da correção, retorna `429` c
 - Teste de regressão antes da correção: falhou pelo motivo esperado; a sexta
   chamada retornou `400` em vez de `429`.
 - Correção aplicada: `RateLimitMiddleware` agora prioriza
-  `request.originalUrl`; o E2E inicializa o mesmo pipe global de validação usado
-  pela aplicação.
-- Teste de regressão depois: passou; cinco respostas `400` seguidas de `429`
-  com `RATE_LIMIT_EXCEEDED` e `Retry-After`.
+  `request.originalUrl`; a normalização canonicaliza barras finais; o E2E
+  inicializa o mesmo pipe global de validação usado pela aplicação.
+- Teste de regressão depois: passou para `/auth/register` e
+  `/auth/register/`; em ambos, cinco respostas `400` foram seguidas de `429`
+  com `RATE_LIMIT_EXCEEDED` e `Retry-After` na rota canônica.
 - Reprodução original: não ocorre mais no pipeline HTTP local. A confirmação na
   URL pública depende do merge e do deploy desta correção.
-- Testes relevantes do projeto: lint e typecheck aprovados; 171 testes
-  unitários, 9 de integração e 92 E2E aprovados; build concluído.
+- Testes relevantes do projeto: lint e typecheck aprovados; 172 testes
+  unitários, 9 de integração e 93 E2E aprovados; build concluído.
 
 ## Riscos e prevenções futuras
 
@@ -88,3 +91,8 @@ correção, a sexta chamada retorna `400`; depois da correção, retorna `429` c
   que o padrão e atravessar o pipeline HTTP real.
 - O ambiente publicado permanece com a versão defeituosa até a implantação da
   branch corrigida; repetir o smoke test depois do deploy.
+
+## Histórico de review
+
+- **Versão 1 — Reprovado:** a correção inicial selecionou a rota canônica, mas
+  `/auth/register/` continuou usando o fallback de 30 requisições por minuto.

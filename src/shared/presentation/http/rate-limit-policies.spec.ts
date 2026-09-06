@@ -41,4 +41,14 @@ describe('rate limit policies', () => {
       '/products/abc/extra',
     );
   });
+
+  it('normalizes a trailing slash before resolving the route policy', () => {
+    expect(normalizeRouteTemplate('POST', '/auth/register/')).toBe(
+      '/auth/register',
+    );
+    expect(normalizeRouteTemplate('GET', '/products/abc/')).toBe(
+      '/products/:id',
+    );
+    expect(normalizeRouteTemplate('GET', '/')).toBe('/');
+  });
 });
