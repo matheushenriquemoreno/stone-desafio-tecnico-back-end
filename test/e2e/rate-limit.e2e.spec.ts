@@ -131,6 +131,25 @@ describe('rate limit HTTP pipeline', () => {
     });
   });
 
+  it('keeps the explicit register policy with different path casing', async () => {
+    const responses = [];
+
+    for (let index = 0; index < 6; index += 1) {
+      responses.push(
+        await request(app.getHttpServer()).post('/AUTH/REGISTER').send({}),
+      );
+    }
+
+    expect(responses.slice(0, 5).every((response) => response.status === 400)).toBe(
+      true,
+    );
+    expect(responses.at(-1)?.status).toBe(429);
+    expect(responses.at(-1)?.body).toMatchObject({
+      code: 'RATE_LIMIT_EXCEEDED',
+      statusCode: 429,
+    });
+  });
+
   it('does not consume the operation bucket for an authorized CORS preflight', async () => {
     const path = '/rate-limit-probe/options';
     const preflight = await request(app.getHttpServer())

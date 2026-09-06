@@ -46,6 +46,7 @@ ativo, porém resolve a política padrão de 30 requisições por minuto.
 | H2 | O contador é perdido entre requisições. | Repetir 31 chamadas na mesma janela. | Refutada: o contador acumulou e bloqueou a 31ª. |
 | H3 | O template usado pela política perde a rota no middleware montado pelo Nest. | Comparar `request.path` e `request.originalUrl` no caminho HTTP e cobrir a rota específica em E2E. | Confirmada: a política padrão é observável e a implementação defeituosa priorizava `request.path`. |
 | H4 | Usar `originalUrl` sem canonicalizar a barra final ainda permite o fallback. | Enviar chamadas para `/auth/register/`, que o Nest aceita como cadastro. | Confirmada no review v1: a 31ª chamada, não a 6ª, recebeu `429`. |
+| H5 | Preservar maiúsculas permite que uma rota equivalente use outro bucket e o fallback. | Enviar chamadas para `/AUTH/REGISTER`, aceita pelo roteamento padrão. | Confirmada no review v2: a 31ª chamada, não a 6ª, recebeu `429`. |
 
 ## Causa raiz confirmada
 
@@ -59,9 +60,10 @@ mesmo método compartilham indevidamente o mesmo bucket.
 ## Proposta de correção
 
 Usar `request.originalUrl` como fonte primária da rota, manter `request.path`
-somente como fallback e canonicalizar barras finais sem alterar a raiz.
-Adicionar E2E para `/auth/register` e `/auth/register/`, exigindo cinco
-respostas de validação seguidas de `429` em ambos.
+somente como fallback e canonicalizar o caminho conforme o roteamento padrão
+do Express: minúsculas e sem barras finais, preservando a raiz. Adicionar E2E
+para as variações aceitas de `/auth/register`, exigindo cinco respostas de
+validação seguidas de `429`.
 
 ## Teste de regressão
 
@@ -74,15 +76,15 @@ correção, a sexta chamada retorna `400`; depois da correção, retorna `429` c
 - Teste de regressão antes da correção: falhou pelo motivo esperado; a sexta
   chamada retornou `400` em vez de `429`.
 - Correção aplicada: `RateLimitMiddleware` agora prioriza
-  `request.originalUrl`; a normalização canonicaliza barras finais; o E2E
-  inicializa o mesmo pipe global de validação usado pela aplicação.
-- Teste de regressão depois: passou para `/auth/register` e
-  `/auth/register/`; em ambos, cinco respostas `400` foram seguidas de `429`
-  com `RATE_LIMIT_EXCEEDED` e `Retry-After` na rota canônica.
+  `request.originalUrl`; a normalização canonicaliza maiúsculas e barras
+  finais; o E2E inicializa o mesmo pipe global de validação usado pela aplicação.
+- Teste de regressão depois: passou para `/auth/register`,
+  `/auth/register/` e `/AUTH/REGISTER`; em todos, cinco respostas `400` foram
+  seguidas de `429` com `RATE_LIMIT_EXCEEDED` e `Retry-After` na rota canônica.
 - Reprodução original: não ocorre mais no pipeline HTTP local. A confirmação na
   URL pública depende do merge e do deploy desta correção.
-- Testes relevantes do projeto: lint e typecheck aprovados; 172 testes
-  unitários, 9 de integração e 93 E2E aprovados; build concluído.
+- Testes relevantes do projeto: lint e typecheck aprovados; 173 testes
+  unitários, 9 de integração e 94 E2E aprovados; build concluído.
 
 ## Riscos e prevenções futuras
 
@@ -96,3 +98,5 @@ correção, a sexta chamada retorna `400`; depois da correção, retorna `429` c
 
 - **Versão 1 — Reprovado:** a correção inicial selecionou a rota canônica, mas
   `/auth/register/` continuou usando o fallback de 30 requisições por minuto.
+- **Versão 2 — Reprovado:** a barra final foi canonicalizada, mas
+  `/AUTH/REGISTER` ainda criava outro bucket e usava o fallback de 30 por minuto.

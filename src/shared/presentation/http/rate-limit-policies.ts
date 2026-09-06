@@ -31,7 +31,7 @@ export function resolveRateLimitPolicy(
 
 export function normalizeRouteTemplate(method: string, path: string): string {
   const pathWithoutQuery = path.split('?')[0] ?? '/';
-  const normalizedPath = pathWithoutQuery.replace(/\/+$/, '') || '/';
+  const normalizedPath = pathWithoutQuery.toLowerCase().replace(/\/+$/, '') || '/';
 
   if (normalizedPath === '/products') {
     return '/products';

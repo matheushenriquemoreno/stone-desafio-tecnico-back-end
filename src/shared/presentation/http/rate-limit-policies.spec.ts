@@ -51,4 +51,13 @@ describe('rate limit policies', () => {
     );
     expect(normalizeRouteTemplate('GET', '/')).toBe('/');
   });
+
+  it('normalizes path casing like the default Express router', () => {
+    expect(normalizeRouteTemplate('POST', '/AUTH/REGISTER')).toBe(
+      '/auth/register',
+    );
+    expect(normalizeRouteTemplate('GET', '/PRODUCTS/ABC')).toBe(
+      '/products/:id',
+    );
+  });
 });
