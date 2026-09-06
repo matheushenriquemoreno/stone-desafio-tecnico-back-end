@@ -20,37 +20,17 @@ import {
   type CorrelationRequest,
 } from '../http/correlation-id.middleware';
 
-function codeForHttpStatus(statusCode: number): ApiErrorCode {
-  if (statusCode === 400) {
-    return 'VALIDATION_ERROR';
-  }
+const HTTP_STATUS_TO_API_ERROR: Record<number, { code: ApiErrorCode; message: string }> = {
+  400: { code: 'VALIDATION_ERROR', message: 'A requisição é inválida.' },
+  401: { code: 'UNAUTHORIZED', message: 'Não autorizado.' },
+  403: { code: 'REQUEST_FORBIDDEN', message: 'Requisição proibida.' },
+  404: { code: 'NOT_FOUND', message: 'O recurso não foi encontrado.' },
+};
 
-  if (statusCode === 401) {
-    return 'UNAUTHORIZED';
-  }
-
-  if (statusCode === 403) {
-    return 'REQUEST_FORBIDDEN';
-  }
-
-  return 'INTERNAL_ERROR';
-}
-
-function messageForHttpStatus(statusCode: number): string {
-  if (statusCode === 400) {
-    return 'A requisição é inválida.';
-  }
-
-  if (statusCode === 401) {
-    return 'Não autorizado.';
-  }
-
-  if (statusCode === 403) {
-    return 'Requisição proibida.';
-  }
-
-  return 'Ocorreu um erro interno.';
-}
+const DEFAULT_HTTP_ERROR = {
+  code: 'INTERNAL_ERROR' as const,
+  message: 'Ocorreu um erro interno.',
+};
 
 export function toApiError(exception: unknown, correlationId: string): ApiError {
   if (exception instanceof ValidationApplicationError) {
@@ -74,19 +54,20 @@ export function toApiError(exception: unknown, correlationId: string): ApiError 
 
   if (exception instanceof HttpException) {
     const statusCode = exception.getStatus();
+    const mapped = HTTP_STATUS_TO_API_ERROR[statusCode] ?? DEFAULT_HTTP_ERROR;
 
     return {
-      code: codeForHttpStatus(statusCode),
+      code: mapped.code,
       correlationId,
-      message: messageForHttpStatus(statusCode),
+      message: mapped.message,
       statusCode,
     };
   }
 
   return {
-    code: 'INTERNAL_ERROR',
+    code: DEFAULT_HTTP_ERROR.code,
     correlationId,
-    message: 'Ocorreu um erro interno.',
+    message: DEFAULT_HTTP_ERROR.message,
     statusCode: 500,
   };
 }
