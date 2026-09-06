@@ -7,6 +7,7 @@ services:
     restart: unless-stopped
     env_file:
       - ${API_ENV_FILE:-.env}
+      - ${AWS_ENV_FILE:-.runtime.env}
     expose:
       - "3000"
     networks:

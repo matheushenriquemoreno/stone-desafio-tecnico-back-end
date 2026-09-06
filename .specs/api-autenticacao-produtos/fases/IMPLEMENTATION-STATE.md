@@ -69,6 +69,37 @@ externa, a publicação e o deploy continuam pendentes para o responsável.
   imediatamente antes da publicação; o trecho de origem continua HTTP aceito
   somente para a demonstração.
 
+### Preparação da tarefa T42
+
+- Premissas: o workflow publicará somente em push para `main`; pull requests
+  executam os gates sem publicar; a tag imutável operacional será o SHA
+  completo do commit e `latest` será apenas conveniência.
+- Implementação: criar workflow com `npm ci`, lint, typecheck, testes unitários,
+  integração, E2E, build, build/push GHCR e saída explícita da referência da
+  imagem para o deploy; usar somente `GITHUB_TOKEN` e secrets do environment.
+- Arquivos: `.github/workflows/api-delivery.yml`, scripts de operação e
+  documentação de secrets/permissions do GitHub.
+- Verificação: `actionlint`, gates equivalentes locais, build da imagem e
+  busca negativa por chaves/token reais.
+- Limitação: publicação GHCR autorizada e inspeção de digest/logs externos não
+  foram executadas nesta sessão.
+
+### Preparação da tarefa T43
+
+- Premissas: a VPS já terá Docker Compose, `.env`, `.runtime.env`, login de
+  leitura no GHCR e diretório configurado; uma instância continua sendo a
+  topologia aprovada.
+- Implementação: copiar manifestos sem segredos, trocar `API_IMAGE` por SHA,
+  fazer pull e recriar somente `backend`, esperar o healthcheck, validar URL
+  pública e executar rollback para `PREVIOUS_API_IMAGE` em falha.
+- Arquivos: `deploy/scripts/deploy-image.sh`, `healthcheck.sh`, `rollback.sh`,
+  workflow e runbook operacional.
+- Verificação: sintaxe Bash, `actionlint`, Compose local e validações de
+  configuração; deploy/readiness público e rollback controlado permanecem
+  para execução autorizada pelo responsável.
+- Conflitos previstos: nenhum; Terraform, tabelas e dados não participam do
+  rollback da aplicação.
+
 ### Preparação da tarefa T39
 
 - Premissas: Node `22.13.1-bookworm-slim` atende ao runtime LTS exigido e às
@@ -610,8 +641,8 @@ externa, a publicação e o deploy continuam pendentes para o responsável.
 | T39 | 09 | Concluída | `docker build --pull --tag stone-api:t39 .` e rebuild após ajuste do manifesto de produção; imagem inspecionada com usuário `node`, `HEALTHCHECK`, comando `node dist/main.js`, somente `dist`, `node_modules` e manifesto sem `devDependencies`; execução efêmera contra DynamoDB Local confirmou `GET /health` 200; gates completos: lint, typecheck, 35 suítes/171 testes unitários, 3 suítes/9 testes de integração, 15 suítes/91 testes E2E, build e `git diff --check`. |
 | T40 | 09 | Concluída | `terraform fmt -check -recursive`, `terraform init -backend=false`, `terraform validate` e `git diff --check` aprovados; Terraform define duas tabelas `PAY_PER_REQUEST` sem sort key/GSI, IAM de runtime limitado aos seis actions e ARNs das tabelas, backend/variáveis sem segredo e `prevent_destroy`; apply e segundo plan permanecem externos. |
 | T41 | 09 | Concluída | `docker compose -f deploy/compose.production.yaml config` aprovado; `nginx -t` aprovado em rede Docker com alias `backend`; proxy de eco confirmou que headers de encaminhamento forjados são substituídos, cookie é preservado para autenticação e logs não expõem o cookie; somente NGINX publica a porta 80. |
-| T42 | 09 | Pendente | — |
-| T43 | 09 | Pendente | — |
+| T42 | 09 | Concluída | Workflow `.github/workflows/api-delivery.yml` validado por `actionlint`; gates equivalentes locais aprovados (lint, typecheck, 35 suítes/171 testes unitários, 3 suítes/9 testes de integração, 15 suítes/91 testes E2E, build e imagem Docker); publicação GHCR real permanece externa. |
+| T43 | 09 | Concluída | Scripts Bash de deploy/readiness/rollback e workflow por SHA preparados; `bash -n`, `docker compose config`, `actionlint` e `git diff --check` aprovados; VPS, readiness HTTPS público e rollback controlado ainda não executados. |
 
 ### Encerramento da Fase 08 — review aprovado
 

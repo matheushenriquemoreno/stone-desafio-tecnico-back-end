@@ -110,6 +110,6 @@ Executar a validação padrão, build/execução da imagem, `docker compose conf
 | T39 | Concluída | `Dockerfile` multiestágio e `.dockerignore`; build, inspeção de usuário/healthcheck/conteúdo, execução efêmera contra DynamoDB Local e gates completos aprovados. |
 | T40 | Concluída | Terraform em `infra/terraform/`; `terraform fmt -check -recursive`, `terraform init -backend=false`, `terraform validate` e `git diff --check` aprovados. Apply AWS e segundo plan permanecem externos. |
 | T41 | Concluída | Compose de produção e NGINX em `deploy/`; `docker compose config`, `nginx -t` em rede Docker e teste de headers forjados/cookie/logs aprovados. Publicação na VPS permanece externa. |
-| T42 | Pendente | Workflow de CI/GHCR ainda será preparado após a validação do fluxo operacional local. |
-| T43 | Pendente | Scripts/runbook de deploy, readiness público e rollback ainda serão preparados após T42. |
+| T42 | Concluída | Workflow de CI/GHCR em `.github/workflows/api-delivery.yml`; `actionlint` e gates equivalentes locais aprovados. Publicação real e evidência do GHCR permanecem externas. |
+| T43 | Concluída | Scripts `deploy-image.sh`, `healthcheck.sh` e `rollback.sh`, cópia remota de manifestos e verificação pública no workflow; sintaxe e configuração local aprovadas. VPS, readiness HTTPS e rollback real permanecem externos. |
 

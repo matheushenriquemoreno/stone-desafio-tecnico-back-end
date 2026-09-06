@@ -1,0 +1,229 @@
+name: API quality and delivery
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: api-production-delivery
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: 22.13.1
+
+jobs:
+  quality:
+    name: Quality gates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start DynamoDB Local
+        run: >-
+          docker run --detach --name dynamodb-local --publish 8000:8000
+          amazon/dynamodb-local:2.6.1 -jar DynamoDBLocal.jar -sharedDb
+
+      - name: Wait for DynamoDB Local
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for attempt in {1..30}; do
+            : "$attempt"
+            if curl --fail --silent --show-error \
+              --request POST \
+              --header 'Content-Type: application/x-amz-json-1.0' \
+              --header 'X-Amz-Target: DynamoDB_20120810.ListTables' \
+              --data '{}' \
+              http://127.0.0.1:8000 >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs dynamodb-local
+          exit 1
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Integration tests
+        run: npm run test:integration
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+
+      - name: Build application
+        run: npm run build
+
+      - name: Build container
+        run: docker build --pull --tag stone-api:ci .
+
+  publish:
+    name: Publish image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Define immutable image reference
+        id: image
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          image_name="ghcr.io/${GITHUB_REPOSITORY,,}"
+          image_ref="${image_name}:${GITHUB_SHA}"
+          printf 'image=%s\n' "$image_ref" >> "$GITHUB_OUTPUT"
+          printf 'IMAGE_NAME=%s\n' "$image_name" >> "$GITHUB_ENV"
+
+      - name: Build and publish image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.image.outputs.image }}
+            ${{ env.IMAGE_NAME }}:latest
+
+  deploy:
+    name: Deploy and verify production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: publish
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    permissions:
+      contents: read
+    env:
+      IMAGE_REF: ${{ needs.publish.outputs.image }}
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_DIRECTORY: ${{ secrets.DEPLOY_DIRECTORY }}
+      PUBLIC_HEALTH_URL: ${{ secrets.PUBLIC_HEALTH_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate deployment inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_USER"
+          test -n "$DEPLOY_DIRECTORY"
+          test -n "$PUBLIC_HEALTH_URL"
+          [[ "$DEPLOY_HOST" =~ ^[A-Za-z0-9._:-]+$ ]]
+          [[ "$DEPLOY_USER" =~ ^[A-Za-z0-9._-]+$ ]]
+          [[ "$DEPLOY_DIRECTORY" =~ ^/[A-Za-z0-9._/-]+$ ]]
+          [[ "$PUBLIC_HEALTH_URL" =~ ^https://[^[:space:]]+$ ]]
+          [[ "$IMAGE_REF" =~ ^ghcr\.io/[a-z0-9._/-]+:[0-9a-f]{40}$ ]]
+
+      - name: Configure dedicated SSH key
+        shell: bash
+        env:
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          test -n "$DEPLOY_SSH_PRIVATE_KEY"
+          test -n "$DEPLOY_KNOWN_HOSTS"
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/deploy_key"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/deploy_known_hosts"
+          chmod 600 "$RUNNER_TEMP/deploy_key" "$RUNNER_TEMP/deploy_known_hosts"
+
+      - name: Copy immutable deployment artifacts
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ssh_opts=(-i "$RUNNER_TEMP/deploy_key" \
+            -o UserKnownHostsFile="$RUNNER_TEMP/deploy_known_hosts" \
+            -o IdentitiesOnly=yes)
+          target="$DEPLOY_USER@$DEPLOY_HOST"
+          # The remote command intentionally receives validated local values.
+          # shellcheck disable=SC2029
+          ssh "${ssh_opts[@]}" "$target" \
+            "mkdir -p -- '$DEPLOY_DIRECTORY/nginx/conf.d' '$DEPLOY_DIRECTORY/scripts'"
+          scp "${ssh_opts[@]}" deploy/compose.production.yaml \
+            "$target:$DEPLOY_DIRECTORY/compose.yaml"
+          scp "${ssh_opts[@]}" deploy/nginx/nginx.conf \
+            "$target:$DEPLOY_DIRECTORY/nginx/nginx.conf"
+          scp -r "${ssh_opts[@]}" deploy/nginx/conf.d \
+            "$target:$DEPLOY_DIRECTORY/nginx/"
+          scp "${ssh_opts[@]}" deploy/scripts/*.sh \
+            "$target:$DEPLOY_DIRECTORY/scripts/"
+          # shellcheck disable=SC2029
+          ssh "${ssh_opts[@]}" "$target" \
+            "chmod 700 '$DEPLOY_DIRECTORY/scripts' && chmod 700 '$DEPLOY_DIRECTORY/scripts'/*.sh"
+
+      - name: Deploy immutable image
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ssh_opts=(-i "$RUNNER_TEMP/deploy_key" \
+            -o UserKnownHostsFile="$RUNNER_TEMP/deploy_known_hosts" \
+            -o IdentitiesOnly=yes)
+          target="$DEPLOY_USER@$DEPLOY_HOST"
+          # shellcheck disable=SC2029
+          ssh "${ssh_opts[@]}" "$target" \
+            "cd '$DEPLOY_DIRECTORY' && ./scripts/deploy-image.sh '$IMAGE_REF'"
+          # shellcheck disable=SC2029
+          ssh "${ssh_opts[@]}" "$target" \
+            "cd '$DEPLOY_DIRECTORY' && docker compose --env-file .image.env -f compose.yaml up -d nginx"
+
+      - name: Verify public readiness
+        run: >-
+          curl --fail --silent --show-error --retry 12 --retry-delay 5
+          --retry-connrefused --max-time 15 "$PUBLIC_HEALTH_URL/health"
+
+      - name: Roll back after a failed deployment
+        if: failure()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ssh_opts=(-i "$RUNNER_TEMP/deploy_key" \
+            -o UserKnownHostsFile="$RUNNER_TEMP/deploy_known_hosts" \
+            -o IdentitiesOnly=yes)
+          target="$DEPLOY_USER@$DEPLOY_HOST"
+          # shellcheck disable=SC2029
+          ssh "${ssh_opts[@]}" "$target" \
+            "cd '$DEPLOY_DIRECTORY' && ./scripts/rollback.sh"
+
+      - name: Verify readiness after rollback
+        if: failure()
+        run: >-
+          curl --fail --silent --show-error --retry 12 --retry-delay 5
+          --retry-connrefused --max-time 15 "$PUBLIC_HEALTH_URL/health"
