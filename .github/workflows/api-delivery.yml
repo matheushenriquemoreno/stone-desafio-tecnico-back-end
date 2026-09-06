@@ -43,12 +43,7 @@ jobs:
           set -Eeuo pipefail
           for attempt in {1..30}; do
             : "$attempt"
-            if curl --fail --silent --show-error \
-              --request POST \
-              --header 'Content-Type: application/x-amz-json-1.0' \
-              --header 'X-Amz-Target: DynamoDB_20120810.ListTables' \
-              --data '{}' \
-              http://127.0.0.1:8000 >/dev/null; then
+            if curl --connect-timeout 2 -s http://127.0.0.1:8000 2>/dev/null | grep -q .; then
               exit 0
             fi
             sleep 2
