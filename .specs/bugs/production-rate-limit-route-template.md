@@ -1,6 +1,6 @@
 # Bug — Rate limit de produção ignora políticas por rota
 
-| Status       | Resolvido |
+| Status       | Em correção |
 |--------------|------------|
 | Created      | 2026-09-06 |
 | Last Updated | 2026-09-06 |
@@ -48,6 +48,7 @@ ativo, porém resolve a política padrão de 30 requisições por minuto.
 | H4 | Usar `originalUrl` sem canonicalizar a barra final ainda permite o fallback. | Enviar chamadas para `/auth/register/`, que o Nest aceita como cadastro. | Confirmada no review v1: a 31ª chamada, não a 6ª, recebeu `429`. |
 | H5 | Preservar maiúsculas permite que uma rota equivalente use outro bucket e o fallback. | Enviar chamadas para `/AUTH/REGISTER`, aceita pelo roteamento padrão. | Confirmada no review v2: a 31ª chamada, não a 6ª, recebeu `429`. |
 | H6 | Usar a URL original integral permite que request-target absoluto inclua host/esquema na chave. | Enviar `POST http://host/auth/register`, aceito como cadastro pelo runtime HTTP. | Confirmada no review v3: a 31ª chamada, não a 6ª, recebeu `429`. |
+| H7 | Usar o parser WHATWG normaliza dot-segments codificados antes de identificar uma rota dinâmica. | Enviar `PATCH /products/%2e`, aceito como `PATCH /products/:id`. | Confirmada no review v4: a 21ª chamada recebeu `401`; somente a 31ª recebeu `429`. |
 
 ## Causa raiz confirmada
 
@@ -61,11 +62,11 @@ mesmo método compartilham indevidamente o mesmo bucket.
 ## Proposta de correção
 
 Usar `request.originalUrl` como fonte primária da rota, manter `request.path`
-somente como fallback, extrair apenas o `pathname` de origin-form ou
-absolute-form e canonicalizar o caminho conforme o roteamento padrão do
-Express: minúsculas e sem barras finais, preservando a raiz. Adicionar E2E para
-as variações aceitas de `/auth/register`, exigindo cinco respostas de validação
-seguidas de `429`.
+somente como fallback, extrair o caminho bruto de origin-form ou absolute-form
+sem normalizar segmentos codificados e canonicalizar apenas os aspectos do
+roteamento padrão do Express: minúsculas e barras finais, preservando a raiz.
+Adicionar E2E para as variações aceitas de `/auth/register` e para a rota
+dinâmica com identificador codificado.
 
 ## Teste de regressão
 
@@ -78,17 +79,19 @@ correção, a sexta chamada retorna `400`; depois da correção, retorna `429` c
 - Teste de regressão antes da correção: falhou pelo motivo esperado; a sexta
   chamada retornou `400` em vez de `429`.
 - Correção aplicada: `RateLimitMiddleware` agora prioriza
-  `request.originalUrl`; a normalização extrai somente o `pathname` e
-  canonicaliza maiúsculas e barras finais; o E2E inicializa o mesmo pipe global
-  de validação usado pela aplicação.
+  `request.originalUrl`; a normalização extrai o caminho bruto sem reescrever
+  segmentos percent-encoded e canonicaliza maiúsculas e barras finais; o E2E
+  inicializa o mesmo pipe global de validação usado pela aplicação.
 - Teste de regressão depois: passou para `/auth/register`,
   `/auth/register/`, `/AUTH/REGISTER` e request-target absoluto; em todos, cinco
   respostas `400` foram seguidas de `429` com `RATE_LIMIT_EXCEEDED` e
   `Retry-After` na rota canônica.
+- A regressão de rota dinâmica passou para `PATCH /products/%2e`: vinte
+  respostas `401` foram seguidas de `429`, provando a política de 20 por minuto.
 - Reprodução original: não ocorre mais no pipeline HTTP local. A confirmação na
   URL pública depende do merge e do deploy desta correção.
-- Testes relevantes do projeto: lint e typecheck aprovados; 174 testes
-  unitários, 9 de integração e 95 E2E aprovados; build concluído.
+- Testes relevantes do projeto: lint e typecheck aprovados; 175 testes
+  unitários, 9 de integração e 96 E2E aprovados; build concluído.
 
 ## Riscos e prevenções futuras
 
@@ -106,3 +109,5 @@ correção, a sexta chamada retorna `400`; depois da correção, retorna `429` c
   `/AUTH/REGISTER` ainda criava outro bucket e usava o fallback de 30 por minuto.
 - **Versão 3 — Reprovado:** casing foi canonicalizado, mas um request-target
   absoluto ainda incorporava host/esquema à chave e usava o fallback.
+- **Versão 4 — Reprovado:** o parser de URL corrigiu absolute-form, mas também
+  normalizou dot-segments codificados antes de identificar rotas dinâmicas.

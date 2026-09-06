@@ -30,7 +30,11 @@ interface HttpResult {
   readonly status: number;
 }
 
-function postRegisterWithAbsoluteRequestTarget(port: number): Promise<HttpResult> {
+function sendRawRequest(
+  port: number,
+  method: string,
+  path: string,
+): Promise<HttpResult> {
   return new Promise((resolve, reject) => {
     const clientRequest = sendHttpRequest(
       {
@@ -39,8 +43,8 @@ function postRegisterWithAbsoluteRequestTarget(port: number): Promise<HttpResult
           'Content-Type': 'application/json',
         },
         hostname: '127.0.0.1',
-        method: 'POST',
-        path: 'http://untrusted.example/auth/register',
+        method,
+        path,
         port,
       },
       (response) => {
@@ -206,10 +210,37 @@ describe('rate limit HTTP pipeline', () => {
     const responses = [];
 
     for (let index = 0; index < 6; index += 1) {
-      responses.push(await postRegisterWithAbsoluteRequestTarget(port));
+      responses.push(
+        await sendRawRequest(
+          port,
+          'POST',
+          'http://untrusted.example/auth/register',
+        ),
+      );
     }
 
     expect(responses.slice(0, 5).every(({ status }) => status === 400)).toBe(true);
+    expect(responses.at(-1)).toMatchObject({
+      code: 'RATE_LIMIT_EXCEEDED',
+      status: 429,
+    });
+    expect(responses.at(-1)?.retryAfter).toMatch(/^\d+$/);
+  });
+
+  it('keeps raw dot segments when resolving a dynamic route policy', async () => {
+    const responses = [];
+
+    for (let index = 0; index < 21; index += 1) {
+      responses.push(
+        await sendRawRequest(
+          port,
+          'PATCH',
+          'http://untrusted.example/products/%2e',
+        ),
+      );
+    }
+
+    expect(responses.slice(0, 20).every(({ status }) => status === 401)).toBe(true);
     expect(responses.at(-1)).toMatchObject({
       code: 'RATE_LIMIT_EXCEEDED',
       status: 429,

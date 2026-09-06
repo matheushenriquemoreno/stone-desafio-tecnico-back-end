@@ -30,11 +30,14 @@ export function resolveRateLimitPolicy(
 }
 
 function extractPathname(requestTarget: string): string {
-  try {
-    return new URL(requestTarget, 'http://rate-limit.local').pathname;
-  } catch {
-    return requestTarget.split('?')[0] ?? '/';
-  }
+  const absoluteTargetPrefix = requestTarget.match(
+    /^[a-z][a-z\d+.-]*:\/\/[^/?#]*/i,
+  )?.[0];
+  const pathWithSuffix = absoluteTargetPrefix
+    ? requestTarget.slice(absoluteTargetPrefix.length)
+    : requestTarget;
+
+  return pathWithSuffix.split(/[?#]/)[0] || '/';
 }
 
 export function normalizeRouteTemplate(method: string, path: string): string {

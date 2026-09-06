@@ -72,4 +72,16 @@ describe('rate limit policies', () => {
       normalizeRouteTemplate('POST', 'https://another.example/AUTH/REGISTER/'),
     ).toBe('/auth/register');
   });
+
+  it('preserves encoded dot segments in a dynamic resource identifier', () => {
+    expect(
+      normalizeRouteTemplate('PATCH', 'http://untrusted.example/products/%2e'),
+    ).toBe('/products/:id');
+    expect(
+      normalizeRouteTemplate(
+        'DELETE',
+        'http://untrusted.example/products/%2e%2e?source=proxy',
+      ),
+    ).toBe('/products/:id');
+  });
 });
