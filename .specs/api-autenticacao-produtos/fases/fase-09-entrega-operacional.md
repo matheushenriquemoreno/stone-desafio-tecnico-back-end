@@ -1,9 +1,9 @@
-# Fase 07 — Empacotamento, infraestrutura e entrega
+# Fase 09 — Empacotamento, infraestrutura e entrega
 
-| Status       | Pendente   |
+| Status       | Em execução |
 |--------------|------------|
 | Created      | 2026-09-03 |
-| Last Updated | 2026-09-03 |
+| Last Updated | 2026-09-05 |
 
 **Objetivo e resultado esperado:** produzir uma imagem imutável e sem privilégios, provisionar os recursos DynamoDB/IAM mínimos e automatizar publicação, deploy, verificação de readiness e rollback por SHA.
 
@@ -13,7 +13,12 @@
 
 **Dependências externas:** conta AWS, estado remoto Terraform, GHCR, GitHub Actions, VPS Oracle, DNS/proxy Cloudflare, SSH dedicado e segredos de ambiente.
 
-## Tarefa T34 — Empacotar a API em imagem mínima e sem privilégios
+Nesta execução, T39–T43 foram autorizadas para preparação dos artefatos locais.
+A configuração de credenciais, aplicação em AWS/VPS, publicação no GHCR e
+deploy/readiness/rollback reais permanecem sob responsabilidade do responsável
+do projeto.
+
+## Tarefa T39 — Empacotar a API em imagem mínima e sem privilégios
 
 Criar `Dockerfile` multiestágio e `.dockerignore`. A etapa final deve conter somente aplicação compilada e dependências de produção, executar como usuário não administrativo, receber segredos apenas em runtime e expor o processo necessário à readiness/liveness do container. Fixar a versão-base de Node compatível com `T01`.
 
@@ -25,7 +30,7 @@ Criar `Dockerfile` multiestágio e `.dockerignore`. A etapa final deve conter so
 - **Critérios de conclusão:** build é reproduzível; processo não roda como root; imagem não contém `.env`, código/testes desnecessários ou credenciais; aplicação compilada inicia e fica pronta.
 - **Riscos ou premissas:** não usar tag flutuante como única identificação; digest/SHA é a referência operacional.
 
-## Tarefa T35 — Provisionar tabelas e IAM mínimo com Terraform
+## Tarefa T40 — Provisionar tabelas e IAM mínimo com Terraform
 
 Definir Terraform idempotente para tabelas `users` e `products` em `PAY_PER_REQUEST`, sem sort key/GSI, e política de execução limitada a `DescribeTable`, `GetItem`, `Scan`, `PutItem`, `UpdateItem` e `DeleteItem` nos ARNs dessas tabelas. Separar identidade administrativa de provisionamento da credencial de runtime e documentar backend/variáveis sem incluir segredo.
 
@@ -37,37 +42,37 @@ Definir Terraform idempotente para tabelas `users` e `products` em `PAY_PER_REQU
 - **Critérios de conclusão:** modelo corresponde ao design; execução não possui ações administrativas ou tabelas curingas; provisionamento é idempotente; estado e credenciais ficam fora do Git.
 - **Riscos ou premissas:** aplicar em AWS altera estado externo e exige credenciais/ambiente fornecidos pelo responsável; testes locais não substituem evidência do plano/aplicação autorizada.
 
-## Tarefa T36 — Configurar Compose e NGINX publicados com cadeia de proxy confiável
+## Tarefa T41 — Configurar Compose e NGINX publicados com cadeia de proxy confiável
 
 Criar manifestos de produção para uma única instância `backend` atrás de `nginx`. Expor somente o NGINX, remover cabeçalhos de encaminhamento recebidos do cliente, reconstruí-los a partir da cadeia Cloudflare confiável, aplicar limites de corpo/timeouts/headers de segurança, rotação de logs e manter segredos em arquivo protegido fora do repositório.
 
 - **Requisitos relacionados:** `AAP-20`, `AAP-22`, `AAP-53`, `EXPECT-02`, `EXPECT-03`, `EXPECT-10`, `EXPECT-11`.
-- **Referência ao design:** `DEC-02`, `DEC-05`, `DEC-12`, `DEC-19`; seções “Organização na VPS” e “Segurança operacional”.
-- **Dependências:** `T28`, `T34`.
+- **Referência ao design:** `DEC-02`, `DEC-12`, `DEC-19`, `DEC-20`; seções “Organização na VPS” e “Segurança operacional”.
+- **Dependências:** `T28`, `T39`.
 - **Parte do sistema afetada:** Compose de produção, configuração NGINX, exemplo de ambiente e documentação da VPS/Cloudflare.
 - **Testes e verificações:** `docker compose config`; teste local do proxy com headers forjados e confiáveis; porta NestJS não publicada; arquivo de segredos ausente do Git; logs sem cookie/JWT; configuração restrita a uma réplica.
 - **Critérios de conclusão:** IP efetivo observado pela API coincide com a cadeia confiável; cliente não injeta cabeçalhos autoritativos; somente NGINX é público; segredos não entram na imagem/manifesta.
 - **Riscos ou premissas:** o trecho Cloudflare–NGINX permanece HTTP por decisão aceita da demonstração; restringir a origem à Cloudflare quando viável e registrar a necessidade futura de TLS ponta a ponta.
 
-## Tarefa T37 — Validar, publicar e identificar imagens por SHA no CI
+## Tarefa T42 — Validar, publicar e identificar imagens por SHA no CI
 
 Criar workflow GitHub Actions que instale por lockfile, execute `lint`, `typecheck`, testes e build, construa a imagem e publique no GHCR com o SHA completo. Secrets devem ser referenciados apenas no ambiente do workflow e nunca impressos, incorporados na imagem ou substituídos por valores reais no repositório.
 
 - **Requisitos relacionados:** `EXPECT-02`, `EXPECT-08`–`EXPECT-11`.
 - **Referência ao design:** `DEC-18`, `DEC-19`; seção “Pipeline”.
-- **Dependências:** `T33`, `T34`.
+- **Dependências:** `T33`, `T39`.
 - **Parte do sistema afetada:** `.github/workflows`, configuração GHCR e documentação de CI.
 - **Testes e verificações:** validar sintaxe do workflow; executar equivalente local dos jobs; confirmar ordem de gates antes do push; inspecionar tags/digest e logs de uma execução autorizada.
 - **Critérios de conclusão:** falha de qualidade impede publicação; imagem é rastreável ao commit; nenhuma credencial aparece em log/artefato; `latest`, se existir, não é referência exclusiva.
 - **Riscos ou premissas:** publicação real depende de permissões GHCR e GitHub; evidência local não prova a integração externa.
 
-## Tarefa T38 — Automatizar deploy, readiness e rollback sem apagar dados
+## Tarefa T43 — Automatizar deploy, readiness e rollback sem apagar dados
 
 Completar o workflow/runbook para acessar a VPS com chave dedicada, atualizar o SHA no Compose, executar pull, recriar somente a API e validar `GET /health` público por HTTPS. Em falha, reapontar ao SHA anterior, recriar o serviço e repetir readiness; nunca destruir ou reverter tabelas como parte do rollback da aplicação.
 
 - **Requisitos relacionados:** `AAP-58`, `AAP-59`, `EXPECT-08`–`EXPECT-11`.
 - **Referência ao design:** `DEC-17`, `DEC-19`; seções “Pipeline”, “Rollback” e “Observabilidade”.
-- **Dependências:** `T35`–`T37`.
+- **Dependências:** `T40`–`T42`.
 - **Parte do sistema afetada:** workflow de deploy, scripts/runbook da VPS, monitor/readiness e procedimento de rollback.
 - **Testes e verificações:** ensaio em ambiente autorizado com deploy de um SHA, readiness positivo, simulação controlada de falha e retorno ao SHA anterior; confirmar tabelas preservadas e registrar duração/resultado.
 - **Critérios de conclusão:** deploy só termina após `/health` `200`; falha aciona ou orienta rollback determinístico; SHA anterior volta saudável; nenhum passo destrói dados; evidências externas são anexadas ao estado/review.
@@ -97,4 +102,14 @@ Executar a validação padrão, build/execução da imagem, `docker compose conf
 - Sem acesso autorizado a AWS, GitHub/GHCR, Cloudflare e VPS, os artefatos podem ser validados localmente, mas o marco final permanece pendente.
 - Preços e gratuidade da AWS devem ser revistos imediatamente antes da aplicação real, sem alterar o escopo funcional.
 - TLS ponta a ponta é evolução obrigatória antes de reutilizar a arquitetura como referência de produção.
+
+## Registro de execução local
+
+| Tarefa | Estado | Evidência |
+|--------|--------|-----------|
+| T39 | Concluída | `Dockerfile` multiestágio e `.dockerignore`; build, inspeção de usuário/healthcheck/conteúdo, execução efêmera contra DynamoDB Local e gates completos aprovados. |
+| T40 | Concluída | Terraform em `infra/terraform/`; `terraform fmt -check -recursive`, `terraform init -backend=false`, `terraform validate` e `git diff --check` aprovados. Apply AWS e segundo plan permanecem externos. |
+| T41 | Concluída | Compose de produção e NGINX em `deploy/`; `docker compose config`, `nginx -t` em rede Docker e teste de headers forjados/cookie/logs aprovados. Publicação na VPS permanece externa. |
+| T42 | Concluída | Workflow de CI/GHCR em `.github/workflows/api-delivery.yml`; `actionlint` e gates equivalentes locais aprovados. Publicação real e evidência do GHCR permanecem externas. |
+| T43 | Concluída | Scripts `deploy-image.sh`, `healthcheck.sh` e `rollback.sh`, cópia remota de manifestos e verificação pública no workflow; sintaxe e configuração local aprovadas. VPS, readiness HTTPS e rollback real permanecem externos. |
 

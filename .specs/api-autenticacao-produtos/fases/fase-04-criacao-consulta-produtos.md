@@ -1,9 +1,9 @@
 # Fase 04 — Criação e consulta de produtos
 
-| Status       | Pendente   |
+| Status       | Concluída |
 |--------------|------------|
 | Created      | 2026-09-03 |
-| Last Updated | 2026-09-03 |
+| Last Updated | 2026-09-04 |
 
 **Objetivo e resultado esperado:** permitir que qualquer pessoa autenticada crie e consulte produtos completos do catálogo compartilhado com validações consistentes e persistência atômica.
 
@@ -67,6 +67,28 @@ Implementar `GetProduct` e a rota de consulta protegida. Identificador existente
 - Serialização pública é explícita e datas são UTC ISO 8601.
 - Não adicionar `createdBy`, proprietário, upload, cálculo de preço ou ordenação.
 
+## Registro de execução
+
+- **T18 — concluída em 2026-09-04:** entidade `Product` criada fora do
+  framework com invariantes de nome, descrição, preço, URL HTTP(S), ID e datas;
+  datas são isoladas contra mutação externa e a serialização pública preserva
+  os sete campos aprovados. Testes dirigidos: 1 suíte/24 testes; lint e
+  typecheck aprovados.
+- **T19 — concluída em 2026-09-04:** porta `ProductRepository` e adaptador
+  DynamoDB implementados com `PutCommand` condicional, `GetCommand` com
+  leitura consistente e mapeamento estrito dos sete atributos. Testes
+  dirigidos: 1 suíte/5 testes unitários e 1 suíte/3 testes de integração;
+  lint e typecheck aprovados.
+- **T20 — concluída em 2026-09-04:** `CreateProduct` e `POST /products`
+  implementados no módulo Products com guard de cookie, CSRF/origem, DTO
+  estrito e serializer público. Testes dirigidos: 1 suíte/3 testes unitários e
+  1 suíte/10 testes E2E; sucesso, limites, ausência/nulo/desconhecido,
+  autenticação, proteção CSRF, persistência e OpenAPI comprovados.
+- **T21 — concluída em 2026-09-04:** `GetProduct` e `GET /products/:id`
+  implementados com `PRODUCT_NOT_FOUND`, serialização pública e proteção pelo
+  cookie. Testes dirigidos: 1 suíte/3 testes unitários e 1 suíte/6 testes E2E;
+  duas contas, ausência, cookies inválidos/expirados e OpenAPI comprovados.
+
 ## Testes e verificações da fase
 
 Executar a validação padrão e um E2E completo com cadastro/login de duas contas, criação pela primeira e consulta pela segunda. Inspecionar itens do DynamoDB Local para confirmar o modelo aprovado.
@@ -78,6 +100,17 @@ Executar a validação padrão e um E2E completo com cadastro/login de duas cont
 3. Produto existente é consultado com `200`; ausente produz `404 PRODUCT_NOT_FOUND`.
 4. Qualquer pessoa autenticada consulta produto criado por outra conta.
 5. Guard, CSRF, erros, OpenAPI e logs permanecem alinhados ao contrato.
+
+## Encerramento da fase
+
+- T18–T21 concluídas com evidências unitárias, de integração e E2E.
+- Gate completo aprovado: `npm ci`, lint, typecheck, 24 suítes/104 testes
+  unitários, 3 suítes/6 testes de integração, 10 suítes/59 testes E2E, build e
+  `git diff --check`.
+- Review independente aprovado na versão 4, registrado em `REVIEW.md`.
+- A-01 permanece informativo e encaminhado à Fase 07; nenhuma pendência da
+  Fase 04 bloqueia o avanço futuro.
+- A Fase 05 permanece `Pendente`, sem ser iniciada neste ciclo.
 
 ## Riscos, premissas e dependências externas da fase
 

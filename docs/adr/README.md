@@ -11,6 +11,7 @@ Este diretório contém as decisões arquiteturais aplicáveis ao back-end.
 | [ADR-003](./ADR-003-modelagem-dynamodb.md) | Modelagem de dados no DynamoDB | Aceita | 2026-09-02 |
 | [ADR-004](./ADR-004-rate-limit.md) | Rate limit por endpoint com janela fixa e IP | Aceita | 2026-09-03 |
 | [ADR-005](./ADR-005-autenticacao-cookie-http-only.md) | Autenticação web direta por cookie HttpOnly | Aceita | 2026-09-03 |
+| [ADR-006](./ADR-006-protecao-csrf-origem.md) | Proteção CSRF por cookie e validação de origem | Aceita | 2026-09-04 |
 
 A numeração é sequencial e pertence exclusivamente ao histórico de decisões deste repositório.
 

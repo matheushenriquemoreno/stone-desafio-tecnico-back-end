@@ -8,6 +8,12 @@ Aceita
 
 2026-09-02
 
+## Histórico de atualizações
+
+| Data       | Alteração |
+|------------|-----------|
+| 2026-09-05 | Adicionada contagem total exata à listagem por varredura consistente, preservando o modelo de dados. |
+
 ## Documentos relacionados
 
 - [Decisões de tecnologia](../Decisao-tecnologias.md)
@@ -83,9 +89,14 @@ PutItem → products WHERE id = :id
 
 ```text
 Scan → products com Limit e ExclusiveStartKey
+Scan consistente com Select COUNT → products até esgotar LastEvaluatedKey
 ```
 
 Como não há filtro de propriedade comum e a listagem retorna todos os produtos, a implementação inicial usará `Scan`. O cursor será derivado de `LastEvaluatedKey` e tratado como valor opaco.
+
+Cada resposta também retornará `total`, calculado por uma varredura consistente com `Select=COUNT`. Como uma varredura pode ser dividida internamente pelo DynamoDB, a implementação seguirá cada `LastEvaluatedKey` e somará os valores de `Count` até percorrer a tabela. A página solicitada e a contagem serão lidas em paralelo somente depois de validar o cursor.
+
+A leitura consistente reduz atraso de replicação, mas o DynamoDB não oferece snapshot transacional para uma varredura composta por várias páginas. Uma criação ou exclusão concorrente pode causar diferença momentânea entre a página e a contagem; a requisição seguinte recalcula o valor. Falha em qualquer parte da contagem falha a listagem inteira, sem resposta parcial.
 
 Para volumes grandes, um `Scan` irrestrito consome RCUs proporcionalmente ao tamanho da tabela. Uma evolução poderá introduzir um GSI com chave de partição fixa ou reorganizar a tabela para permitir `Query`. No volume pequeno do desafio, `Scan` é uma limitação aceita e explícita.
 
@@ -118,12 +129,13 @@ As condições de atualização e exclusão permitem distinguir um produto inexi
 
 ```text
 Request:  GET /products?limit=20&cursor=<base64-lastEvaluatedKey>
-Response: { items: [...], nextCursor: "<base64-lastEvaluatedKey>" }
+Response: { items: [...], total: 42, nextCursor: "<base64-lastEvaluatedKey>" }
 ```
 
 - `LastEvaluatedKey` será codificado antes de ser enviado.
 - Na próxima requisição, o cursor será decodificado como `ExclusiveStartKey`.
 - Sem `nextCursor`, não há outra página.
+- `total` é obrigatório, inteiro, não negativo e representa todo o catálogo.
 - O cliente não deve interpretar o cursor.
 - Codificação e decodificação ficam centralizadas na infraestrutura de persistência.
 
@@ -145,11 +157,13 @@ As tabelas serão criadas de forma idempotente por scripts no ambiente local e p
 - Não há GSI ou sort key sem necessidade atual.
 - A escolha entre `Query` e `Scan` fica explícita.
 - A paginação por cursor acompanha o modelo do DynamoDB.
+- A contagem não exige nova tabela, item de metadados ou migração.
 - Cada tabela possui responsabilidade clara.
 
 ### Negativas
 
 - O `Scan` em `products` não escala bem.
+- Cada listagem executa trabalho proporcional ao tamanho total do catálogo para produzir `total`.
 - Sem sort key, não há ordenação global por data.
 - A navegação é sequencial e não permite acesso aleatório por número de página.
 - Novas consultas podem exigir migração ou índice.
@@ -167,5 +181,13 @@ Rejeitada porque nenhum requisito atual depende de filtro ou ordenação tempora
 ### GSI desde o início
 
 Rejeitada porque adiciona custo de leitura e escrita sem necessidade concreta. Um índice pode ser adicionado posteriormente.
+
+### Contador transacional
+
+Rejeitado porque exigiria metadado persistido e coordenação atômica com criação e exclusão. O catálogo pequeno não justifica essa complexidade.
+
+### Contagem aproximada da tabela
+
+Rejeitada porque a estimativa operacional do DynamoDB pode permanecer desatualizada e não atende ao requisito de total exato.
 
 Referência: [Índices secundários globais do DynamoDB](https://docs.aws.amazon.com/pt_br/amazondynamodb/latest/developerguide/GSI.html).

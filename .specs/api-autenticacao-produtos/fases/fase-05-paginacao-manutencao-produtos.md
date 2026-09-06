@@ -1,9 +1,9 @@
 # Fase 05 — Paginação, atualização e exclusão de produtos
 
-| Status       | Pendente   |
+| Status       | Concluída |
 |--------------|------------|
 | Created      | 2026-09-03 |
-| Last Updated | 2026-09-03 |
+| Last Updated | 2026-09-04 |
 
 **Objetivo e resultado esperado:** completar o catálogo compartilhado com listagem sequencial por cursor, atualização parcial estrita e exclusão condicional, preservando autorização e contratos de erro.
 
@@ -46,7 +46,7 @@ Criar DTO/query, controller e OpenAPI da listagem protegida. Converter `limit` s
 - **Dependências:** `T17`, `T23`.
 - **Parte do sistema afetada:** DTO/controller/serializer Products, OpenAPI e testes E2E.
 - **Testes e verificações:** vazio, padrão, limites, número fracionário/string inválida, cursor, páginas consecutivas e autenticação; conferir omissão real de `nextCursor`, não `null`.
-- **Critérios de conclusão:** critérios 12–15 do PRD passam; resposta é `{ items, nextCursor? }`; OpenAPI reflete query, cookie, paginação e erros.
+- **Critérios de conclusão:** critérios 12–15 do PRD passam; a resposta original `{ items, nextCursor? }` foi posteriormente ampliada por `T38` com `total` obrigatório; OpenAPI reflete query, cookie, paginação e erros.
 - **Riscos ou premissas:** testes não devem pressupor ordenação não contratada; dados de fixture podem usar conjunto estável apenas para verificar continuidade.
 
 ## Tarefa T25 — Modelar atualização parcial sem decisão oculta

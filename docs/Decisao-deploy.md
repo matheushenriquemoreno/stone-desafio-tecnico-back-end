@@ -42,9 +42,9 @@ flowchart LR
     H -->|Pull da imagem| GHCR
 ```
 
-`api.example.com` será um registro `A` com proxy da Cloudflare habilitado e apontará para o IPv4 da VPS. A configuração demonstrativa aceita TLS na borda e HTTP entre Cloudflare e NGINX; esse risco é descrito em [Segurança operacional](#segurança-operacional).
+`apiproducts.devmoreno.com.br` será um registro `A` com proxy da Cloudflare habilitado e apontará para o IPv4 da VPS. A configuração demonstrativa aceita TLS na borda e HTTP entre Cloudflare e NGINX; esse risco é descrito em [Segurança operacional](#segurança-operacional).
 
-O navegador carregado pelo front-end chamará `api.example.com` diretamente. A Vercel não encaminhará requisições para a API. O domínio de produção do front-end deverá pertencer ao mesmo site registrável da API, e sua origem exata será autorizada pela configuração CORS.
+O navegador carregado pelo front-end chamará `apiproducts.devmoreno.com.br` diretamente. A Vercel não encaminhará requisições para a API. O front-end de produção será `products.devmoreno.com.br`, e sua origem exata será autorizada pela configuração CORS.
 
 ## Organização na VPS
 
@@ -114,9 +114,9 @@ Referências:
 ## Segurança operacional
 
 - Clientes acessarão a API por HTTPS na borda da Cloudflare.
-- O cookie JWT terá `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/` e não definirá `Domain`.
+- O cookie JWT terá `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/` e não definirá `Domain`.
 - CORS permitirá credenciais apenas para origens exatas configuradas; curingas não serão aceitos.
-- Operações mutáveis exigirão o cabeçalho de proteção CSRF definido na ADR-005.
+- Operações mutáveis seguirão `SameSite=Strict` e a validação de `Origin`/`Referer` definida na [ADR-006](./adr/ADR-006-protecao-csrf-origem.md).
 - A comunicação VPS–DynamoDB usará TLS.
 - Segredos ficarão em GitHub Secrets e no arquivo protegido da VPS.
 - O `.env` terá permissão restrita e não será versionado.

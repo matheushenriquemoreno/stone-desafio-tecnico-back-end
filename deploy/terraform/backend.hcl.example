@@ -1,0 +1,5 @@
+bucket         = "replace-with-terraform-state-bucket"
+key            = "stone-api/production/terraform.tfstate"
+region         = "replace-with-state-region"
+dynamodb_table = "replace-with-terraform-lock-table"
+encrypt        = true

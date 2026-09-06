@@ -1,0 +1,22 @@
+services:
+  dynamodb-local:
+    command:
+      - -jar
+      - DynamoDBLocal.jar
+      - -sharedDb
+      - -dbPath
+      - /home/dynamodblocal/data
+    environment:
+      AWS_ACCESS_KEY_ID: local
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_SECRET_ACCESS_KEY: local
+    image: amazon/dynamodb-local:2.6.1
+    ports:
+      - '8000:8000'
+    # The image runs as UID 1000 while a new named volume is root-owned.
+    user: '0:0'
+    volumes:
+      - dynamodb-local-data:/home/dynamodblocal/data
+
+volumes:
+  dynamodb-local-data:

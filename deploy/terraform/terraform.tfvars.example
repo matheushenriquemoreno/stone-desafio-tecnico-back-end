@@ -1,0 +1,10 @@
+aws_region        = "us-east-1"
+environment       = "production"
+project_name      = "stone-api"
+users_table_name  = "stone_users"
+products_table_name = "stone_products"
+runtime_user_name = "stone-api-runtime"
+
+tags = {
+  Owner = "replace-with-owner"
+}

@@ -1,9 +1,9 @@
 # Fase 02 — Cadastro seguro de usuários
 
-| Status       | Pendente   |
+| Status       | Concluída |
 |--------------|------------|
 | Created      | 2026-09-03 |
-| Last Updated | 2026-09-03 |
+| Last Updated | 2026-09-04 |
 
 **Objetivo e resultado esperado:** permitir que um visitante crie uma conta única com dados normalizados, senha protegida e resposta estritamente pública, sem autenticação automática.
 
@@ -12,6 +12,10 @@
 **Requisitos relacionados:** `AAP-01`–`AAP-09`, `AAP-20`–`AAP-24`, `AAP-50`–`AAP-52`, `EXPECT-01`–`EXPECT-04`, `EXPECT-06`–`EXPECT-08`.
 
 **Dependências externas:** DynamoDB Local da Fase 01.
+
+> **Registro histórico:** esta fase foi executada antes da revisão material de
+> 2026-09-04. As referências ao header customizado em suas tarefas e evidências
+> descrevem o contrato anterior e foram substituídas pela Fase 07 e pela ADR-006.
 
 ## Tarefa T06 — Modelar usuário, e-mail normalizado e invariantes de cadastro
 
@@ -25,6 +29,20 @@ Criar o domínio Auth com usuário e value objects/funções que validem nome en
 - **Critérios de conclusão:** todas as invariantes do cadastro são independentes de NestJS; normalização acontece antes da validação e da comparação; limites inclusivos e inválidos estão cobertos.
 - **Riscos ou premissas:** normalizar nome significa apenas o tratamento já aprovado na fronteira, sem inventar transformação cultural ou colapso de caracteres.
 
+### Evidência de execução T06
+
+- `npm run lint` — concluído sem erros, incluindo as fronteiras das camadas
+  internas.
+- `npm run typecheck` — concluído com TypeScript estrito.
+- `npm test -- --runInBand` — concluído; 14 suítes e 39 testes aprovados,
+  incluindo limites inclusivos de nome e senha, normalização de e-mail e
+  serialização pública segura do usuário.
+- `npm run build` — concluído.
+- `git diff --check` — concluído sem erros.
+- O domínio Auth não importa NestJS, HTTP, AWS SDK, JWT ou Argon2; a senha
+  em texto puro não aparece em `User` e o `toJSON` expõe apenas `id`, `name` e
+  e-mail.
+
 ## Tarefa T07 — Implementar hash Argon2id por porta
 
 Definir a porta de hash de senha e seu adaptador Argon2id, com criação e verificação de hash. Parâmetros devem ser configurados explicitamente, adequados ao ambiente demonstrativo e substituíveis nos testes sem reduzir a regra de produção.
@@ -36,6 +54,19 @@ Definir a porta de hash de senha e seu adaptador Argon2id, com criação e verif
 - **Testes e verificações:** hash difere da senha e usa variante Argon2id; verificação aceita senha correta e recusa incorreta; logs e mensagens de erro não contêm entrada nem hash.
 - **Critérios de conclusão:** somente o hash deixa a fronteira do adaptador; parâmetros não dependem de relógio ou espera real nos testes; nenhuma senha ou hash aparece em saída pública.
 - **Riscos ou premissas:** calibrar parâmetros sem criar uma meta de latência inexistente no PRD; registrar os valores adotados no código/configuração.
+
+### Evidência de execução T07
+
+- `npm test -- --runInBand src/modules/auth/infrastructure/security/argon2-password-hasher.spec.ts` — concluído; 1 suíte e 3 testes aprovados.
+- O adaptador produz hashes na variante `Argon2id` com parâmetros explícitos
+  `memoryCost=19456`, `timeCost=2` e `parallelism=1`; o teste confirma o
+  formato e a verificação da senha correta.
+- A verificação da senha incorreta e de hash malformado retorna `false`, sem
+  exceção pública com entrada, hash ou detalhe interno.
+- `npm run lint`, `npm run typecheck`, `npm run build` e `git diff --check` —
+  concluídos sem erros.
+- A aplicação depende da porta `PasswordHasher`; Argon2id aparece somente no
+  adaptador de infraestrutura e não nas camadas internas.
 
 ## Tarefa T08 — Persistir usuários com unicidade atômica
 
@@ -49,6 +80,19 @@ Definir uma porta específica `UserRepository` e implementar o adaptador DynamoD
 - **Critérios de conclusão:** `attribute_not_exists(email)` elimina janela de corrida; item contém apenas `email`, `id`, `name`, `passwordHash` e `createdAt`; falhas técnicas não viram falso conflito.
 - **Riscos ou premissas:** a chave por e-mail normalizado é a decisão aprovada; não criar índice ou tabela adicional.
 
+### Evidência de execução T08
+
+- `npm test -- --runInBand src/modules/auth/infrastructure/persistence/dynamodb-user.repository.spec.ts` — concluído; 1 suíte e 4 testes unitários aprovados para escrita, conflito condicional, falha técnica e leitura.
+- `npm run test:integration -- --runInBand` com DynamoDB Local — concluído; 2 suítes e 3 testes aprovados, incluindo persistência/leitura, inspeção do item e disputa concorrente pelo mesmo e-mail normalizado.
+- A escrita usa `PutCommand` com `attribute_not_exists(email)` e o item contém
+  somente `email`, `id`, `name`, `passwordHash` e `createdAt`; a senha em texto
+  puro não é persistida.
+- Somente `ConditionalCheckFailedException` é convertido em
+  `EmailAlreadyExistsError`; falhas técnicas são propagadas para o mapeamento
+  global de erro.
+- `npm run lint`, `npm run typecheck`, `npm test` (16 suítes/46 testes),
+  `npm run build` e `git diff --check` — concluídos sem erros.
+
 ## Tarefa T09 — Orquestrar o caso de uso RegisterUser
 
 Implementar `RegisterUser` para validar e normalizar a entrada, gerar ID e instante, criar o hash e solicitar a escrita condicional. O resultado do caso de uso deve conter somente `id`, `name` e `email`; nenhum token ou cookie é emitido.
@@ -60,6 +104,19 @@ Implementar `RegisterUser` para validar e normalizar a entrada, gerar ID e insta
 - **Testes e verificações:** testar ordem de normalização/hash/persistência, sucesso determinístico, duplicidade e falha técnica; afirmar que emissor JWT não é dependência do caso de uso.
 - **Critérios de conclusão:** cadastro válido produz somente dados públicos; duplicidade produz erro estável mapeável para `409`; cadastro nunca autentica o visitante.
 - **Riscos ou premissas:** retentativa de infraestrutura não pode gerar identidade lógica diferente para a mesma execução.
+
+### Evidência de execução T09
+
+- `npm test -- --runInBand src/modules/auth/application/register-user/register-user.spec.ts` — concluído; 1 suíte e 6 testes aprovados.
+- O caso de uso valida antes do hash, normaliza nome/e-mail, gera ID e
+  instante uma vez, chama `PasswordHasher`, persiste pela porta e retorna
+  somente `id`, `name` e e-mail.
+- O teste de ordem registra `hash` antes de `save`; entradas inválidas não
+  chegam ao hash nem ao repositório; duplicidade e falha técnica são
+  propagadas sem criar token ou cookie.
+- O módulo `RegisterUser` não importa NestJS, HTTP, DynamoDB, Argon2, JWT ou
+  cookie. `npm run lint`, `npm run typecheck`, `npm run build` e
+  `git diff --check` — concluídos sem erros.
 
 ## Tarefa T10 — Configurar CORS exato e preflight antes do pipeline de negócio
 
@@ -73,6 +130,20 @@ Implementar CORS com credenciais somente para origens configuradas por correspon
 - **Critérios de conclusão:** não existe curinga com credenciais; somente origens exatas recebem headers CORS; preflight autorizado é resolvido antes do pipeline de negócio.
 - **Riscos ou premissas:** origens precisam ser configuração obrigatória por ambiente; previews de terceiros permanecem fora do fluxo autenticado.
 
+### Evidência de execução T10
+
+- `npm run test:e2e -- --runInBand` — concluído; 3 suítes e 9 testes
+  aprovados, incluindo preflight CORS autorizado e recusado.
+- O bootstrap registra a política com correspondência exata de origem,
+  credenciais habilitadas, métodos explícitos `GET`, `POST`, `PATCH`, `DELETE`
+  e `OPTIONS`, cabeçalhos `Content-Type` e `X-CSRF-Protection`, e exposição de
+  `Retry-After`.
+- O preflight autorizado responde `204`, anuncia a política e não executa o
+  controller; uma origem semelhante mas não igual não recebe
+  `Access-Control-Allow-Origin`.
+- `npm run lint`, `npm run typecheck`, `npm test` (17 suítes/52 testes),
+  `npm run build` e `git diff --check` — concluídos sem erros.
+
 ## Tarefa T11 — Bloquear mutações sem proteção CSRF ou com origem inválida
 
 Criar o componente reutilizável que exija `X-CSRF-Protection: 1` em `POST`, `PATCH` e `DELETE`. Quando `Origin` existir, aceitar somente a origem própria da API ou uma origem cliente permitida. A rejeição deve ocorrer com `403 REQUEST_FORBIDDEN` antes de qualquer caso de uso ou acesso ao DynamoDB.
@@ -85,6 +156,19 @@ Criar o componente reutilizável que exija `X-CSRF-Protection: 1` em `POST`, `PA
 - **Critérios de conclusão:** toda mutação fica protegida por padrão; rejeições retornam erro padrão correlacionado; a política não cria sessão ou token CSRF.
 - **Riscos ou premissas:** requisições sem `Origin` continuam sujeitas ao cabeçalho CSRF conforme o contrato de clientes não web.
 
+### Evidência de execução T11
+
+- `npm run test:e2e -- --runInBand test/e2e/csrf.e2e.spec.ts` — concluído; 1
+  suíte e 8 testes aprovados.
+- `CsrfProtectionMiddleware` protege globalmente `POST`, `PATCH` e `DELETE`,
+  exige o valor literal `1`, permite origem ausente, origem própria exata ou
+  origem da allowlist e rejeita demais combinações antes do controller.
+- Respostas bloqueadas foram convertidas pelo filtro global em `403
+  REQUEST_FORBIDDEN` correlacionado; o contador do controller permaneceu zero.
+- `npm run lint`, `npm run typecheck`, `npm test` (17 suítes/52 testes),
+  `npm run test:e2e` (4 suítes/17 testes), `npm run build` e
+  `git diff --check` — concluídos sem erros.
+
 ## Tarefa T12 — Expor POST /auth/register com contrato e E2E
 
 Criar DTO, controller, serialização e documentação OpenAPI do cadastro. A rota deve exigir `X-CSRF-Protection: 1` e origem autorizada quando `Origin` estiver presente, retornar `201` com os três campos públicos, `409 EMAIL_ALREADY_EXISTS` na duplicidade e `400 VALIDATION_ERROR` com campos públicos nos dados inválidos.
@@ -96,6 +180,26 @@ Criar DTO, controller, serialização e documentação OpenAPI do cadastro. A ro
 - **Testes e verificações:** E2E de sucesso, limites de todos os campos, normalização, duplicidade, propriedade desconhecida, ausência de CSRF e origem não autorizada; inspecionar corpo, headers, banco e logs.
 - **Critérios de conclusão:** respostas e status coincidem com os critérios 1–3 do PRD; OpenAPI descreve entrada, sucesso e erros; não há cookie ou JWT no cadastro.
 - **Riscos ou premissas:** cadastro continua público quanto a autenticação, mas não é isento das proteções de origem, CSRF e do rate limit que será conectado na Fase 06.
+
+### Evidência de execução T12
+
+- `npm run test:e2e -- --runInBand test/e2e/register-user.e2e.spec.ts` — 1
+  suíte e 11 testes aprovados, cobrindo cadastro válido, normalização,
+  limites, campo desconhecido, duplicidade, ausência de CSRF, origem não
+  autorizada, persistência sem senha/hash público e documentação OpenAPI.
+- `npm run lint`, `npm run typecheck`, `npm test -- --runInBand` (17 suítes/52
+  testes), `npm run test:integration -- --runInBand` (2 suítes/3 testes),
+  `npm run test:e2e -- --runInBand` (5 suítes/28 testes), `npm run build` e
+  `git diff --check` — concluídos sem erros.
+- `POST /auth/register` retorna `201` com somente `id`, `name` e e-mail
+  normalizado; duplicidade retorna `409 EMAIL_ALREADY_EXISTS`; entradas
+  inválidas retornam `400 VALIDATION_ERROR`; CSRF/origem inválidos retornam
+  `403 REQUEST_FORBIDDEN`; não há `Set-Cookie`, JWT, senha ou hash na resposta.
+- `GET /docs-json` e `GET /docs` respondem com sucesso e documentam a entrada,
+  resposta `201`, erros `400`/`403`/`409` e o cabeçalho obrigatório de CSRF.
+- O adaptador persistiu apenas os atributos públicos e o hash Argon2id no
+  DynamoDB Local, com condição de unicidade preservada; os logs E2E não
+  expuseram dados sensíveis.
 
 ## Orientações de implementação
 

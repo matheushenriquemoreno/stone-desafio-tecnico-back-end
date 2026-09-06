@@ -1,9 +1,9 @@
 # Estado da Implementação — API de cadastro, autenticação e catálogo de produtos
 
-| Status       | Pendente   |
-|--------------|------------|
+| Status       | Aprovado |
+|--------------|-------------|
 | Created      | 2026-09-03 |
-| Last Updated | 2026-09-03 |
+| Last Updated | 2026-09-05 |
 
 ## Regra de execução
 
@@ -11,63 +11,790 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 ## Fase ativa
 
-Nenhuma — implementação não iniciada.
+A Fase 07 está `Concluída` após o review aprovado da proteção CSRF. A Fase 08,
+que adiciona o total exato à listagem de produtos, está `Concluída` após o review
+independente aprovado na versão 9. A Fase 09 está `Em execução` para a
+preparação local das T39–T43. A configuração de credenciais, a aplicação
+externa, a publicação e o deploy continuam pendentes para o responsável.
+
+### Preparação da Fase 09
+
+- Escopo autorizado: preparar localmente as T39–T43, com validações sem
+  credenciais; não publicar em registro, AWS, VPS, Cloudflare ou GitHub Actions.
+- Escopo externo adiado pelo responsável: aplicar Terraform/IAM, configurar
+  Compose/NGINX na VPS, executar CI/GHCR, deploy, readiness público e rollback.
+- Padrões: manter o processo NestJS existente, injetar configuração somente em
+  runtime, separar dependências de desenvolvimento e executar a imagem com o
+  usuário não administrativo `node`.
+- Abstrações reutilizadas: `npm run build`, `npm run start`, `GET /health` e
+  o contrato de ambiente validado por `createAppConfig`.
+- Arquivos previstos: `Dockerfile`, `.dockerignore`, `README.md`, plano, fase
+  e este estado.
+- Verificação: build da imagem, inspeção do usuário/configuração/conteúdo,
+  execução contra DynamoDB Local, `GET /health`, gates do projeto e
+  `git diff --check`.
+- Conflitos previstos: nenhum; a imagem não deve conter `.env`, testes,
+  documentação, código-fonte ou dependências de desenvolvimento.
+
+### Preparação da tarefa T40
+
+- Premissas: o estado Terraform será remoto em S3 com lock em DynamoDB; a
+  identidade que aplica o Terraform será administrativa e separada do usuário
+  IAM de runtime; a API usará somente as duas tabelas previstas pelo design.
+- Implementação: criar duas tabelas sob demanda com `prevent_destroy`, usuário
+  IAM dedicado e política inline limitada aos seis actions aprovados e aos dois
+  ARNs de tabela; não criar access key para evitar segredo no estado.
+- Arquivos: `infra/terraform/*.tf`, exemplos de backend/variáveis, README de
+  aplicação e `.gitignore` para estado, variáveis e credenciais locais.
+- Verificação: `terraform fmt -check -recursive`, `terraform init -backend=false`,
+  `terraform validate` e `git diff --check`.
+- Limitação: sem credenciais/conta AWS, não há evidência de apply nem de um
+  segundo plan sem mudanças.
+
+### Preparação da tarefa T41
+
+- Premissas: o Compose de produção será separado do Compose local; haverá uma
+  única réplica da API, sem porta publicada, e o NGINX terá IP fixo na rede
+  privada para coincidir com `TRUSTED_PROXY_IPS`.
+- Implementação: criar Compose com `backend` em modo read-only e NGINX na
+  única rede pública; reconstruir `X-Forwarded-For`, `X-Real-IP` e
+  `CF-Connecting-IP` somente após validar o peer nas faixas Cloudflare; aplicar
+  limites, headers de segurança e rotação de logs sem registrar cookies.
+- Arquivos: `deploy/compose.production.yaml`, configuração NGINX, exemplo de
+  ambiente de produção e instruções de instalação na VPS.
+- Verificação: `docker compose config`, `nginx -t` dentro de rede Docker com
+  alias `backend`, teste de proxy com headers forjados e cookie, ausência de
+  segredo real e `git diff --check`.
+- Limitação: a lista de IPs da Cloudflare precisa ser revisada pelo responsável
+  imediatamente antes da publicação; o trecho de origem continua HTTP aceito
+  somente para a demonstração.
+
+### Preparação da tarefa T42
+
+- Premissas: o workflow publicará somente em push para `main`; pull requests
+  executam os gates sem publicar; a tag imutável operacional será o SHA
+  completo do commit e `latest` será apenas conveniência.
+- Implementação: criar workflow com `npm ci`, lint, typecheck, testes unitários,
+  integração, E2E, build, build/push GHCR e saída explícita da referência da
+  imagem para o deploy; usar somente `GITHUB_TOKEN` e secrets do environment.
+- Arquivos: `.github/workflows/api-delivery.yml`, scripts de operação e
+  documentação de secrets/permissions do GitHub.
+- Verificação: `actionlint`, gates equivalentes locais, build da imagem e
+  busca negativa por chaves/token reais.
+- Limitação: publicação GHCR autorizada e inspeção de digest/logs externos não
+  foram executadas nesta sessão.
+
+### Preparação da tarefa T43
+
+- Premissas: a VPS já terá Docker Compose, `.env`, `.runtime.env`, login de
+  leitura no GHCR e diretório configurado; uma instância continua sendo a
+  topologia aprovada.
+- Implementação: copiar manifestos sem segredos, trocar `API_IMAGE` por SHA,
+  fazer pull e recriar somente `backend`, esperar o healthcheck, validar URL
+  pública e executar rollback para `PREVIOUS_API_IMAGE` em falha.
+- Arquivos: `deploy/scripts/deploy-image.sh`, `healthcheck.sh`, `rollback.sh`,
+  workflow e runbook operacional.
+- Verificação: sintaxe Bash, `actionlint`, Compose local e validações de
+  configuração; deploy/readiness público e rollback controlado permanecem
+  para execução autorizada pelo responsável.
+- Conflitos previstos: nenhum; Terraform, tabelas e dados não participam do
+  rollback da aplicação.
+
+### Preparação da tarefa T39
+
+- Premissas: Node `22.13.1-bookworm-slim` atende ao runtime LTS exigido e às
+  engines do lockfile; `PORT=3000` é o contrato interno da imagem.
+- Implementação: usar estágios separados para dependências de build,
+  compilação, dependências de produção e runtime; o `HEALTHCHECK` consultará
+  `/health` sem incluir credenciais.
+- Verificação dirigida: `docker build`, inspeção de `USER`, ausência de
+  arquivos sensíveis/desnecessários, inicialização com DynamoDB Local e
+  readiness `200`.
+
+### Preparação da Fase 08
+
+- Padrões: manter domínio e caso de uso independentes do DynamoDB; a porta
+  `ProductRepository` expressa a página com `total`; apresentação serializa o
+  contrato público e OpenAPI.
+- Premissas: catálogo pequeno; `total` obrigatório e exato no catálogo estável;
+  `Scan` consistente não fornece snapshot transacional sob mutações concorrentes.
+- Abstrações reutilizadas: `ProductPage`, `ProductRepository`, `ListProducts`,
+  `DynamoDbProductRepository`, `ProductsPageResponseDto` e serializer do
+  controller.
+- Arquivos previstos: porta, adaptador e testes de produtos; DTO/controller;
+  E2E de listagem e OpenAPI; matriz de conformidade; PRD, design, ADR-003,
+  contrato, plano, fase, estado e review.
+- Verificação: testes unitários e integração dirigidos em `T37`; E2E, OpenAPI,
+  matriz e gate completo em `T38`, seguidos de review independente.
+- Conflitos: nenhum. A nova leitura reutiliza a permissão `Scan` já prevista e
+  não exige tabela, índice, contador persistido, cache ou migração.
+
+### Preparação da tarefa T37
+
+- Premissas: o cursor será decodificado antes das leituras; página e contagem
+  executarão em paralelo; a contagem seguirá todos os `LastEvaluatedKey` e
+  somará `Count ?? 0`.
+- Abstrações: `ProductPage.total` permanece na aplicação; `Select=COUNT` e
+  `ConsistentRead=true` permanecem exclusivos do adaptador DynamoDB.
+- Arquivos: porta, adaptador, caso de uso e fakes/testes unitários e de
+  integração diretamente afetados.
+- Verificação: total zero e paginado, formato dos comandos, falha técnica,
+  cursor inválido sem I/O e atualização após criar/excluir; lint e typecheck.
+- Conflitos previstos: nenhum; falha da contagem deve propagar sem página parcial.
+
+### Preparação da tarefa T38
+
+- Premissas: `total` é inteiro obrigatório e não negativo; `nextCursor`
+  continua omitido no fim; a ordem das propriedades JSON não é contratual.
+- Abstrações: `PublicProductsPage` e `ProductsPageResponseDto` publicam o
+  contrato; `ProductsController` apenas converte entidades e propaga `total`.
+- Arquivos: DTO/controller, E2E de listagem e OpenAPI, matriz de conformidade,
+  documentação e evidências da fase.
+- Verificação: vazio com zero, 21 produtos em páginas distintas, schema
+  OpenAPI obrigatório, erro técnico sem resposta parcial, gates completos e
+  busca residual por envelopes antigos.
+- Conflitos previstos: nenhum; autenticação, rate limit, limites e cursor não
+  devem mudar.
+
+### Preparação da Fase 07
+
+- Padrões: reutilizar a fábrica comum de cookie, o middleware transversal, a
+  configuração CORS, o OpenAPI gerado e os testes E2E existentes; manter o
+  domínio sem dependências HTTP.
+- Premissas: `SameSite=Strict` vale em local e testes; `Secure=false` e nome sem
+  prefixo continuam somente a adaptação local HTTP já existente. `Origin` tem
+  precedência sobre `Referer`; ambos ausentes são aceitos e seguem para as
+  etapas posteriores.
+- Abstrações reutilizadas: `createAuthCookieOptions`,
+  `CsrfProtectionMiddleware`, `createCorsOptions`, `setupOpenApi` e o filtro
+  `RequestForbiddenError`.
+- Arquivos previstos: fábrica e testes de cookie, middleware e E2E de origem,
+  controllers, CORS, OpenAPI, consumidores E2E, contrato, PRD, design, ADR-006,
+  plano e matriz de conformidade.
+- Verificação: testes dirigidos da política, busca residual do header removido,
+  lint, typecheck, testes unitários, integração, E2E, build e `git diff --check`.
+- Conflitos: nenhum após a aprovação da revisão material; ADR-005 permanece
+  válida para cookie, JWT e consumo direto, com CSRF/origem substituídos pela
+  ADR-006.
+
+### Preparação da Fase 05
+
+- Padrões: preservar o domínio Product sem dependências de NestJS, HTTP ou
+  DynamoDB; casos de uso dependerão somente da porta `ProductRepository`;
+  controllers e DTOs continuarão responsáveis pela borda HTTP.
+- Abstrações reutilizadas: `Product`, `ProductRepository`, `Clock`,
+  `AccessTokenGuard`, `PublicValidationPipe`, `ApiExceptionFilter` e o cliente
+  `DynamoDBDocumentClient` já existentes.
+- Premissas: o cursor representa exclusivamente a chave `id` da tabela
+  `products`, será Base64 URL-safe sem assinatura e permanecerá opaco para o
+  cliente; atualização seguirá last-write-wins e exclusão não será idempotente.
+- Arquivos previstos: codec e erro de cursor, casos de uso e porta de
+  produtos, adaptador DynamoDB, DTOs/controllers, módulo Products e testes
+  unitários, de integração e E2E.
+- Verificação: cada tarefa terá teste dirigido; ao final serão executados
+  lint, typecheck, suíte unitária, integração, E2E, build e `git diff --check`.
+- Conflitos: nenhum encontrado entre PRD, design, plano, ADR-003 e o código
+  atual.
+
+### Preparação da tarefa T22
+
+- Premissas: o envelope terá versão `1` e a chave persistida será exatamente
+  `{ id: string }`; o limite do cursor será 2.048 caracteres e a saída não
+  será assinada nem tratada como criptografia.
+- Abstrações: `ProductCursorCodec` ficará na infraestrutura de persistência e
+  `InvalidProductCursorError` será o erro de aplicação público; o controller
+  não conhecerá `LastEvaluatedKey`.
+- Arquivos: codec/erro de cursor e teste unitário dedicado.
+- Verificação: round-trip, URL-safe, JSON/versão/estrutura/tipos/tamanho
+  inválidos e ausência de payload interno em mensagens.
+- Conflitos: nenhum.
+
+### Preparação da tarefa T23
+
+- Premissas: `ProductRepository.list` receberá o limite e o cursor opaco;
+  somente o adaptador converterá o cursor para `ExclusiveStartKey` e
+  `LastEvaluatedKey`.
+- Abstrações: `ProductPage` permanecerá uma saída da aplicação com produtos e
+  `nextCursor` opcional; o caso de uso aplicará o padrão 20 e os limites 1–100.
+- Arquivos: porta/repositório de produtos, `ListProducts`, adaptador DynamoDB,
+  módulo Products e testes unitários/de integração.
+- Verificação: catálogo vazio, limites, múltiplas páginas, página final,
+  cursor encaminhado e integração com DynamoDB Local.
+- Conflitos: nenhum.
+
+### Preparação da tarefa T24
+
+- Premissas: `GET /products` será protegido pelo mesmo guard dos demais
+  produtos; o query parser aceitará apenas dígitos decimais para `limit`, com
+  padrão 20, e o serializer omitirá `nextCursor` quando ausente.
+- Abstrações: DTOs de apresentação traduzirão query e resposta; `ListProducts`
+  continuará responsável somente pela regra de limite e pela porta do catálogo.
+- Arquivos: DTO/query, DTO de página, controller, módulo Products e E2E de
+  listagem/OpenAPI.
+- Verificação: catálogo vazio, limites, query inválida, cursor válido/inválido,
+  páginas consecutivas, autenticação e contrato OpenAPI.
+- Conflitos: nenhum.
+
+### Preparação da tarefa T25
+
+- Premissas: o patch aceita somente `name`, `description`, `price` e
+  `imageUrl`; pelo menos uma propriedade deve estar presente e os campos
+  omitidos serão reconstruídos a partir do produto atual.
+- Abstrações: `Product` continuará dono das invariantes e produzirá um novo
+  estado imutável; `UpdateProduct` orquestrará relógio, busca e porta sem
+  conhecer DynamoDB.
+- Arquivos: domínio Product, caso de uso/erro de atualização, DTO de patch e
+  testes unitários.
+- Verificação: cada campo isolado, combinações, corpo vazio, `null`, campo
+  desconhecido, limites, preservação de `createdAt`/omitidos e `updatedAt`
+  controlado.
+- Conflitos: nenhum.
+
+### Preparação da tarefa T26
+
+- Premissas: o adaptador usará `UpdateItem` com `attribute_exists(id)`,
+  `ReturnValues=ALL_NEW` e expressões construídas somente da lista fechada de
+  campos alterados; ausência condicional será traduzida pelo caso de uso.
+- Abstrações: `ProductMaintenanceRepository` será a porta para atualização e
+  `UpdateProduct` permanecerá independente do SDK; controller/DTO cuidarão de
+  cookie, CSRF, validação e serialização pública.
+- Arquivos: adaptador/porta DynamoDB, `UpdateProduct`, módulo Products,
+  controller/DTO de patch e testes unitários, integração e E2E.
+- Verificação: cada combinação de campos, ausência, falha técnica, duas contas,
+  proteção HTTP, OpenAPI e preservação dos campos omitidos.
+- Conflitos: nenhum.
+
+### Preparação da tarefa T27
+
+- Premissas: `DELETE /products/:id` usará `DeleteItem` com
+  `attribute_exists(id)`; ausência condicional será `PRODUCT_NOT_FOUND` e o
+  sucesso será `204` sem corpo nem `Content-Type` obrigatório.
+- Abstrações: `DeleteProduct` dependerá da porta de manutenção; o controller
+  continuará limitado a autenticação, CSRF/origem, status HTTP e OpenAPI.
+- Arquivos: adaptador/porta DynamoDB, caso de uso, controller/módulo e testes
+  unitários, de integração e E2E.
+- Verificação: exclusão existente, repetição, duas contas, autenticação,
+  CSRF/origem, corpo vazio e falha técnica.
+- Conflitos: nenhum.
+
+### Encerramento da Fase 05
+
+- Gate: review independente da Fase 05 aprovado na versão 5, registrado em
+  `REVIEW.md`.
+- Decisão: T22–T27 foram marcadas como `Concluídas`; a Fase 05 foi marcada
+  como `Concluída` após paginação, atualização e exclusão passarem os gates
+  completos.
+- Evidência final: 28 suítes/142 testes unitários, 3 suítes/9 testes de
+  integração e 13 suítes/84 testes E2E passaram, além de lint, typecheck,
+  build e `git diff --check`.
+- Ressalvas: A-01 permanece restrito ao DynamoDB Local; A-02 registra o
+  comportamento terminal observado no DynamoDB Local e ambos seguem para a
+  Fase 07. A Fase 06 foi então iniciada.
+
+### Preparação da Fase 06
+
+- Padrões: manter o rate limit antes de autenticação, validação e banco, mas
+  depois do preflight; separar resolução de IP, política, armazenamento e
+  resposta HTTP; não registrar IP bruto nem segredos.
+- Abstrações reutilizadas: `Clock`, `ConfigService`, `ApiExceptionFilter`,
+  `CorrelationIdMiddleware`, CORS/CSRF, controllers e setup OpenAPI já
+  existentes.
+- Premissas: Fixed Window em memória por instância; chave composta por IP
+  efetivo, método e template normalizado; proxy só é confiável quando listado
+  explicitamente em `TRUSTED_PROXY_IPS`; limites seguem integralmente a
+  ADR-004.
+- Arquivos previstos: configuração de proxies, resolvedor de IP, políticas,
+  armazenamento/metrics, middleware, filtro HTTP, OpenAPI e testes unitários,
+  integração e E2E de rate limit/conformidade.
+- Verificação: testes de cadeia de proxy e relógio controlados; políticas e
+  pipeline; `429`/`Retry-After`; `/docs`/`/docs-json`; matriz transversal;
+  lint, typecheck, suítes, build e `git diff --check`.
+- Conflitos: a dependência `@nestjs/throttler` prevista no design não é
+  compatível com NestJS 12; a implementação usará componente próprio com a
+  mesma política ADR-004, registrando o desvio para revisão.
+
+### Preparação da tarefa T28
+
+- Premissas: sem proxy confiável, somente `socket.remoteAddress` será aceito;
+  com proxy confiável, a cadeia `X-Forwarded-For` será percorrida da direita
+  para a esquerda até o primeiro endereço não confiável; a configuração aceita
+  apenas IPs explícitos válidos.
+- Abstrações: `EffectiveClientIpResolver` ficará na borda HTTP; casos de uso e
+  armazenamento receberão somente a identidade já resolvida; nenhum cabeçalho
+  será lido diretamente pelo rate limiter.
+- Arquivos: `TRUSTED_PROXY_IPS`, configuração de trust proxy, resolvedor e
+  testes unitários/E2E de cabeçalhos forjados e cadeia autorizada.
+- Verificação: conexão direta, um/múltiplos proxies, configuração inválida e
+  prova da identidade usada na chave sem IP bruto nos logs.
+- Conflitos: nenhum com ADR-004 ou DEC-12/DEC-19.
+
+### Preparação da tarefa T29
+
+- Premissas: o armazenamento será em memória da instância, com relógio
+  injetável; a primeira chamada fixa `expiresAt` e chamadas seguintes não
+  prorrogam a janela; expiração remove o bucket.
+- Abstrações: `FixedWindowRateLimiter` receberá uma chave já composta pela
+  borda e não conhecerá Express, headers ou DynamoDB; a métrica agregará apenas
+  o template da rota.
+- Arquivos: porta/serviço de rate limit, política de resultado e testes
+  unitários com relógio controlado.
+- Verificação: limite inclusivo, bloqueio seguinte, janela não deslizante,
+  expiração, isolamento por IP/método/template e limpeza dos buckets.
+- Conflitos: nenhum com ADR-004; a topologia de instância única permanecerá
+  explícita.
+
+### Preparação da tarefa T30
+
+- Premissas: a política será uma tabela única por método e template; rotas
+  conhecidas não dependerão do fallback; `OPTIONS` será ignorado antes do
+  contador e as falhas downstream continuarão consumindo o bucket.
+- Abstrações: `RateLimitMiddleware` resolverá IP, template e política e
+  delegará ao `RateLimiter`; guards, DTOs, casos de uso e repositórios não
+  conhecerão a política.
+- Arquivos: tabela/resolvedor de políticas, middleware, providers do módulo,
+  composição do pipeline e testes unitários/E2E.
+- Verificação: todos os limites da ADR-004, fallback de rota, IDs no mesmo
+  template, erros de autenticação/validação e preflight sem consumo.
+- Conflitos: nenhum; a ordem CORS → correlation → rate limit → CSRF → guards
+  será mantida explícita.
+
+### Preparação da tarefa T31
+
+- Premissas: bloqueio será `429 RATE_LIMIT_EXCEEDED`; o corpo usará o schema
+  comum, `Retry-After` será inteiro em segundos restantes e nunca zero durante
+  uma janela ainda ativa.
+- Abstrações: `RateLimitExceededError` carregará somente o retry seguro; o
+  filtro HTTP escreverá o header; métricas permanecerão agregadas por template.
+- Arquivos: filtro/exceção, métrica em memória e testes unitários/E2E de
+  arredondamento, correlação, ausência de downstream e privacidade.
+- Verificação: início/fim da janela, novo bucket após expiração, contagem por
+  template e ausência de IP/JWT/cookie em corpo e logs.
+- Conflitos: nenhum com o schema comum ou ADR-004.
+
+### Preparação da tarefa T32
+
+- Premissas: `/docs` e `/docs-json` continuarão sendo as únicas superfícies de
+  documentação; OpenAPI usará cookie auth, CSRF e o schema comum, sem Bearer
+  ou endpoint intermediário.
+- Abstrações: decorators de cada controller serão a fonte do documento; o
+  bootstrap continuará apenas configurando Swagger UI e JSON exportável.
+- Arquivos: controllers Auth/Products/Health, DTO de erro, setup OpenAPI e
+  teste de contrato.
+- Verificação: caminhos/métodos, segurança, headers, DTOs, query/cursor,
+  estados de sucesso/erro e presença de `429` nas rotas concluídas.
+- Conflitos: nenhum com PRD, Contrato-da-API ou DEC-02/DEC-03/DEC-05/DEC-13.
+
+### Preparação da tarefa T33
+
+- Premissas: a matriz terá uma linha por cada um dos 27 critérios de aceitação
+  do PRD e apontará para testes existentes ou para o teste transversal que os
+  valida; não será criado um segundo contrato paralelo.
+- Abstrações: o verificador será somente de conformidade e artefatos, sem
+  modificar runtime, persistência ou dados do ambiente.
+- Arquivos: matriz automatizada, verificador de caminhos/testes, varredura
+  negativa de artefatos sensíveis e documentação da evidência final.
+- Verificação: matriz sem IDs duplicados ou lacunas, testes oficiais, OpenAPI,
+  integração/E2E repetidos e busca por senha/hash/JWT/credencial em saídas
+  produzidas.
+- Conflitos: nenhum; o review independente continuará sendo o gate posterior.
+
+### Encerramento da Fase 03
+
+- T13–T17 concluídas com evidências unitárias e E2E.
+- Gate completo aprovado: lint, typecheck, 20 suítes/69 testes unitários,
+  2 suítes/3 testes de integração, 8 suítes/43 testes E2E e build.
+- Review independente aprovado na versão 3, registrado em `REVIEW.md`.
+- Ressalvas informativas A-01 e A-02 mantidas; A-02 será revalidada nas rotas
+  concretas de Products desta fase.
+
+### Preparação da Fase 03
+
+- Padrões: manter JWT, cookie e Express restritos às camadas de infraestrutura
+  e apresentação; os casos de uso dependem somente de portas e do domínio.
+- Abstrações reutilizadas: `Clock`, `UserRepository`, `PasswordHasher`,
+  `ConfigService`, `ApiExceptionFilter`, `PublicValidationPipe` e o middleware
+  global de CORS/CSRF já aprovados nas fases anteriores.
+- Arquivos previstos: porta e adaptador de token, caso de uso de autenticação,
+  fábrica de cookie, DTOs/controllers Auth, guard JWT e testes unitários/E2E.
+- Premissas: o segredo, emissor, audiência, TTL e nome do cookie continuam
+  obrigatórios na configuração; o TTL publicado permanece 900 segundos e o
+  ambiente de teste pode usar relógio controlado.
+- Verificação: testes dirigidos por tarefa, depois lint, typecheck, suíte
+  unitária, integração, E2E, build e inspeção negativa de tokens/segredos em
+  respostas e logs.
+- Conflitos: nenhum encontrado entre PRD, design, ADRs, plano e código atual.
+
+### Preparação da tarefa T13
+
+- Premissas: `jsonwebtoken` será o adaptador técnico; o TTL publicado será
+  exatamente 900 segundos e a configuração continuará sem default de segredo.
+- Abstrações: `AccessTokenService` expõe somente emissão e validação; a
+  identidade validada contém apenas sujeito e instantes de validade.
+- Arquivos: porta em `auth/application/ports`, adaptador e teste em
+  `auth/infrastructure/security`, além do teste de configuração.
+- Verificação: claims decodificadas, algoritmo, assinatura, emissor, audiência,
+  expiração, TTL e relógio controlado; lint e typecheck.
+- Conflitos previstos: a biblioteca pode adicionar/remover claims de tempo
+  implicitamente; o teste deve detectar isso antes de concluir a tarefa.
+
+### Preparação das tarefas T14–T17
+
+- T14: reutilizar `Email` como dono da normalização, consultar antes de
+  verificar Argon2id e emitir o token somente após a senha correta; testar
+  conta ausente, senha incorreta, hash inválido e falhas técnicas.
+- T15: manter o cookie na borda HTTP e a autenticação no caso de uso; testar
+  `204`, corpo vazio, atributos, TTL, erro genérico e ausência de `Set-Cookie`.
+- T16: não criar caso de uso ou sessão para logout; expirar diretamente o
+  cookie centralizado e testar os quatro estados do cookie sem tocar no banco.
+- T17: registrar a estratégia Passport com a porta de token e criar um guard
+  que aceite somente o cookie configurado; testar identidade válida e todas as
+  rejeições sem revelar token.
+- Conflitos previstos: o guard padrão do Passport exige opções de módulo no
+  contexto de cada controller; se isso impedir a reutilização, manter a
+  estratégia Passport e encapsular a chamada em um guard explícito.
+
+### Registro de preparação
+
+- Padrões: TypeScript estrito; nomes de domínio em inglês no código; Clean
+  Architecture por domínio e camada; controllers sem regra de negócio;
+  adaptadores externos atrás de portas; testes unitários, integração e E2E.
+- Abstrações reutilizadas: portas explícitas para relógio, identificadores e
+  readiness; composition root NestJS; filtro global de erros; cliente
+  `DynamoDBDocumentClient` injetado.
+- Arquivos inicialmente afetados: `package.json`, lockfile, configurações de
+  TypeScript/ESLint/Jest/Nest, `.env.example`, `.gitignore`, `src/`,
+  `compose.yaml`, scripts locais e testes da Fase 01.
+- Premissas: Node.js `v24.15.0` será usado como runtime disponível; DynamoDB
+  Local será a dependência externa local; nenhuma credencial real será
+  necessária ou versionada.
+- Conflitos: nenhum encontrado entre PRD, design, plano, ADRs e repositório
+  vazio.
+
+### Preparação da tarefa T01
+
+- Premissas: a validação de ambiente será a única fonte de parsing e não terá
+  defaults para segredos; `DYNAMODB_ENDPOINT` será explícito para tornar o
+  ambiente local reproduzível; os comandos de integração e E2E usarão
+  `--passWithNoTests` até suas respectivas fases criarem testes.
+- Abstrações: `ConfigModule` global e `ConfigService<AppConfig>` no bootstrap;
+  `validateEnvironment` como função pura para testes; Jest com configurações
+  separadas por nível.
+- Arquivos: `package.json`, `tsconfig*.json`, `eslint.config.mjs`,
+  `.prettierrc.json`, `jest*.config.cjs`, `.env.example`, `.gitignore`,
+  `src/app.module.ts`, `src/main.ts`, `src/shared/infrastructure/configuration.ts`
+  e seu teste unitário.
+- Verificação: `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`,
+  `npm run test:integration`, `npm run test:e2e` e `npm run build`, incluindo
+  cenários de configuração válida, segredo curto e variável ausente.
+- Conflitos previstos: a versão atual do NestJS e do TypeScript será fixada no
+  lockfile; qualquer incompatibilidade de runtime será registrada como desvio
+  antes de ajustar versões.
+
+### Preparação da tarefa T02
+
+- Premissas: relógio e geração de identificadores são portas pequenas e
+  compartilhadas; implementações determinísticas ficam em `application` para
+  uso explícito nos testes; a fonte real de IDs será `node:crypto.randomUUID`.
+- Abstrações: `Clock` com `now()` e `IdGenerator` com `generate()`; fakes
+  fixos não terão dependência de NestJS, HTTP, AWS SDK ou JWT.
+- Arquivos: portas em `src/shared/application/ports`, fakes em
+  `src/shared/application/testing`, implementações reais em
+  `src/shared/infrastructure`, teste arquitetural em `test/architecture` e
+  regras de importação em `eslint.config.mjs`.
+- Verificação: testes unitários dos relógios/IDs, teste de reprodutibilidade
+  dos fakes, teste arquitetural e lint com regras de fronteira.
+- Conflitos: nenhum; não será criado repositório ou tipo genérico sem uso
+  concreto.
+
+### Preparação da tarefa T03
+
+- Premissas: o `correlationId` será aceito somente quando tiver formato opaco
+  seguro e, caso contrário, será gerado pela porta de IDs; o corpo HTTP nunca
+  será passado ao logger; mensagens de validação serão genéricas e listarão
+  apenas propriedades públicas recebidas.
+- Abstrações: `ApplicationError` e `ApiError` ficam independentes de HTTP;
+  filtro, pipe, middleware e interceptor pertencem à apresentação; o logger
+  recebe somente um registro estruturado já sanitizado.
+- Arquivos: catálogo de erros e portas de logging em `src/shared/application`,
+  filtro/pipe/middleware/interceptor em `src/shared/presentation`, logger
+  concreto no compartilhado de infraestrutura, composition root e teste HTTP
+  em `test/e2e`.
+- Verificação: testes unitários do mapeamento, correlação e logs; E2E de erro
+  conhecido, validação e falha inesperada; busca negativa dos valores sensíveis
+  capturados; lint, typecheck e suíte completa.
+- Conflitos: nenhum; falhas inesperadas manterão detalhes somente fora da
+  resposta pública e sem stack trace no log estruturado.
+
+### Preparação da tarefa T04
+
+- Premissas: DynamoDB Local será fixado em `amazon/dynamodb-local:2.6.1`;
+  `users` usará `email` e `products` usará `id`, ambas como única chave de
+  partição e com `PAY_PER_REQUEST`; o endpoint local usará credenciais dummy.
+- Abstrações: `DYNAMODB_DOCUMENT_CLIENT` será o único token consumido pelos
+  módulos; o provisionador terá uma checagem explícita de esquema para tornar
+  a idempotência segura; prefixo opcional será validado e aplicado aos nomes.
+- Arquivos: `compose.yaml`, cliente/módulo DynamoDB em
+  `src/shared/infrastructure`, configuração de prefixo, script de
+  provisionamento, testes unitários e integração com DynamoDB Local.
+- Verificação: `docker compose config`, subida do serviço, provisionamento
+  repetido, `DescribeTable` das duas tabelas, isolamento por prefixo e gates
+  oficiais do projeto.
+- Conflitos: nenhum; não haverá exclusão de tabelas nem fallback para dados
+  publicados.
+
+### Preparação da tarefa T05
+
+- Premissas: readiness será um caso de uso da aplicação que exige o estado de
+  inicialização e uma verificação `DescribeTable` de `users` e `products`; toda
+  falha da porta será convertida no mesmo `SERVICE_UNAVAILABLE` sem nome da
+  tabela ou detalhe do SDK.
+- Abstrações: `ReadinessProbe` e `ApplicationLifecycle` serão portas do módulo
+  Health; o adaptador DynamoDB ficará na infraestrutura; o controller só
+  serializará `{ status: 'ok' }`.
+- Arquivos: `src/modules/health` em camadas explícitas, erro compartilhado de
+  indisponibilidade, `AppModule` e E2E real de readiness com tabelas temporárias
+  por prefixo.
+- Verificação: testes unitários do caso de uso para inicialização, sucesso e
+  falha inesperada; E2E HTTP com tabelas acessíveis, cada tabela removida e
+  resposta correlacionada sem detalhes internos; gates completos da fase.
+- Conflitos: nenhum; liveness continua fora da API e o rate limit da rota será
+  adicionado somente na Fase 06.
+
+### Transição para a Fase 02
+
+- Gate anterior: review da Fase 01 aprovado na versão 1, registrado em
+  `REVIEW.md`.
+- Decisão: a Fase 01 foi marcada como `Concluída` e a Fase 02 foi marcada como
+  `Em execução`, preservando a ordem aprovada do plano.
+
+### Preparação da tarefa T06
+
+- Premissas: o domínio Auth será independente de NestJS, HTTP, DynamoDB, JWT e
+  Argon2; a senha em texto puro será uma entrada transitória do caso de uso e
+  não fará parte da entidade persistível.
+- Abstrações: usuário e e-mail serão tipos de domínio explícitos; as regras de
+  normalização e limites serão funções/objetos pequenos, sem repositório ou
+  serviço genérico antecipado.
+- Arquivos: `src/auth/domain`, erros de domínio e testes unitários de limites,
+  normalização e serialização segura.
+- Verificação: executar testes de borda para nome, e-mail e senha, teste de
+  equivalência após normalização, busca arquitetural e lint/typecheck.
+- Conflitos: nenhum encontrado entre PRD, design, ADRs e a Fase 02; Argon2id
+  será introduzido somente na tarefa T07, atrás de porta.
 
 ## Fases
 
 | #  | Fase | Arquivo | Status | Concluída em |
 |----|------|---------|--------|--------------|
-| 01 | Tracer bullet e fundação observável | [fase-01-tracer-bullet-fundacao.md](fase-01-tracer-bullet-fundacao.md) | Pendente | — |
-| 02 | Cadastro seguro de usuários | [fase-02-cadastro-usuarios.md](fase-02-cadastro-usuarios.md) | Pendente | — |
-| 03 | Autenticação e proteção do cliente web | [fase-03-autenticacao-protecao-web.md](fase-03-autenticacao-protecao-web.md) | Pendente | — |
-| 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fase-04-criacao-consulta-produtos.md) | Pendente | — |
-| 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fase-05-paginacao-manutencao-produtos.md) | Pendente | — |
-| 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fase-06-rate-limit-conformidade.md) | Pendente | — |
-| 07 | Empacotamento, infraestrutura e entrega | [fase-07-entrega-operacional.md](fase-07-entrega-operacional.md) | Pendente | — |
+| 01 | Tracer bullet e fundação observável | [fase-01-tracer-bullet-fundacao.md](fase-01-tracer-bullet-fundacao.md) | Concluída | 2026-09-04 |
+| 02 | Cadastro seguro de usuários | [fase-02-cadastro-usuarios.md](fase-02-cadastro-usuarios.md) | Concluída | 2026-09-04 |
+| 03 | Autenticação e proteção do cliente web | [fase-03-autenticacao-protecao-web.md](fase-03-autenticacao-protecao-web.md) | Concluída | 2026-09-04 |
+| 04 | Criação e consulta de produtos | [fase-04-criacao-consulta-produtos.md](fase-04-criacao-consulta-produtos.md) | Concluída | 2026-09-04 |
+| 05 | Paginação, atualização e exclusão de produtos | [fase-05-paginacao-manutencao-produtos.md](fase-05-paginacao-manutencao-produtos.md) | Concluída | 2026-09-04 |
+| 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fase-06-rate-limit-conformidade.md) | Concluída | 2026-09-04 |
+| 07 | Proteção CSRF por cookie e validação de origem | [fase-07-protecao-csrf-origem.md](fase-07-protecao-csrf-origem.md) | Concluída | 2026-09-04 |
+| 08 | Total exato na listagem de produtos | [fase-08-total-exato-produtos.md](fase-08-total-exato-produtos.md) | Concluída | 2026-09-05 |
+| 09 | Empacotamento, infraestrutura e entrega | [fase-09-entrega-operacional.md](fase-09-entrega-operacional.md) | Em execução | — |
 
 ## Tarefas
 
 | ID  | Fase | Status | Evidências |
 |-----|------|--------|------------|
-| T01 | 01 | Pendente | — |
-| T02 | 01 | Pendente | — |
-| T03 | 01 | Pendente | — |
-| T04 | 01 | Pendente | — |
-| T05 | 01 | Pendente | — |
-| T06 | 02 | Pendente | — |
-| T07 | 02 | Pendente | — |
-| T08 | 02 | Pendente | — |
-| T09 | 02 | Pendente | — |
-| T10 | 02 | Pendente | — |
-| T11 | 02 | Pendente | — |
-| T12 | 02 | Pendente | — |
-| T13 | 03 | Pendente | — |
-| T14 | 03 | Pendente | — |
-| T15 | 03 | Pendente | — |
-| T16 | 03 | Pendente | — |
-| T17 | 03 | Pendente | — |
-| T18 | 04 | Pendente | — |
-| T19 | 04 | Pendente | — |
-| T20 | 04 | Pendente | — |
-| T21 | 04 | Pendente | — |
-| T22 | 05 | Pendente | — |
-| T23 | 05 | Pendente | — |
-| T24 | 05 | Pendente | — |
-| T25 | 05 | Pendente | — |
-| T26 | 05 | Pendente | — |
-| T27 | 05 | Pendente | — |
-| T28 | 06 | Pendente | — |
-| T29 | 06 | Pendente | — |
-| T30 | 06 | Pendente | — |
-| T31 | 06 | Pendente | — |
-| T32 | 06 | Pendente | — |
-| T33 | 06 | Pendente | — |
-| T34 | 07 | Pendente | — |
-| T35 | 07 | Pendente | — |
-| T36 | 07 | Pendente | — |
-| T37 | 07 | Pendente | — |
-| T38 | 07 | Pendente | — |
+| T01 | 01 | Concluída | `npm ci --ignore-scripts --no-audit --no-fund`, lint, typecheck, teste unitário (1 suíte/4 testes), scripts de integração/E2E, build, bootstrap válido na porta 3010 e startup inválido com saída 1 sanitizada; `git diff --check` sem erros. |
+| T02 | 01 | Concluída | Lint com fronteiras, typecheck e `npm test` (6 suítes/11 testes) aprovados; produção usa `node:crypto.randomUUID`, fakes são determinísticos e teste arquitetural não encontrou dependências proibidas. |
+| T03 | 01 | Concluída | Lint/typecheck, `npm test` (8 suítes/16 testes), E2E (1 suíte/3 testes), integração, build e diff passaram; respostas 409/400/500 correlacionadas e logs sanitizados comprovados, sem senha/token/stack. |
+| T04 | 01 | Concluída | Compose, cliente injetado, provisionamento repetido, integração com duas tabelas isoladas e todos os gates (lint/typecheck/19 unitários/3 E2E/build) passaram; bootstrap real abriu a porta 3011. |
+| T05 | 01 | Concluída | Lint/typecheck, 12 suítes/24 unitários, integração, 2 suítes/6 E2E, build e Compose passaram; `/health` confirmou 200 exato com ambas as tabelas e 503 seguro para cada tabela ausente. |
+| T06 | 02 | Concluída | Lint, typecheck, `npm test` (14 suítes/39 testes), build e `git diff --check` aprovados; domínio Auth cobre limites, normalização de e-mail e nome, senha transitória e serialização pública sem hash. |
+| T07 | 02 | Concluída | Adaptador `Argon2PasswordHasher` atrás da porta `PasswordHasher`; hash Argon2id com parâmetros explícitos, verificação correta/incorreta e hash malformado cobertos; suíte dirigida (1/3), lint, typecheck, build e diff aprovados. |
+| T08 | 02 | Concluída | `DynamoDbUserRepository` com `PutCommand` condicional, `GetCommand`, mapeamento seguro e conflito atômico; unitário (1/4), integração (2/3), suíte total (16/46), lint, typecheck, build e diff aprovados. |
+| T09 | 02 | Concluída | Caso de uso `RegisterUser` validado com ordem hash→persistência, ID/instante únicos, resposta pública, rejeição de entrada inválida e propagação de falhas; 1 suíte/6 testes, lint, typecheck, build e diff aprovados. |
+| T10 | 02 | Concluída | Política CORS exata registrada no bootstrap; preflight autorizado `204`, credenciais, métodos/cabeçalhos e `Retry-After` cobertos; E2E (3/9), suíte total (17/52), lint, typecheck, build e diff aprovados. |
+| T11 | 02 | Concluída | `CsrfProtectionMiddleware` global para mutações, origem própria/allowlist exata e `403 REQUEST_FORBIDDEN`; E2E dirigido (1/8), suíte total (17/52), lint, typecheck, build e diff aprovados. |
+| T12 | 02 | Concluída | Controller/DTOs, serialização pública, OpenAPI, CORS/CSRF no bootstrap e E2E de cadastro implementados; E2E dirigido (1/11), suíte total (17/52), integração (2/3), E2E completo (5/28), lint, typecheck, build e diff aprovados. |
+| T13 | 03 | Concluída | `npm test -- --runTestsByPath src/modules/auth/infrastructure/security/jsonwebtoken-access-token.service.spec.ts src/shared/infrastructure/configuration.spec.ts` (2 suítes/13 testes), `npm run lint` e `npm run typecheck` aprovados. |
+| T14 | 03 | Concluída | `npm test -- --runTestsByPath src/modules/auth/application/authenticate-user/authenticate-user.spec.ts` (1 suíte/7 testes), `npm run lint` e `npm run typecheck` aprovados. |
+| T15 | 03 | Concluída | `npm test -- --runTestsByPath src/modules/auth/presentation/auth-cookie.spec.ts` (1 suíte/1 teste), `npm run test:e2e -- --runTestsByPath test/e2e/login.e2e.spec.ts` (1 suíte/3 testes), `npm run lint` e `npm run typecheck` aprovados; primeiro gate E2E ajustado para aceitar `Expires` adicional emitido pelo Express, mantendo os atributos exigidos. |
+| T16 | 03 | Concluída | `npm test -- --runTestsByPath src/modules/auth/presentation/auth-cookie.spec.ts` (1 suíte/2 testes), `npm run test:e2e -- --runTestsByPath test/e2e/logout.e2e.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados. |
+| T17 | 03 | Concluída | `npm run test:e2e -- --runTestsByPath test/e2e/access-token-guard.e2e.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados. |
+| T18 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/domain/product.spec.ts` (1 suíte/24 testes), `npm run lint` e `npm run typecheck` aprovados; invariantes e serialização pública do domínio isoladas do framework. |
+| T19 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (1 suíte/5 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/3 testes), `npm run lint` e `npm run typecheck` aprovados; condição atômica, mapeamento exato, ausência e colisão sem sobrescrita comprovados. |
+| T20 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/create-product/create-product.spec.ts` (1 suíte/3 testes), `npm run test:e2e -- --runTestsByPath test/e2e/create-product.e2e.spec.ts` (1 suíte/10 testes), `npm run lint` e `npm run typecheck` aprovados; `POST /products` protegido, estrito e sem persistência em entradas inválidas. |
+| T21 | 04 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/get-product/get-product.spec.ts` (1 suíte/3 testes), `npm run test:e2e -- --runTestsByPath test/e2e/get-product.e2e.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados; `GET /products/:id` retorna catálogo compartilhado ou `404 PRODUCT_NOT_FOUND` e rejeita cookie ausente/inválido/expirado. |
+| T22 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/infrastructure/persistence/dynamodb-cursor-codec.spec.ts` (1 suíte/10 testes), `npm run lint` e `npm run typecheck` aprovados; envelope versionado, Base64 URL-safe, validação estrutural e erro seguro comprovados. |
+| T23 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/list-products/list-products.spec.ts src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (2 suítes/15 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/4 testes), `npm run lint` e `npm run typecheck` aprovados; `Scan`, `Limit`, cursor nativo, padrão 20 e limites 1–100 comprovados. |
+| T24 | 05 | Concluída | `npm run test:e2e -- --runTestsByPath test/e2e/list-products.e2e.spec.ts` (1 suíte/11 testes), `npm run lint` e `npm run typecheck` aprovados; `GET /products` cobre catálogo vazio, limite padrão/limites, cursores consecutivos, erros seguros, autenticação e OpenAPI. |
+| T25 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/update-product/update-product.spec.ts src/modules/products/domain/product.spec.ts` (2 suítes/37 testes), `npm run lint` e `npm run typecheck` aprovados; patch não vazio e estrito, invariantes reutilizadas, campos omitidos preservados e relógio controlado comprovados. |
+| T26 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts src/modules/products/application/update-product/update-product.spec.ts` (2 suítes/21 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/5 testes), `npm run test:e2e -- --runTestsByPath test/e2e/update-product.e2e.spec.ts` (1 suíte/10 testes), `npm run lint` e `npm run typecheck` aprovados; `UpdateItem` condicional, patch estrito, preservação, falha técnica, proteção HTTP, compartilhamento e OpenAPI comprovados. |
+| T27 | 05 | Concluída | `npm test -- --runInBand --runTestsByPath src/modules/products/application/delete-product/delete-product.spec.ts src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (2 suítes/11 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/6 testes), `npm run test:e2e -- --runTestsByPath test/e2e/delete-product.e2e.spec.ts` (1 suíte/4 testes), `npm run lint` e `npm run typecheck` aprovados; `DeleteItem` condicional, `204` vazio, repetição `404`, compartilhamento, proteções e OpenAPI comprovados. |
+| T28 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/infrastructure/configuration.spec.ts src/shared/presentation/http/effective-client-ip.spec.ts src/shared/infrastructure/dynamodb/dynamodb.client.spec.ts` (3 suítes/16 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; allowlist explícita de proxies, cadeia confiável, normalização de IP e rejeição segura de configuração inválida comprovadas. |
+| T29 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/infrastructure/rate-limit/in-memory-fixed-window-rate-limiter.spec.ts` (1 suíte/6 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; Fixed Window, chave estruturada por IP/método/template, não prorrogação, expiração e limpeza comprovadas. |
+| T30 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/presentation/http/rate-limit-policies.spec.ts src/shared/presentation/http/rate-limit.middleware.spec.ts` (2 suítes/6 testes), `npm run test:e2e -- --runTestsByPath test/e2e/rate-limit.e2e.spec.ts test/e2e/list-products.e2e.spec.ts test/e2e/register-user.e2e.spec.ts` (3 suítes/24 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; tabela ADR-004, fallback, ordem do middleware, `OPTIONS` e isolamento das fixtures comprovados. |
+| T31 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath src/shared/presentation/errors/api-exception.filter.spec.ts src/shared/infrastructure/rate-limit/in-memory-rate-limit-metrics.spec.ts` (2 suítes/5 testes), `npm run test:e2e -- --runTestsByPath test/e2e/rate-limit.e2e.spec.ts` (1 suíte/2 testes), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; `429 RATE_LIMIT_EXCEEDED`, `Retry-After`, correlação, métrica agregada e bloqueio antes do controller comprovados. |
+| T32 | 06 | Concluída | `npm run test:e2e -- --runTestsByPath test/e2e/openapi.e2e.spec.ts` (1 suíte/1 teste), `npm run lint`, `npm run typecheck` e `git diff --check` aprovados; `/docs`, `/docs-json`, seis caminhos/nove operações, cookie auth, ausência de Bearer e `429` documentado comprovados. |
+| T33 | 06 | Concluída | `npm test -- --runInBand --runTestsByPath test/conformance/acceptance-criteria.matrix.spec.ts test/conformance/sensitive-artifacts.spec.ts` (2 suítes/4 testes), gates completos com 35 suítes/168 testes unitários, 3 suítes/9 testes de integração e 15 suítes/87 testes E2E, além de lint, typecheck, build e `git diff --check`; matriz 1–27, fonte de produção, placeholder de ambiente e artefatos opcionais foram verificados. |
+| T34 | 07 | Concluída | Cookie e testes atualizados para `SameSite=Strict`; `npm test -- --runInBand --runTestsByPath src/modules/auth/presentation/auth-cookie.spec.ts` e E2E de login/logout (2 suítes/9 testes) aprovados. |
+| T35 | 07 | Concluída | Middleware e E2E de origem implementados; `npm run lint`, `npm run typecheck` e E2E dedicado (1 suíte/12 testes) aprovados. |
+| T36 | 07 | Concluída | CORS, OpenAPI, controllers, consumidores e matriz atualizados; busca residual não encontrou o header customizado em `src`/`test` nem em contratos ativos; `npm run lint`, `npm run typecheck`, `npm test` (35 suítes/168 testes), `npm run test:integration` (3 suítes/9 testes), `npm run test:e2e` (15 suítes/91 testes), `npm run build` e `git diff --check` aprovados. |
+| T37 | 08 | Concluída | `npm test -- --runTestsByPath src/modules/products/application/list-products/list-products.spec.ts src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (2 suítes/21 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados; cursor pré-validado, contagem consistente multipágina, zero, falha integral e atualização após exclusão comprovados. |
+| T38 | 08 | Concluída | `npm run lint`, `npm run typecheck`, `npm test` (35 suítes/171 testes), `npm run test:integration` (3 suítes/9 testes), `npm run test:e2e` (15 suítes/91 testes), `npm run build` e `git diff --check` aprovados; E2E de listagem/OpenAPI, matriz, contrato e DTO comprovam `total` obrigatório, zero no catálogo vazio, 21 na primeira/última página e `nextCursor` opcional. |
+| T39 | 09 | Concluída | `docker build --pull --tag stone-api:t39 .` e rebuild após ajuste do manifesto de produção; imagem inspecionada com usuário `node`, `HEALTHCHECK`, comando `node dist/main.js`, somente `dist`, `node_modules` e manifesto sem `devDependencies`; execução efêmera contra DynamoDB Local confirmou `GET /health` 200; gates completos: lint, typecheck, 35 suítes/171 testes unitários, 3 suítes/9 testes de integração, 15 suítes/91 testes E2E, build e `git diff --check`. |
+| T40 | 09 | Concluída | `terraform fmt -check -recursive`, `terraform init -backend=false`, `terraform validate` e `git diff --check` aprovados; Terraform define duas tabelas `PAY_PER_REQUEST` sem sort key/GSI, IAM de runtime limitado aos seis actions e ARNs das tabelas, backend/variáveis sem segredo e `prevent_destroy`; apply e segundo plan permanecem externos. |
+| T41 | 09 | Concluída | `docker compose -f deploy/compose.production.yaml config` aprovado; `nginx -t` aprovado em rede Docker com alias `backend`; proxy de eco confirmou que headers de encaminhamento forjados são substituídos, cookie é preservado para autenticação e logs não expõem o cookie; somente NGINX publica a porta 80. |
+| T42 | 09 | Concluída | Workflow `.github/workflows/api-delivery.yml` validado por `actionlint`; gates equivalentes locais aprovados (lint, typecheck, 35 suítes/171 testes unitários, 3 suítes/9 testes de integração, 15 suítes/91 testes E2E, build e imagem Docker); publicação GHCR real permanece externa. |
+| T43 | 09 | Concluída | Scripts Bash de deploy/readiness/rollback e workflow por SHA preparados; `bash -n`, `docker compose config`, `actionlint` e `git diff --check` aprovados; VPS, readiness HTTPS público e rollback controlado ainda não executados. |
+
+### Encerramento da Fase 08 — review aprovado
+
+- T37 e T38 foram concluídas com evidências dirigidas e gate completo verde.
+- O contrato público agora exige `total` inteiro não negativo em toda resposta
+  `200` de `GET /products`; a contagem é exata para a leitura observada e
+  percorre todas as páginas internas do `Scan` consistente.
+- O review independente da versão 9 aprovou a fase sem achados abertos.
+- A Fase 09 foi autorizada primeiro para T39 e depois para a preparação local
+  das T40–T43; a execução externa continua separada do trabalho local.
+
+### Encerramento parcial da Fase 09 — T39–T41 preparadas
+
+- O `Dockerfile` multiestágio usa Node `22.13.1-bookworm-slim`, instala
+  dependências por lockfile, compila a aplicação, remove mapas/declarações e
+  mantém somente dependências de produção no runtime.
+- A imagem final executa como `node`, recebe configuração em runtime e expõe
+  um `HEALTHCHECK` baseado em `/health`; nenhum `.env`, teste, documentação,
+  código-fonte ou `devDependencies` foi incorporado.
+- O build local e a execução efêmera com DynamoDB Local foram comprovados sem
+  publicação externa.
+- T40 e T41 possuem artefatos locais e validações sem credenciais. Aplicar
+  Terraform/IAM, publicar Compose/NGINX, executar CI/GHCR e realizar
+  deploy/readiness público/rollback permanecem externos.
+- A Fase 09 continua `Em execução`; não há veredito de review da fase nem
+  alegação de publicação até que as tarefas operacionais sejam autorizadas e
+  concluídas.
+
+### Encerramento da Fase 07 — review aprovado
+
+- T34, T35 e T36 estão `Concluídas` com evidências registradas na tabela de
+  tarefas.
+- O gate completo passou: lint, typecheck, 35 suítes/168 testes unitários,
+  3 suítes/9 testes de integração, 15 suítes/91 testes E2E, build e
+  `git diff --check`.
+- A busca residual confirma que o header removido não aparece em `src` ou
+  `test`, CORS ou contratos ativos. Ocorrências em fases e ADRs antigos são
+  históricas e identificadas como substituídas.
+- O review independente da Fase 07 foi aprovado na versão 7 de `REVIEW.md`.
+- A fase operacional então numerada como Fase 08 permaneceu `Pendente`; na
+  revisão material de 2026-09-05 ela foi movida para a Fase 09.
 
 ## Bloqueios e desvios
 
-Nenhum.
+Desvio T04: DynamoDB Local usa `user: "0:0"` no Compose para corrigir a permissão do volume nomeado criado como `root:root`; é limitado ao serviço auxiliar local e não antecipa a política de usuário não privilegiado da imagem da API na Fase 09.
+
+### Preparação da Fase 04
+
+- Padrões: manter o domínio Product sem dependências do NestJS/AWS; casos de
+  uso dependem da porta `ProductRepository`; controller e DTO permanecem na
+  borda HTTP; serialização pública é explícita.
+- Abstrações reutilizadas: `Clock`, `IdentifierGenerator`,
+  `DynamoDBDocumentClient`, `ConfigService`, `AccessTokenGuard`, filtro global
+  de erros e middleware global de CORS/CSRF já aprovados nas fases anteriores.
+- Premissas: catálogo compartilhado não possui `createdBy`; `price` permanece
+  número; `imageUrl` contém somente a URL, sem upload ou bytes de imagem; a
+  tabela `products` usa chave simples `id`.
+- Verificação: cada tarefa terá teste dirigido e evidência no estado; ao final
+  serão executados lint, typecheck, suítes unitárias, integração, E2E, build e
+  `git diff --check`, seguidos de review independente.
+- Conflitos: nenhum encontrado entre PRD, design, plano, ADRs e código atual.
+
+### Preparação da tarefa T18
+
+- Premissas: datas e ID são definidos na criação e não possuem mutadores;
+  objetos `Date` serão clonados para impedir mutação externa; não haverá
+  arredondamento nem cálculo monetário.
+- Abstrações: `Product` e `InvalidProductDataError` pertencem somente ao
+  domínio; `PublicProductData` define a saída serializável aprovada.
+- Arquivos: `products/domain/product.ts`, erro de domínio e teste unitário.
+- Verificação: limites inclusivos de strings e URL, esquemas HTTP/HTTPS,
+  valores de preço e isolamento das datas; lint e typecheck.
+- Conflitos previstos: representação binária de números decimais não deve ser
+  usada como evidência de casas decimais adicionais no contrato numérico.
+
+### Preparação da tarefa T19
+
+- Premissas: a chave primária de `products` é `id`; `PutCommand` usará
+  `attribute_not_exists(id)` e `GetCommand` consultará somente essa chave.
+- Abstrações: a aplicação conhecerá apenas `ProductRepository`; o adaptador
+  converterá explicitamente entre `Product` e o item aprovado do DynamoDB.
+- Arquivos: porta e erro de colisão em `products/application`, adaptador e
+  testes unitário/integrado da persistência.
+- Verificação: item com exatamente os sete campos aprovados, criação/leitura,
+  ausência, colisão sem sobrescrita e propagação de falha de infraestrutura.
+- Conflitos previstos: detalhes e tipos do SDK não devem atravessar a porta ou
+  aparecer em controller/caso de uso.
+
+### Preparação da tarefa T20
+
+- Premissas: `POST /products` é protegido pelo `AccessTokenGuard` e pelo
+  middleware global de CSRF/origem; a entrada exige os quatro campos editáveis
+  e rejeita propriedades desconhecidas pelo pipe global.
+- Abstrações: `CreateProduct` gera ID e datas por `IdGenerator`/`Clock`, valida
+  pelo domínio e persiste pela porta; o controller retorna somente
+  `PublicProductData`.
+- Arquivos: caso de uso e teste unitário, DTO/validator/serializer/controller,
+  `ProductsModule`, composição da aplicação e E2E de criação.
+- Verificação: sucesso `201`, limites, ausência/nulo/desconhecido, autenticação,
+  CSRF/origem, ausência de escrita em falha e contrato OpenAPI.
+- Conflitos previstos: a validação HTTP duplica apenas a forma declarativa do
+  contrato; a invariável do domínio continua sendo a autoridade final.
+
+### Preparação da tarefa T21
+
+- Premissas: `GET /products/:id` recebe um identificador opaco não vazio,
+  consulta diretamente a chave simples e não avalia proprietário.
+- Abstrações: `GetProduct` conhece apenas `ProductRepository`; ausência vira
+  `ProductNotFoundError` com o código estável `PRODUCT_NOT_FOUND`; o
+  controller serializa os mesmos sete campos públicos da criação.
+- Arquivos: caso de uso/teste, erro, controller/módulo e E2E de consulta.
+- Verificação: existente `200`, ausente `404`, cookies ausente/inválido/expirado,
+  duas contas, falha de infraestrutura e OpenAPI.
+- Conflitos previstos: o guard continua sendo a única barreira de autenticação;
+  não introduzir autorização por recurso nem `createdBy`.
+
+### Encerramento da Fase 02
+
+- Gate: review independente da Fase 02 aprovado na versão 2, registrado em
+  `REVIEW.md`.
+- Decisão: a Fase 02 foi marcada como `Concluída` após T06–T12 e a Fase 03
+  permanece `Pendente`; nenhuma tarefa, preparação ou implementação da Fase 03
+  foi iniciada.
+- Ressalvas: autenticação por JWT/cookie permanece na Fase 03; rate limit e
+  conformidade operacional permanecem na Fase 06; o desvio local do DynamoDB
+  segue encaminhado à Fase 09.
+
+### Encerramento da Fase 04
+
+- Gate: review independente da Fase 04 aprovado na versão 4, registrado em
+  `REVIEW.md`.
+- Decisão: T18–T21 foram marcadas como `Concluídas`; a Fase 04 foi marcada como
+  `Concluída` após o domínio Product, persistência, criação e consulta
+  passarem os gates completos.
+- Evidência final: 24 suítes/104 testes unitários, 3 suítes/6 testes de
+  integração e 10 suítes/59 testes E2E passaram, além de lint, typecheck,
+  build e `git diff --check`.
+- Ressalvas: A-01 permanece restrito ao DynamoDB Local e encaminhado à Fase 09;
+  a Fase 05 foi iniciada após o review e agora está encerrada com aprovação.
+
+### Encerramento da Fase 06
+
+- Gate: review independente da Fase 06 aprovado na versão 6, registrado em
+  `REVIEW.md`.
+- Decisão: T28–T33 foram marcadas como `Concluídas`; a Fase 06 foi marcada
+  como `Concluída` após rate limit, OpenAPI e conformidade passarem os gates.
+- Evidência final: 35 suítes/168 testes unitários, 3 suítes/9 testes de
+  integração e 15 suítes/87 testes E2E passaram, além de lint, typecheck,
+  build e `git diff --check`.
+- O componente próprio de Fixed Window segue a política da ADR-004; o uso de
+  `@nestjs/throttler` foi substituído porque a versão disponível não é
+  compatível com NestJS 12, sem alterar o contrato funcional.
+- A verificação da imagem publicada permanece encaminhada à Fase 09, pois não
+  há imagem/Dockerfile neste checkout; o audit T33 cobre os fontes, respostas,
+  logs de teste e artefatos de runtime fornecidos à suíte.
