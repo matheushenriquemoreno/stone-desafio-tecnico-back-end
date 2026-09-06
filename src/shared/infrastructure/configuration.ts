@@ -105,7 +105,7 @@ class EnvironmentVariables {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(900)
+  @Max(3600)
   JWT_ACCESS_TTL_SECONDS!: number;
 
   @Transform(({ value }: { value: unknown }): unknown => {
