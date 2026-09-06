@@ -1,6 +1,7 @@
 import {
   DEFAULT_RATE_LIMIT_POLICY,
   RATE_LIMIT_POLICIES,
+  hasExplicitRateLimitPolicy,
   normalizeRouteTemplate,
   resolveRateLimitPolicy,
 } from './rate-limit-policies';
@@ -30,6 +31,9 @@ describe('rate limit policies', () => {
       limit: 60,
       windowMs: 60_000,
     });
+    expect(hasExplicitRateLimitPolicy('GET', '/products')).toBe(true);
+    expect(hasExplicitRateLimitPolicy('GET', '/docs')).toBe(true);
+    expect(hasExplicitRateLimitPolicy('POST', '/not-configured')).toBe(false);
   });
 
   it('normalizes only the product resource identifier to the route template', () => {
@@ -40,5 +44,48 @@ describe('rate limit policies', () => {
     expect(normalizeRouteTemplate('GET', '/products/abc/extra')).toBe(
       '/products/abc/extra',
     );
+  });
+
+  it('normalizes a trailing slash before resolving the route policy', () => {
+    expect(normalizeRouteTemplate('POST', '/auth/register/')).toBe(
+      '/auth/register',
+    );
+    expect(normalizeRouteTemplate('GET', '/products/abc/')).toBe(
+      '/products/:id',
+    );
+    expect(normalizeRouteTemplate('GET', '/')).toBe('/');
+  });
+
+  it('normalizes path casing like the default Express router', () => {
+    expect(normalizeRouteTemplate('POST', '/AUTH/REGISTER')).toBe(
+      '/auth/register',
+    );
+    expect(normalizeRouteTemplate('GET', '/PRODUCTS/ABC')).toBe(
+      '/products/:id',
+    );
+  });
+
+  it('uses only the pathname from an absolute request target', () => {
+    expect(
+      normalizeRouteTemplate(
+        'POST',
+        'http://untrusted.example/auth/register?source=proxy',
+      ),
+    ).toBe('/auth/register');
+    expect(
+      normalizeRouteTemplate('POST', 'https://another.example/AUTH/REGISTER/'),
+    ).toBe('/auth/register');
+  });
+
+  it('preserves encoded dot segments in a dynamic resource identifier', () => {
+    expect(
+      normalizeRouteTemplate('PATCH', 'http://untrusted.example/products/%2e'),
+    ).toBe('/products/:id');
+    expect(
+      normalizeRouteTemplate(
+        'DELETE',
+        'http://untrusted.example/products/%2e%2e?source=proxy',
+      ),
+    ).toBe('/products/:id');
   });
 });

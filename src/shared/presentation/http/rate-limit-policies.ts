@@ -29,8 +29,27 @@ export function resolveRateLimitPolicy(
   );
 }
 
+export function hasExplicitRateLimitPolicy(
+  method: string,
+  routeTemplate: string,
+): boolean {
+  return RATE_LIMIT_POLICIES[`${method.toUpperCase()} ${routeTemplate}`] !== undefined;
+}
+
+function extractPathname(requestTarget: string): string {
+  const absoluteTargetPrefix = requestTarget.match(
+    /^[a-z][a-z\d+.-]*:\/\/[^/?#]*/i,
+  )?.[0];
+  const pathWithSuffix = absoluteTargetPrefix
+    ? requestTarget.slice(absoluteTargetPrefix.length)
+    : requestTarget;
+
+  return pathWithSuffix.split(/[?#]/)[0] || '/';
+}
+
 export function normalizeRouteTemplate(method: string, path: string): string {
-  const normalizedPath = path.split('?')[0] ?? '/';
+  const pathname = extractPathname(path);
+  const normalizedPath = pathname.toLowerCase().replace(/\/+$/, '') || '/';
 
   if (normalizedPath === '/products') {
     return '/products';

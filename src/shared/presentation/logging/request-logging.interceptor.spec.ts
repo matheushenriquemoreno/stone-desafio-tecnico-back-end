@@ -3,6 +3,7 @@ import { firstValueFrom, of } from 'rxjs';
 
 import { FixedClock } from '../../application/testing/fixed-clock';
 import type {
+  RateLimitFallbackLogEntry,
   RequestLogEntry,
   RequestLogger,
 } from '../../application/ports/request-logger';
@@ -10,9 +11,14 @@ import { RequestLoggingInterceptor } from './request-logging.interceptor';
 
 class CapturingRequestLogger implements RequestLogger {
   readonly entries: RequestLogEntry[] = [];
+  readonly warnings: RateLimitFallbackLogEntry[] = [];
 
   log(entry: RequestLogEntry): void {
     this.entries.push(entry);
+  }
+
+  warn(entry: RateLimitFallbackLogEntry): void {
+    this.warnings.push(entry);
   }
 }
 

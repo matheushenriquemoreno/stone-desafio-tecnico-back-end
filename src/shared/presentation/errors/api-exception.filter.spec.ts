@@ -65,6 +65,15 @@ describe('toApiError', () => {
     });
   });
 
+  it('maps a 404 HttpException to NOT_FOUND with a descriptive message', () => {
+    expect(toApiError(new HttpException('Not Found', 404), 'correlation-5')).toEqual({
+      code: 'NOT_FOUND',
+      correlationId: 'correlation-5',
+      message: 'O recurso não foi encontrado.',
+      statusCode: 404,
+    });
+  });
+
   it('exposes only the integer Retry-After header for rate-limit errors', () => {
     const filter = new ApiExceptionFilter({ generate: () => 'generated-id' });
     const response = {
