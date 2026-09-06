@@ -29,9 +29,17 @@ export function resolveRateLimitPolicy(
   );
 }
 
+function extractPathname(requestTarget: string): string {
+  try {
+    return new URL(requestTarget, 'http://rate-limit.local').pathname;
+  } catch {
+    return requestTarget.split('?')[0] ?? '/';
+  }
+}
+
 export function normalizeRouteTemplate(method: string, path: string): string {
-  const pathWithoutQuery = path.split('?')[0] ?? '/';
-  const normalizedPath = pathWithoutQuery.toLowerCase().replace(/\/+$/, '') || '/';
+  const pathname = extractPathname(path);
+  const normalizedPath = pathname.toLowerCase().replace(/\/+$/, '') || '/';
 
   if (normalizedPath === '/products') {
     return '/products';

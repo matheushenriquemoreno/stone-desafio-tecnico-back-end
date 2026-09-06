@@ -2,6 +2,7 @@ import type { INestApplication } from '@nestjs/common';
 import { Controller, Get, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { request as sendHttpRequest } from 'node:http';
 import request from 'supertest';
 
 import type { AppConfig } from '../../src/shared/infrastructure/configuration';
@@ -23,9 +24,55 @@ class RateLimitProbeController {
   }
 }
 
+interface HttpResult {
+  readonly code?: string;
+  readonly retryAfter?: string;
+  readonly status: number;
+}
+
+function postRegisterWithAbsoluteRequestTarget(port: number): Promise<HttpResult> {
+  return new Promise((resolve, reject) => {
+    const clientRequest = sendHttpRequest(
+      {
+        headers: {
+          'Content-Length': '2',
+          'Content-Type': 'application/json',
+        },
+        hostname: '127.0.0.1',
+        method: 'POST',
+        path: 'http://untrusted.example/auth/register',
+        port,
+      },
+      (response) => {
+        const chunks: Buffer[] = [];
+
+        response.on('data', (chunk: Buffer) => chunks.push(chunk));
+        response.on('end', () => {
+          const body = JSON.parse(Buffer.concat(chunks).toString()) as {
+            code?: string;
+          };
+
+          resolve({
+            code: body.code,
+            retryAfter:
+              typeof response.headers['retry-after'] === 'string'
+                ? response.headers['retry-after']
+                : undefined,
+            status: response.statusCode ?? 0,
+          });
+        });
+      },
+    );
+
+    clientRequest.on('error', reject);
+    clientRequest.end('{}');
+  });
+}
+
 describe('rate limit HTTP pipeline', () => {
   let app: INestApplication;
   let limiter: RateLimiter;
+  let port: number;
 
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
@@ -55,7 +102,12 @@ describe('rate limit HTTP pipeline', () => {
     const configService = app.get(ConfigService<AppConfig>);
     app.enableCors(createCorsOptions(configService.getOrThrow('allowedOrigins')));
     app.useGlobalPipes(new PublicValidationPipe());
-    await app.init();
+    await app.listen(0, '127.0.0.1');
+    const address = app.getHttpServer().address();
+    if (address === null || typeof address === 'string') {
+      throw new Error('A aplicação de teste não abriu uma porta TCP.');
+    }
+    port = address.port;
     limiter = app.get(RATE_LIMITER);
   });
 
@@ -148,6 +200,21 @@ describe('rate limit HTTP pipeline', () => {
       code: 'RATE_LIMIT_EXCEEDED',
       statusCode: 429,
     });
+  });
+
+  it('keeps the explicit register policy for an absolute request target', async () => {
+    const responses = [];
+
+    for (let index = 0; index < 6; index += 1) {
+      responses.push(await postRegisterWithAbsoluteRequestTarget(port));
+    }
+
+    expect(responses.slice(0, 5).every(({ status }) => status === 400)).toBe(true);
+    expect(responses.at(-1)).toMatchObject({
+      code: 'RATE_LIMIT_EXCEEDED',
+      status: 429,
+    });
+    expect(responses.at(-1)?.retryAfter).toMatch(/^\d+$/);
   });
 
   it('does not consume the operation bucket for an authorized CORS preflight', async () => {

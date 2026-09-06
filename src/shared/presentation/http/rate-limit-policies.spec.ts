@@ -60,4 +60,16 @@ describe('rate limit policies', () => {
       '/products/:id',
     );
   });
+
+  it('uses only the pathname from an absolute request target', () => {
+    expect(
+      normalizeRouteTemplate(
+        'POST',
+        'http://untrusted.example/auth/register?source=proxy',
+      ),
+    ).toBe('/auth/register');
+    expect(
+      normalizeRouteTemplate('POST', 'https://another.example/AUTH/REGISTER/'),
+    ).toBe('/auth/register');
+  });
 });
