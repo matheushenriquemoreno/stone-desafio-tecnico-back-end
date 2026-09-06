@@ -19,6 +19,7 @@ Design técnico: [TECHNICAL-DESIGN.md](./TECHNICAL-DESIGN.md) (`Aprovado`)
 | 2026-09-05 | Revisão material aprovada: inserida a Fase 08 para `total` exato na listagem; a entrega operacional foi movida para a Fase 09 e suas tarefas pendentes foram renumeradas. |
 | 2026-09-05 | Fase 08 implementada e validada pelos gates completos; aguarda review independente antes da Fase 09. |
 | 2026-09-05 | Fase 09 autorizada parcialmente: T39 será executada localmente; T40–T43 ficam pendentes para configuração e publicação pelo responsável. |
+| 2026-09-05 | Fase 09 autorizada para preparação local dos artefatos T40–T43; execução externa, publicação e deploy continuam sob responsabilidade do responsável. |
 
 ## Objetivo geral da implementação
 

@@ -13,9 +13,10 @@
 
 **Dependências externas:** conta AWS, estado remoto Terraform, GHCR, GitHub Actions, VPS Oracle, DNS/proxy Cloudflare, SSH dedicado e segredos de ambiente.
 
-Nesta execução, somente a T39 foi autorizada para implementação local. As
-tarefas T40–T43 permanecem pendentes para configuração de infraestrutura,
-publicação e deploy pelo responsável do projeto.
+Nesta execução, T39–T43 foram autorizadas para preparação dos artefatos locais.
+A configuração de credenciais, aplicação em AWS/VPS, publicação no GHCR e
+deploy/readiness/rollback reais permanecem sob responsabilidade do responsável
+do projeto.
 
 ## Tarefa T39 — Empacotar a API em imagem mínima e sem privilégios
 

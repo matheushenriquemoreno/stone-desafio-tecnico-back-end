@@ -13,16 +13,16 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 A Fase 07 está `Concluída` após o review aprovado da proteção CSRF. A Fase 08,
 que adiciona o total exato à listagem de produtos, está `Concluída` após o review
-independente aprovado na versão 9. A Fase 09 está `Em execução` para a T39,
-autorizada nesta sessão. As tarefas T40–T43 permanecem `Pendente` para que o
-responsável faça as configurações de infraestrutura, publicação e deploy.
+independente aprovado na versão 9. A Fase 09 está `Em execução` para a
+preparação local das T39–T43. A configuração de credenciais, a aplicação
+externa, a publicação e o deploy continuam pendentes para o responsável.
 
 ### Preparação da Fase 09
 
-- Escopo autorizado: executar somente a T39, com build e execução local da
-  imagem; não publicar em registro, AWS, VPS, Cloudflare ou GitHub Actions.
-- Escopo adiado pelo responsável: T40 (Terraform/IAM), T41 (Compose/NGINX
-  publicado), T42 (CI/GHCR) e T43 (deploy, readiness público e rollback).
+- Escopo autorizado: preparar localmente as T39–T43, com validações sem
+  credenciais; não publicar em registro, AWS, VPS, Cloudflare ou GitHub Actions.
+- Escopo externo adiado pelo responsável: aplicar Terraform/IAM, configurar
+  Compose/NGINX na VPS, executar CI/GHCR, deploy, readiness público e rollback.
 - Padrões: manter o processo NestJS existente, injetar configuração somente em
   runtime, separar dependências de desenvolvimento e executar a imagem com o
   usuário não administrativo `node`.
@@ -35,6 +35,21 @@ responsável faça as configurações de infraestrutura, publicação e deploy.
   `git diff --check`.
 - Conflitos previstos: nenhum; a imagem não deve conter `.env`, testes,
   documentação, código-fonte ou dependências de desenvolvimento.
+
+### Preparação da tarefa T40
+
+- Premissas: o estado Terraform será remoto em S3 com lock em DynamoDB; a
+  identidade que aplica o Terraform será administrativa e separada do usuário
+  IAM de runtime; a API usará somente as duas tabelas previstas pelo design.
+- Implementação: criar duas tabelas sob demanda com `prevent_destroy`, usuário
+  IAM dedicado e política inline limitada aos seis actions aprovados e aos dois
+  ARNs de tabela; não criar access key para evitar segredo no estado.
+- Arquivos: `infra/terraform/*.tf`, exemplos de backend/variáveis, README de
+  aplicação e `.gitignore` para estado, variáveis e credenciais locais.
+- Verificação: `terraform fmt -check -recursive`, `terraform init -backend=false`,
+  `terraform validate` e `git diff --check`.
+- Limitação: sem credenciais/conta AWS, não há evidência de apply nem de um
+  segundo plan sem mudanças.
 
 ### Preparação da tarefa T39
 
@@ -575,7 +590,7 @@ responsável faça as configurações de infraestrutura, publicação e deploy.
 | T37 | 08 | Concluída | `npm test -- --runTestsByPath src/modules/products/application/list-products/list-products.spec.ts src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (2 suítes/21 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados; cursor pré-validado, contagem consistente multipágina, zero, falha integral e atualização após exclusão comprovados. |
 | T38 | 08 | Concluída | `npm run lint`, `npm run typecheck`, `npm test` (35 suítes/171 testes), `npm run test:integration` (3 suítes/9 testes), `npm run test:e2e` (15 suítes/91 testes), `npm run build` e `git diff --check` aprovados; E2E de listagem/OpenAPI, matriz, contrato e DTO comprovam `total` obrigatório, zero no catálogo vazio, 21 na primeira/última página e `nextCursor` opcional. |
 | T39 | 09 | Concluída | `docker build --pull --tag stone-api:t39 .` e rebuild após ajuste do manifesto de produção; imagem inspecionada com usuário `node`, `HEALTHCHECK`, comando `node dist/main.js`, somente `dist`, `node_modules` e manifesto sem `devDependencies`; execução efêmera contra DynamoDB Local confirmou `GET /health` 200; gates completos: lint, typecheck, 35 suítes/171 testes unitários, 3 suítes/9 testes de integração, 15 suítes/91 testes E2E, build e `git diff --check`. |
-| T40 | 09 | Pendente | — |
+| T40 | 09 | Concluída | `terraform fmt -check -recursive`, `terraform init -backend=false`, `terraform validate` e `git diff --check` aprovados; Terraform define duas tabelas `PAY_PER_REQUEST` sem sort key/GSI, IAM de runtime limitado aos seis actions e ARNs das tabelas, backend/variáveis sem segredo e `prevent_destroy`; apply e segundo plan permanecem externos. |
 | T41 | 09 | Pendente | — |
 | T42 | 09 | Pendente | — |
 | T43 | 09 | Pendente | — |
