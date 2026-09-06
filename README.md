@@ -68,3 +68,19 @@ devem existir. Para o ambiente local definido no exemplo:
 docker compose up -d dynamodb-local
 npm run db:provision
 ```
+
+## Build da imagem
+
+O `Dockerfile` usa múltiplos estágios: a imagem final contém somente o
+aplicativo compilado e as dependências de produção. Segredos e configurações
+de ambiente são fornecidos apenas em tempo de execução.
+
+```bash
+docker build --pull -t stone-api:local .
+docker image inspect stone-api:local --format '{{.Config.User}}'
+```
+
+O processo da imagem executa como o usuário não administrativo `node` e expõe
+o `HEALTHCHECK` baseado em `GET /health`. A publicação em registro, a
+configuração da infraestrutura e o deploy da imagem são procedimentos
+operacionais separados deste build local.

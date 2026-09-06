@@ -13,8 +13,39 @@ Executar uma fase por vez, sempre a próxima `Pendente`. Uma fase somente muda p
 
 A Fase 07 está `Concluída` após o review aprovado da proteção CSRF. A Fase 08,
 que adiciona o total exato à listagem de produtos, está `Concluída` após o review
-independente aprovado na versão 9. A entrega operacional foi movida para a Fase 09 e
-permanece `Pendente`.
+independente aprovado na versão 9. A Fase 09 está `Em execução` para a T39,
+autorizada nesta sessão. As tarefas T40–T43 permanecem `Pendente` para que o
+responsável faça as configurações de infraestrutura, publicação e deploy.
+
+### Preparação da Fase 09
+
+- Escopo autorizado: executar somente a T39, com build e execução local da
+  imagem; não publicar em registro, AWS, VPS, Cloudflare ou GitHub Actions.
+- Escopo adiado pelo responsável: T40 (Terraform/IAM), T41 (Compose/NGINX
+  publicado), T42 (CI/GHCR) e T43 (deploy, readiness público e rollback).
+- Padrões: manter o processo NestJS existente, injetar configuração somente em
+  runtime, separar dependências de desenvolvimento e executar a imagem com o
+  usuário não administrativo `node`.
+- Abstrações reutilizadas: `npm run build`, `npm run start`, `GET /health` e
+  o contrato de ambiente validado por `createAppConfig`.
+- Arquivos previstos: `Dockerfile`, `.dockerignore`, `README.md`, plano, fase
+  e este estado.
+- Verificação: build da imagem, inspeção do usuário/configuração/conteúdo,
+  execução contra DynamoDB Local, `GET /health`, gates do projeto e
+  `git diff --check`.
+- Conflitos previstos: nenhum; a imagem não deve conter `.env`, testes,
+  documentação, código-fonte ou dependências de desenvolvimento.
+
+### Preparação da tarefa T39
+
+- Premissas: Node `22.13.1-bookworm-slim` atende ao runtime LTS exigido e às
+  engines do lockfile; `PORT=3000` é o contrato interno da imagem.
+- Implementação: usar estágios separados para dependências de build,
+  compilação, dependências de produção e runtime; o `HEALTHCHECK` consultará
+  `/health` sem incluir credenciais.
+- Verificação dirigida: `docker build`, inspeção de `USER`, ausência de
+  arquivos sensíveis/desnecessários, inicialização com DynamoDB Local e
+  readiness `200`.
 
 ### Preparação da Fase 08
 
@@ -499,7 +530,7 @@ permanece `Pendente`.
 | 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fase-06-rate-limit-conformidade.md) | Concluída | 2026-09-04 |
 | 07 | Proteção CSRF por cookie e validação de origem | [fase-07-protecao-csrf-origem.md](fase-07-protecao-csrf-origem.md) | Concluída | 2026-09-04 |
 | 08 | Total exato na listagem de produtos | [fase-08-total-exato-produtos.md](fase-08-total-exato-produtos.md) | Concluída | 2026-09-05 |
-| 09 | Empacotamento, infraestrutura e entrega | [fase-09-entrega-operacional.md](fase-09-entrega-operacional.md) | Pendente | — |
+| 09 | Empacotamento, infraestrutura e entrega | [fase-09-entrega-operacional.md](fase-09-entrega-operacional.md) | Em execução | — |
 
 ## Tarefas
 
@@ -543,7 +574,7 @@ permanece `Pendente`.
 | T36 | 07 | Concluída | CORS, OpenAPI, controllers, consumidores e matriz atualizados; busca residual não encontrou o header customizado em `src`/`test` nem em contratos ativos; `npm run lint`, `npm run typecheck`, `npm test` (35 suítes/168 testes), `npm run test:integration` (3 suítes/9 testes), `npm run test:e2e` (15 suítes/91 testes), `npm run build` e `git diff --check` aprovados. |
 | T37 | 08 | Concluída | `npm test -- --runTestsByPath src/modules/products/application/list-products/list-products.spec.ts src/modules/products/infrastructure/persistence/dynamodb-product.repository.spec.ts` (2 suítes/21 testes), `npm run test:integration -- --runTestsByPath test/integration/products.integration.spec.ts` (1 suíte/6 testes), `npm run lint` e `npm run typecheck` aprovados; cursor pré-validado, contagem consistente multipágina, zero, falha integral e atualização após exclusão comprovados. |
 | T38 | 08 | Concluída | `npm run lint`, `npm run typecheck`, `npm test` (35 suítes/171 testes), `npm run test:integration` (3 suítes/9 testes), `npm run test:e2e` (15 suítes/91 testes), `npm run build` e `git diff --check` aprovados; E2E de listagem/OpenAPI, matriz, contrato e DTO comprovam `total` obrigatório, zero no catálogo vazio, 21 na primeira/última página e `nextCursor` opcional. |
-| T39 | 09 | Pendente | — |
+| T39 | 09 | Concluída | `docker build --pull --tag stone-api:t39 .` e rebuild após ajuste do manifesto de produção; imagem inspecionada com usuário `node`, `HEALTHCHECK`, comando `node dist/main.js`, somente `dist`, `node_modules` e manifesto sem `devDependencies`; execução efêmera contra DynamoDB Local confirmou `GET /health` 200; gates completos: lint, typecheck, 35 suítes/171 testes unitários, 3 suítes/9 testes de integração, 15 suítes/91 testes E2E, build e `git diff --check`. |
 | T40 | 09 | Pendente | — |
 | T41 | 09 | Pendente | — |
 | T42 | 09 | Pendente | — |
@@ -556,8 +587,24 @@ permanece `Pendente`.
   `200` de `GET /products`; a contagem é exata para a leitura observada e
   percorre todas as páginas internas do `Scan` consistente.
 - O review independente da versão 9 aprovou a fase sem achados abertos.
-- A Fase 09 permanece `Pendente` e não foi iniciada; sua execução depende de
-  nova autorização.
+- A Fase 09 foi autorizada parcialmente nesta sessão; T39 foi executada e
+  T40–T43 permanecem pendentes por decisão do responsável.
+
+### Encerramento parcial da Fase 09 — T39 concluída
+
+- O `Dockerfile` multiestágio usa Node `22.13.1-bookworm-slim`, instala
+  dependências por lockfile, compila a aplicação, remove mapas/declarações e
+  mantém somente dependências de produção no runtime.
+- A imagem final executa como `node`, recebe configuração em runtime e expõe
+  um `HEALTHCHECK` baseado em `/health`; nenhum `.env`, teste, documentação,
+  código-fonte ou `devDependencies` foi incorporado.
+- O build local e a execução efêmera com DynamoDB Local foram comprovados sem
+  publicação externa.
+- T40–T43 permanecem pendentes por solicitação do responsável: Terraform/IAM,
+  Compose/NGINX publicado, CI/GHCR e deploy/readiness público/rollback.
+- A Fase 09 continua `Em execução`; não há veredito de review da fase nem
+  alegação de publicação até que as tarefas operacionais sejam autorizadas e
+  concluídas.
 
 ### Encerramento da Fase 07 — review aprovado
 

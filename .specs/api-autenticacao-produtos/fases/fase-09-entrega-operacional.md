@@ -1,6 +1,6 @@
 # Fase 09 — Empacotamento, infraestrutura e entrega
 
-| Status       | Pendente   |
+| Status       | Em execução |
 |--------------|------------|
 | Created      | 2026-09-03 |
 | Last Updated | 2026-09-05 |
@@ -12,6 +12,10 @@
 **Requisitos relacionados:** `AAP-20`, `AAP-22`, `AAP-53`, `AAP-58`, `AAP-59`, `EXPECT-02`, `EXPECT-03`, `EXPECT-08`–`EXPECT-11`.
 
 **Dependências externas:** conta AWS, estado remoto Terraform, GHCR, GitHub Actions, VPS Oracle, DNS/proxy Cloudflare, SSH dedicado e segredos de ambiente.
+
+Nesta execução, somente a T39 foi autorizada para implementação local. As
+tarefas T40–T43 permanecem pendentes para configuração de infraestrutura,
+publicação e deploy pelo responsável do projeto.
 
 ## Tarefa T39 — Empacotar a API em imagem mínima e sem privilégios
 

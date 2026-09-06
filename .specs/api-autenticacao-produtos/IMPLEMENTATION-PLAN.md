@@ -18,6 +18,7 @@ Design técnico: [TECHNICAL-DESIGN.md](./TECHNICAL-DESIGN.md) (`Aprovado`)
 | 2026-09-04 | Revisão material aprovada: inserida a Fase 07 para `SameSite=Strict` e origem; a entrega operacional foi movida para a Fase 08. |
 | 2026-09-05 | Revisão material aprovada: inserida a Fase 08 para `total` exato na listagem; a entrega operacional foi movida para a Fase 09 e suas tarefas pendentes foram renumeradas. |
 | 2026-09-05 | Fase 08 implementada e validada pelos gates completos; aguarda review independente antes da Fase 09. |
+| 2026-09-05 | Fase 09 autorizada parcialmente: T39 será executada localmente; T40–T43 ficam pendentes para configuração e publicação pelo responsável. |
 
 ## Objetivo geral da implementação
 
@@ -41,7 +42,7 @@ A Fase 01 estabelece `npm` com lockfile e os scripts `lint`, `typecheck`, `test`
 | 06 | Rate limit e conformidade operacional da API | [fase-06-rate-limit-conformidade.md](fases/fase-06-rate-limit-conformidade.md) | Concluída |
 | 07 | Proteção CSRF por cookie e validação de origem | [fase-07-protecao-csrf-origem.md](fases/fase-07-protecao-csrf-origem.md) | Concluída |
 | 08 | Total exato na listagem de produtos | [fase-08-total-exato-produtos.md](fases/fase-08-total-exato-produtos.md) | Concluída |
-| 09 | Empacotamento, infraestrutura e entrega | [fase-09-entrega-operacional.md](fases/fase-09-entrega-operacional.md) | Pendente |
+| 09 | Empacotamento, infraestrutura e entrega | [fase-09-entrega-operacional.md](fases/fase-09-entrega-operacional.md) | Em execução |
 
 ## Dependências e ordem entre as fases
 
