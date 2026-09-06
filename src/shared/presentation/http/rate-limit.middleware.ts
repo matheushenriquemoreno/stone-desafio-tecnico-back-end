@@ -37,7 +37,7 @@ export class RateLimitMiddleware implements NestMiddleware {
 
     const routeTemplate = normalizeRouteTemplate(
       request.method,
-      request.path || request.originalUrl || '/',
+      request.originalUrl || request.path || '/',
     );
     const key: RateLimitKey = {
       ip: this.clientIpResolver.resolve(request),

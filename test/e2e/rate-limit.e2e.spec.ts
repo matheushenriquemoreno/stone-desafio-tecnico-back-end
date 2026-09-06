@@ -10,6 +10,7 @@ import {
   type RateLimiter,
 } from '../../src/shared/application/ports/rate-limiter';
 import { createCorsOptions } from '../../src/shared/presentation/http/cors-options';
+import { PublicValidationPipe } from '../../src/shared/presentation/validation/public-validation.pipe';
 
 @Controller('rate-limit-probe')
 class RateLimitProbeController {
@@ -53,6 +54,7 @@ describe('rate limit HTTP pipeline', () => {
     app = await NestFactory.create(RateLimitProbeModule, { logger: false });
     const configService = app.get(ConfigService<AppConfig>);
     app.enableCors(createCorsOptions(configService.getOrThrow('allowedOrigins')));
+    app.useGlobalPipes(new PublicValidationPipe());
     await app.init();
     limiter = app.get(RATE_LIMITER);
   });
@@ -88,6 +90,26 @@ describe('rate limit HTTP pipeline', () => {
     expect(JSON.stringify(blockedResponse?.body)).not.toContain('203.0.113');
     expect(blockedResponse?.headers['x-correlation-id']).toMatch(/^[0-9a-f-]{36}$/i);
     expect(RateLimitProbeController.calls).toBe(30);
+  });
+
+  it('applies the explicit register policy through the mounted middleware', async () => {
+    const responses = [];
+
+    for (let index = 0; index < 6; index += 1) {
+      responses.push(
+        await request(app.getHttpServer()).post('/auth/register').send({}),
+      );
+    }
+
+    expect(responses.slice(0, 5).every((response) => response.status === 400)).toBe(
+      true,
+    );
+    expect(responses.at(-1)?.status).toBe(429);
+    expect(responses.at(-1)?.headers['retry-after']).toMatch(/^\d+$/);
+    expect(responses.at(-1)?.body).toMatchObject({
+      code: 'RATE_LIMIT_EXCEEDED',
+      statusCode: 429,
+    });
   });
 
   it('does not consume the operation bucket for an authorized CORS preflight', async () => {
