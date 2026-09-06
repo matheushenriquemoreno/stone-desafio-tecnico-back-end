@@ -1,6 +1,6 @@
 # Bug — Workflow referencia caminhos inexistentes dos artefatos de deploy
 
-| Status       | Em correção |
+| Status       | Em validação |
 |--------------|-------------|
 | Created      | 2026-09-06  |
 | Last Updated | 2026-09-06  |
@@ -83,9 +83,18 @@ erro `stat local` e avançar para `Deploy immutable image`.
 - Teste de regressão antes da correção: falha pelo motivo certo; os caminhos
   antigos não existem.
 - Correção aplicada: ajustados apenas os quatro caminhos `scp` do workflow.
-- Teste de regressão depois: pendente; depende da execução do GitHub Actions.
+- Teste de regressão depois: validação local dos seis caminhos corrigidos passou;
+  a execução externa do GitHub Actions após o merge está pendente.
 - Reprodução original: ainda não reexecutada após a correção.
-- Testes relevantes: validação estática do workflow pendente.
+- Testes relevantes: `git diff --check` passou; `actionlint` não está instalado
+  no ambiente local; validação externa do workflow pendente.
+
+## Próxima etapa
+
+Após o merge na `main`, executar o workflow e confirmar que `Copy immutable
+deployment artifacts` conclui, que `Deploy immutable image` inicia e que o
+readiness público passa. Somente então o status deve ser alterado para
+`Resolvido`.
 
 ## Riscos e prevenções futuras
 
