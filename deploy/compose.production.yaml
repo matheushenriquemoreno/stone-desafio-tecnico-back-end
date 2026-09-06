@@ -1,0 +1,62 @@
+name: stone-api
+
+services:
+  backend:
+    image: ${API_IMAGE:?API_IMAGE must be set}
+    init: true
+    restart: unless-stopped
+    env_file:
+      - ${API_ENV_FILE:-.env}
+    expose:
+      - "3000"
+    networks:
+      private:
+        ipv4_address: 172.30.0.3
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+
+  nginx:
+    image: nginx:1.27.5-alpine
+    init: true
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    networks:
+      public: {}
+      private:
+        ipv4_address: 172.30.0.2
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+
+networks:
+  public:
+  private:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/28

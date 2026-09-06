@@ -51,6 +51,24 @@ externa, a publicação e o deploy continuam pendentes para o responsável.
 - Limitação: sem credenciais/conta AWS, não há evidência de apply nem de um
   segundo plan sem mudanças.
 
+### Preparação da tarefa T41
+
+- Premissas: o Compose de produção será separado do Compose local; haverá uma
+  única réplica da API, sem porta publicada, e o NGINX terá IP fixo na rede
+  privada para coincidir com `TRUSTED_PROXY_IPS`.
+- Implementação: criar Compose com `backend` em modo read-only e NGINX na
+  única rede pública; reconstruir `X-Forwarded-For`, `X-Real-IP` e
+  `CF-Connecting-IP` somente após validar o peer nas faixas Cloudflare; aplicar
+  limites, headers de segurança e rotação de logs sem registrar cookies.
+- Arquivos: `deploy/compose.production.yaml`, configuração NGINX, exemplo de
+  ambiente de produção e instruções de instalação na VPS.
+- Verificação: `docker compose config`, `nginx -t` dentro de rede Docker com
+  alias `backend`, teste de proxy com headers forjados e cookie, ausência de
+  segredo real e `git diff --check`.
+- Limitação: a lista de IPs da Cloudflare precisa ser revisada pelo responsável
+  imediatamente antes da publicação; o trecho de origem continua HTTP aceito
+  somente para a demonstração.
+
 ### Preparação da tarefa T39
 
 - Premissas: Node `22.13.1-bookworm-slim` atende ao runtime LTS exigido e às
@@ -591,7 +609,7 @@ externa, a publicação e o deploy continuam pendentes para o responsável.
 | T38 | 08 | Concluída | `npm run lint`, `npm run typecheck`, `npm test` (35 suítes/171 testes), `npm run test:integration` (3 suítes/9 testes), `npm run test:e2e` (15 suítes/91 testes), `npm run build` e `git diff --check` aprovados; E2E de listagem/OpenAPI, matriz, contrato e DTO comprovam `total` obrigatório, zero no catálogo vazio, 21 na primeira/última página e `nextCursor` opcional. |
 | T39 | 09 | Concluída | `docker build --pull --tag stone-api:t39 .` e rebuild após ajuste do manifesto de produção; imagem inspecionada com usuário `node`, `HEALTHCHECK`, comando `node dist/main.js`, somente `dist`, `node_modules` e manifesto sem `devDependencies`; execução efêmera contra DynamoDB Local confirmou `GET /health` 200; gates completos: lint, typecheck, 35 suítes/171 testes unitários, 3 suítes/9 testes de integração, 15 suítes/91 testes E2E, build e `git diff --check`. |
 | T40 | 09 | Concluída | `terraform fmt -check -recursive`, `terraform init -backend=false`, `terraform validate` e `git diff --check` aprovados; Terraform define duas tabelas `PAY_PER_REQUEST` sem sort key/GSI, IAM de runtime limitado aos seis actions e ARNs das tabelas, backend/variáveis sem segredo e `prevent_destroy`; apply e segundo plan permanecem externos. |
-| T41 | 09 | Pendente | — |
+| T41 | 09 | Concluída | `docker compose -f deploy/compose.production.yaml config` aprovado; `nginx -t` aprovado em rede Docker com alias `backend`; proxy de eco confirmou que headers de encaminhamento forjados são substituídos, cookie é preservado para autenticação e logs não expõem o cookie; somente NGINX publica a porta 80. |
 | T42 | 09 | Pendente | — |
 | T43 | 09 | Pendente | — |
 
@@ -602,10 +620,10 @@ externa, a publicação e o deploy continuam pendentes para o responsável.
   `200` de `GET /products`; a contagem é exata para a leitura observada e
   percorre todas as páginas internas do `Scan` consistente.
 - O review independente da versão 9 aprovou a fase sem achados abertos.
-- A Fase 09 foi autorizada parcialmente nesta sessão; T39 foi executada e
-  T40–T43 permanecem pendentes por decisão do responsável.
+- A Fase 09 foi autorizada primeiro para T39 e depois para a preparação local
+  das T40–T43; a execução externa continua separada do trabalho local.
 
-### Encerramento parcial da Fase 09 — T39 concluída
+### Encerramento parcial da Fase 09 — T39–T41 preparadas
 
 - O `Dockerfile` multiestágio usa Node `22.13.1-bookworm-slim`, instala
   dependências por lockfile, compila a aplicação, remove mapas/declarações e
@@ -615,8 +633,9 @@ externa, a publicação e o deploy continuam pendentes para o responsável.
   código-fonte ou `devDependencies` foi incorporado.
 - O build local e a execução efêmera com DynamoDB Local foram comprovados sem
   publicação externa.
-- T40–T43 permanecem pendentes por solicitação do responsável: Terraform/IAM,
-  Compose/NGINX publicado, CI/GHCR e deploy/readiness público/rollback.
+- T40 e T41 possuem artefatos locais e validações sem credenciais. Aplicar
+  Terraform/IAM, publicar Compose/NGINX, executar CI/GHCR e realizar
+  deploy/readiness público/rollback permanecem externos.
 - A Fase 09 continua `Em execução`; não há veredito de review da fase nem
   alegação de publicação até que as tarefas operacionais sejam autorizadas e
   concluídas.

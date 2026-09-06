@@ -103,3 +103,13 @@ Executar a validação padrão, build/execução da imagem, `docker compose conf
 - Preços e gratuidade da AWS devem ser revistos imediatamente antes da aplicação real, sem alterar o escopo funcional.
 - TLS ponta a ponta é evolução obrigatória antes de reutilizar a arquitetura como referência de produção.
 
+## Registro de execução local
+
+| Tarefa | Estado | Evidência |
+|--------|--------|-----------|
+| T39 | Concluída | `Dockerfile` multiestágio e `.dockerignore`; build, inspeção de usuário/healthcheck/conteúdo, execução efêmera contra DynamoDB Local e gates completos aprovados. |
+| T40 | Concluída | Terraform em `infra/terraform/`; `terraform fmt -check -recursive`, `terraform init -backend=false`, `terraform validate` e `git diff --check` aprovados. Apply AWS e segundo plan permanecem externos. |
+| T41 | Concluída | Compose de produção e NGINX em `deploy/`; `docker compose config`, `nginx -t` em rede Docker e teste de headers forjados/cookie/logs aprovados. Publicação na VPS permanece externa. |
+| T42 | Pendente | Workflow de CI/GHCR ainda será preparado após a validação do fluxo operacional local. |
+| T43 | Pendente | Scripts/runbook de deploy, readiness público e rollback ainda serão preparados após T42. |
+
