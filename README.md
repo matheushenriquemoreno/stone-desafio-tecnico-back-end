@@ -1,6 +1,6 @@
 # Stone — Desafio técnico | Back-end
 
-API REST em NestJS para cadastro e autenticação de usuários e CRUD paginado de produtos, com JWT, rate limit, documentação OpenAPI e persistência no DynamoDB.
+API REST em NestJS para cadastro e autenticação de usuários e Listagem de produtos e CRUD, Utilizando authenticação via token JWT, regras de rate limit, documentação utilizando OpenAPI e persistência no DynamoDB.
 
 ## Responsabilidade deste repositório
 
@@ -13,7 +13,7 @@ Este repositório contém somente o back-end:
 - testes unitários, de integração e E2E da API;
 - container, infraestrutura e pipeline de deploy da API.
 
-A interface Next.js é um cliente externo e consome esta API diretamente pelo navegador. Este repositório não contém implementação específica para um intermediário de front-end.
+A interface Next.js é um cliente externo e consome esta API diretamente pelo navegador.
 
 ## Documentação
 
@@ -25,24 +25,30 @@ A interface Next.js é um cliente externo e consome esta API diretamente pelo na
 - [Architecture Decision Records](./docs/adr/README.md)
 - [Regras de desenvolvimento](./rules/README.md)
 
-## Desenvolvimento
+
+## Entrega do desafio
+
+Como o objetivo do desafio foi fazer uma entrega onde os criterios eram bem descritos, eu quis fazer uma entrega levando em conta o todo, não so gerando um codigo organizado, mais fazendo a entrega até produção.
+
+Passando por conhecimentos de nuvem, AWS, CI/CD utilizando o git hub. DynamoDB com AWS e Terraform. Foi um desafio pra mim mesmo para melhorar meu conhecimento e juntar tudo o que eu sei e consolidar em uma entrega real.
+
+Segue os links dos itens hospedados.
+
+[Front-end](https://products.devmoreno.com.br) em products.devmoreno.com.br
+ 
+[Documentação do back-end](https://apiproducts.devmoreno.com.br/reference) em apiproducts.devmoreno.com.br
+
+O Banco de dados está hospedado na aws com toda a infra estrutura provisionada via terraform, seguindo essas configurações: [Terraform guia](./deploy//terraform/README.md)
+
+Outro ponto, segue o guia de como eu utilizei IA durante o desenvolvimento, foi um uso 100% estruturado e consiente: [Utilização de IA durante o Teste](./docs/Utilização%20de%20IA%20durante%20o%20Teste.pdf)
+
+## Rodar ambiente
 
 Copie `.env.example` para `.env`, ajuste os valores locais e instale as
 dependências pelo lockfile:
 
 ```bash
 npm ci
-```
-
-Os comandos oficiais de verificação são:
-
-```bash
-npm run lint
-npm run typecheck
-npm test
-npm run test:integration
-npm run test:e2e
-npm run build
 ```
 
 O bootstrap valida todas as variáveis obrigatórias antes de iniciar a API. O
@@ -56,18 +62,15 @@ npm run build
 npm run start
 ```
 
-Durante o desenvolvimento, use o modo com recarregamento automático:
+Os comandos oficiais de verificação são:
 
 ```bash
-npm run start:dev
-```
-
-O DynamoDB Local deve estar disponível em `DYNAMODB_ENDPOINT` e as tabelas
-devem existir. Para o ambiente local definido no exemplo:
-
-```bash
-docker compose up -d dynamodb-local
-npm run db:provision
+npm run lint
+npm run typecheck
+npm test
+npm run test:integration
+npm run test:e2e
+npm run build
 ```
 
 ## Build da imagem
