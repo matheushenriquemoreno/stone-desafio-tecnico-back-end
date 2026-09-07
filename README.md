@@ -1,19 +1,20 @@
 # Stone — Desafio técnico | Back-end
 
-API REST em NestJS para cadastro e autenticação de usuários e Listagem de produtos e CRUD, Utilizando authenticação via token JWT, regras de rate limit, documentação utilizando OpenAPI e persistência no DynamoDB.
+Este projeto foi desenvolvido como um desafio técnico de back-end. A proposta
+foi entregar não apenas os endpoints, mas também testes, documentação,
+infraestrutura reproduzível e uma versão publicada da API.
 
-## Responsabilidade deste repositório
+## O que foi implementado
 
-Este repositório contém somente o back-end:
-
-- contratos HTTP de autenticação e produtos;
-- casos de uso, regras de domínio e adaptadores NestJS;
-- persistência no DynamoDB e scripts de ambiente local;
-- emissão e validação de JWT, hash de senhas e rate limit;
-- testes unitários, de integração e E2E da API;
-- container, infraestrutura e pipeline de deploy da API.
-
-A interface Next.js é um cliente externo e consome esta API diretamente pelo navegador.
+- cadastro, login e logout de usuários;
+- JWT em cookie `HttpOnly`, `Secure` e `SameSite=Strict`;
+- CRUD de produtos protegido por autenticação;
+- paginação por cursor e rate limit;
+- validação de CORS e origem em operações mutáveis;
+- respostas de erro consistentes e correlação de requisições;
+- readiness em `GET /health`;
+- documentação OpenAPI/Scalar;
+- testes unitários, integração e E2E.
 
 ## Documentação
 
@@ -42,13 +43,27 @@ O Banco de dados está hospedado na aws com toda a infra estrutura provisionada 
 
 Outro ponto, segue o guia de como eu utilizei IA durante o desenvolvimento, foi um uso 100% estruturado e consiente: [Utilização de IA durante o Teste](./docs/Utilização%20de%20IA%20durante%20o%20Teste.pdf)
 
-## Rodar ambiente
+## Processo de deploy
+
+O processo de deplloy para o back-end foi o seguinte.
+
+Para provisionamento do banco de dados foi realizado com o terraform, criado todas as politicas IAM, usuario, e também as tabelas, somente a criação das chaves de acesso do usuário da aplicação que realizei a criação manual na AWS.
+
+ja para o deploy da api, eu utilize uma VPS da Oracle, essa VPS estava sem nenhuma aplicação, então foi feita toda a configuração do linux e instalações do docker todo processo documentado em: [Deploy api](./deploy/api/README.md). 
+A configuração foi visando realizar toda a criação da infraestrutura para o usuário de deploy do github realizar a config, visando ter deploy automatico toda vez que tiver um merge na branch main.
+
+
+## Executar localmente
+
+Requisitos: Node.js 22 ou LTS compatível, npm e Docker Compose.
 
 Copie `.env.example` para `.env`, ajuste os valores locais e instale as
 dependências pelo lockfile:
 
 ```bash
 npm ci
+docker compose up -d dynamodb-local
+npm run db:provision
 ```
 
 O bootstrap valida todas as variáveis obrigatórias antes de iniciar a API. O
@@ -62,7 +77,19 @@ npm run build
 npm run start
 ```
 
-Os comandos oficiais de verificação são:
+ou 
+
+```bash
+npm run start:dev
+```
+
+A API ficará disponível em `http://localhost:3000`.
+
+- documentação: `http://localhost:3000/reference`;
+- OpenAPI JSON: `http://localhost:3000/docs-json`;
+- readiness: `http://localhost:3000/health`.
+
+## Validar a entrega
 
 ```bash
 npm run lint
@@ -73,18 +100,33 @@ npm run test:e2e
 npm run build
 ```
 
-## Build da imagem
+Os testes de integração e E2E usam o DynamoDB Local.
 
-O `Dockerfile` usa múltiplos estágios: a imagem final contém somente o
-aplicativo compilado e as dependências de produção. Segredos e configurações
-de ambiente são fornecidos apenas em tempo de execução.
 
-```bash
-docker build --pull -t stone-api:local .
-docker image inspect stone-api:local --format '{{.Config.User}}'
-```
+## Decisões técnicas principais
 
-O processo da imagem executa como o usuário não administrativo `node` e expõe
-o `HEALTHCHECK` baseado em `GET /health`. A publicação em registro, a
-configuração da infraestrutura e o deploy da imagem são procedimentos
-operacionais separados deste build local.
+- NestJS e TypeScript estrito;
+- Clean Architecture com domínio, casos de uso, portas e adaptadores;
+- DynamoDB com AWS SDK v3, sem ORM adicional;
+- Argon2id para senhas;
+- Docker multi-stage com usuário não administrativo;
+- imagens publicadas no GHCR identificadas pelo SHA do commit.
+
+Detalhes em [Decisões de tecnologia](./docs/Decisao-tecnologias.md),
+[Contrato da API](./docs/Contrato-da-API.md) e [ADRs](./docs/adr/README.md).
+
+## Deploy
+
+O ambiente publicado usa Terraform para as tabelas e IAM da AWS, uma VPS
+Oracle com Docker/NGINX, Cloudflare na borda e GitHub Actions para publicar e
+atualizar a imagem da API.
+
+- [Resumo operacional da API](./deploy/api/README.md)
+- [Guia completo da VPS](./deploy/api/vps-setup-guide.md)
+- [Resumo do Terraform](./deploy/terraform/README.md)
+- [Guia completo do Terraform](./deploy/terraform/infra-terraform-guia.md)
+
+É uma arquitetura demonstrativa: há uma única VPS, não há autoscaling e o
+deploy pode causar breve indisponibilidade. As limitações e a evolução sugerida
+estão em [Decisão de deploy](./docs/Decisao-deploy.md).
+
